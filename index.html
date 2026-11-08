@@ -62,11 +62,7 @@
         return true;
       }
 
-      const div = document.createElement("div");
-      div.className = "ok";
-      div.textContent = "You are signed in to Open Brain. You may return to Gemini.";
-      signinStatus.innerHTML = "";
-      signinStatus.appendChild(div);
+      location.replace("/openbrain-oauth-ui/dashboard/");
       return true;
     }
 

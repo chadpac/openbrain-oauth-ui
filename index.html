@@ -19,6 +19,7 @@
     <section id="info">
       <h1>Open Brain</h1>
       <p class="muted">This site is used only for secure OAuth authorization of Open Brain AI connections.</p>
+      <div id="signinStatus"></div>
     </section>
 
     <section id="reset" class="hidden">
@@ -45,6 +46,29 @@
     const info = document.getElementById("info");
     const reset = document.getElementById("reset");
     const message = document.getElementById("message");
+    const signinStatus = document.getElementById("signinStatus");
+
+    async function resumePendingAuthorization() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return false;
+
+      const pendingId = localStorage.getItem("openbrain_pending_authorization_id");
+      if (pendingId) {
+        localStorage.removeItem("openbrain_pending_authorization_id");
+        location.replace(
+          "/openbrain-oauth-ui/oauth/consent/?authorization_id=" +
+            encodeURIComponent(pendingId)
+        );
+        return true;
+      }
+
+      const div = document.createElement("div");
+      div.className = "ok";
+      div.textContent = "You are signed in to Open Brain. You may return to Gemini.";
+      signinStatus.innerHTML = "";
+      signinStatus.appendChild(div);
+      return true;
+    }
 
     function showReset() {
       info.classList.add("hidden");
@@ -65,8 +89,16 @@
     }
 
     sb.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") showReset();
+      if (event === "PASSWORD_RECOVERY") {
+        showReset();
+        return;
+      }
+      if (event === "SIGNED_IN") {
+        resumePendingAuthorization();
+      }
     });
+
+    resumePendingAuthorization();
 
     document.getElementById("resetForm").addEventListener("submit", async (e) => {
       e.preventDefault();

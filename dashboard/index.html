@@ -47,6 +47,13 @@
     .today-task-title{font-weight:770}.today-task-meta{font-size:12px;color:var(--muted);margin-top:3px}.today-overdue{color:#a95d5d;font-weight:750}
     .today-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.today-mini{background:#f8faf9;border:1px solid var(--line);border-radius:12px;padding:11px}
     .today-mini .n{font-size:22px;font-weight:850}.today-mini .l{font-size:11px;color:var(--muted);margin-top:1px}
+    .week-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
+    .week-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:18px}.week-priorities{display:grid;gap:8px;margin-top:10px}
+    .week-priority{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fafcfc}
+    .week-num{width:26px;height:26px;border-radius:50%;background:var(--peach-soft);color:#8b624b;display:grid;place-items:center;font-size:12px;font-weight:850}
+    .week-side{background:#f6faf9;border:1px solid #dfe9e8;border-radius:14px;padding:14px}.week-side h4{margin:0 0 8px}.week-metric{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #e2eceb;font-size:13px}.week-metric:first-of-type{border-top:0}
+    .week-anchor{margin-top:12px;padding:11px 12px;border-radius:12px;background:var(--peach-soft);font-size:13px}.week-anchor strong{display:block;margin-bottom:3px;color:#76513f}
+    .review-note{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.45}
     .overview{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px;margin-bottom:18px}
     .overview-card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
     .overview-card.goal{background:linear-gradient(145deg,#fff,var(--peach-soft));border-color:#ead5c7}
@@ -91,7 +98,7 @@
     .logincard{width:min(480px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:var(--shadow)}
     .logincard h1{margin:0 0 8px;font-size:28px}.logincard p{color:var(--muted);line-height:1.5}.loginlogo{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,var(--peach),var(--slate));display:grid;place-items:center;font-size:24px;margin-bottom:18px}
     .message{margin:12px 0;padding:11px 12px;border-radius:10px;font-size:13px}.message.ok{background:var(--green-soft);color:#166534}.message.err{background:var(--red-soft);color:#991b1b}
-    @media(max-width:1100px){.today-grid,.overview{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
+    @media(max-width:1100px){.today-grid,.overview,.week-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
     @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:14px 14px 10px}.brand{padding-bottom:10px}nav{display:flex;overflow:auto}.navitem{white-space:nowrap}.aside-foot{display:none}main{padding:18px 14px 30px}.topbar{align-items:flex-start}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}}
   </style>
 </head>
@@ -176,6 +183,30 @@
             <div class="today-mini"><div id="todayTaskCount" class="n">—</div><div class="l">My tasks</div></div>
             <div class="today-mini"><div id="todayEventCount" class="n">—</div><div class="l">Family events</div></div>
             <div class="today-mini"><div id="todayOverdueCount" class="n">—</div><div class="l">Overdue</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="week-card">
+        <div class="overview-head">
+          <div>
+            <div class="eyebrow">This week</div>
+            <h3 id="weekHeading">Weekly plan</h3>
+            <div id="weekRange" class="subtitle"></div>
+          </div>
+          <button id="planWeek" class="ghost">Plan / review week</button>
+        </div>
+        <div class="week-grid">
+          <div>
+            <div id="weekPriorities" class="week-priorities"><div class="overview-empty">Choose up to three priorities for the week.</div></div>
+            <div id="weekReviewNote" class="review-note"></div>
+          </div>
+          <div class="week-side">
+            <h4>Capacity snapshot</h4>
+            <div class="week-metric"><span>My active reminders</span><strong id="weekTaskCount">—</strong></div>
+            <div class="week-metric"><span>Family events</span><strong id="weekEventCount">—</strong></div>
+            <div class="week-metric"><span>Overdue items</span><strong id="weekOverdueCount">—</strong></div>
+            <div id="weekGoalAnchor" class="week-anchor hidden"></div>
           </div>
         </div>
       </section>
@@ -294,6 +325,24 @@
     </form>
   </dialog>
 
+  <dialog id="weekEditor">
+    <form id="weekForm">
+      <div class="modalhead"><h3>Weekly plan & review</h3><button id="closeWeekEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <div class="message ok" style="margin:0">
+          Keep this intentionally small. Three meaningful priorities are usually more useful than a long wish list.
+        </div>
+        <div><label for="weekPriority1">Priority 1</label><input id="weekPriority1" maxlength="220" placeholder="The most important thing to move forward" /></div>
+        <div><label for="weekPriority2">Priority 2</label><input id="weekPriority2" maxlength="220" /></div>
+        <div><label for="weekPriority3">Priority 3</label><input id="weekPriority3" maxlength="220" /></div>
+        <div><label for="weekWins">Wins / what went well</label><textarea id="weekWins" placeholder="Add during your weekly review"></textarea></div>
+        <div><label for="weekLessons">What did I learn?</label><textarea id="weekLessons" placeholder="What helped, what got in the way, what should change?"></textarea></div>
+        <div><label for="weekCarry">Carry forward / drop / delegate</label><textarea id="weekCarry" placeholder="What should move into next week, be dropped, or be handed off?"></textarea></div>
+      </div>
+      <div class="modalfoot"><button id="cancelWeekEdit" class="ghost" type="button">Cancel</button><button class="primary" type="submit">Save weekly plan</button></div>
+    </form>
+  </dialog>
+
   <dialog id="eventEditor">
     <form id="eventForm">
       <div class="modalhead"><h3 id="eventEditorTitle">New family event</h3><button id="closeEventEditor" class="ghost" type="button">Close</button></div>
@@ -339,7 +388,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], goals:[], filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], goals:[], weeklyPlans:[], filter:"active", search:"", memberFilter:"" };
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -439,19 +488,21 @@
     }
 
     async function loadData(){
-      const [membersRes, householdRes, tasksRes, eventsRes, goalsRes]=await Promise.all([
+      const [membersRes, householdRes, tasksRes, eventsRes, goalsRes, weeksRes]=await Promise.all([
         sb.from("household_members").select("user_id,household_id,display_name,role").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
         sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
         sb.from("family_events").select("*").eq("household_id",state.member.household_id).gte("starts_at",new Date(Date.now()-86400000).toISOString()).order("starts_at",{ascending:true}).limit(12),
-        sb.from("family_goals").select("*").eq("household_id",state.member.household_id).eq("status","active").order("updated_at",{ascending:false})
+        sb.from("family_goals").select("*").eq("household_id",state.member.household_id).eq("status","active").order("updated_at",{ascending:false}),
+        sb.from("weekly_plans").select("*").eq("owner_user_id",state.user.id).order("week_start",{ascending:false}).limit(12)
       ]);
       if(membersRes.error) throw membersRes.error;
       if(householdRes.error) throw householdRes.error;
       if(tasksRes.error) throw tasksRes.error;
       if(eventsRes.error) throw eventsRes.error;
       if(goalsRes.error) throw goalsRes.error;
-      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.goals=goalsRes.data||[];
+      if(weeksRes.error) throw weeksRes.error;
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.goals=goalsRes.data||[]; state.weeklyPlans=weeksRes.data||[];
       if(!state.memberFilter) state.memberFilter=state.member.user_id;
       populateMembers();
     }
@@ -475,6 +526,7 @@
       $("statPaused").textContent=state.tasks.filter(t=>t.status==="paused").length;
       $("statFamily").textContent=state.members.length;
       renderToday();
+      renderWeek();
       renderOverview();
       renderTasks();
     }
@@ -531,6 +583,103 @@
 
     function clearQuick(){
       $("quickCapture").value="";
+    }
+
+    function startOfWeek(date=new Date()){
+      const d=new Date(date);
+      d.setHours(0,0,0,0);
+      const day=d.getDay();
+      const diff=day===0?-6:1-day;
+      d.setDate(d.getDate()+diff);
+      return d;
+    }
+
+    function dateOnlyLocal(date){
+      const d=new Date(date);
+      return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+    }
+
+    function currentWeeklyPlan(){
+      const key=dateOnlyLocal(startOfWeek());
+      return state.weeklyPlans.find(w=>w.week_start===key)||null;
+    }
+
+    function renderWeek(){
+      const start=startOfWeek(), end=new Date(start); end.setDate(end.getDate()+6); end.setHours(23,59,59,999);
+      $("weekRange").textContent=new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(start)+" – "+new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",year:"numeric"}).format(end);
+
+      const plan=currentWeeklyPlan();
+      const priorities=[plan?.priority_1,plan?.priority_2,plan?.priority_3].filter(Boolean);
+      const box=$("weekPriorities");
+      if(!priorities.length){
+        box.innerHTML='<div class="overview-empty">Choose up to three priorities for the week. These should describe outcomes you want to move forward—not every task you need to do.</div>';
+      }else{
+        box.innerHTML=priorities.map((p,i)=>'<div class="week-priority"><div class="week-num">'+(i+1)+'</div><div>'+esc(p)+'</div></div>').join("");
+      }
+
+      const mine=state.tasks.filter(t=>t.assigned_to_user_id===state.user.id && ["pending","in_progress"].includes(t.status));
+      const weekTasks=mine.filter(t=>{
+        const d=t.remind_at||t.due_at; if(!d)return false;
+        const x=new Date(d); return x>=start && x<=end;
+      });
+      const overdue=mine.filter(t=>t.remind_at && new Date(t.remind_at)<start);
+      const weekEvents=state.events.filter(e=>{const x=new Date(e.starts_at); return x>=start && x<=end;});
+      $("weekTaskCount").textContent=weekTasks.length;
+      $("weekEventCount").textContent=weekEvents.length;
+      $("weekOverdueCount").textContent=overdue.length;
+
+      const goal=activeGoal(), anchor=$("weekGoalAnchor");
+      if(goal){
+        anchor.classList.remove("hidden");
+        anchor.innerHTML='<strong>Goal anchor</strong>'+esc(goal.next_action||goal.title);
+      }else{
+        anchor.classList.add("hidden"); anchor.innerHTML="";
+      }
+
+      const notes=[];
+      if(plan?.wins) notes.push("Wins recorded");
+      if(plan?.lessons) notes.push("Lessons captured");
+      if(plan?.carry_forward) notes.push("Carry-forward reviewed");
+      $("weekReviewNote").textContent=notes.length?notes.join(" · "):"Use the same weekly plan to reflect at the end of the week. Your review stays private to your account.";
+      $("planWeek").textContent=plan?"Edit / review week":"Plan this week";
+    }
+
+    function openWeekEditor(){
+      const plan=currentWeeklyPlan();
+      $("weekForm").reset();
+      $("weekPriority1").value=plan?.priority_1||"";
+      $("weekPriority2").value=plan?.priority_2||"";
+      $("weekPriority3").value=plan?.priority_3||"";
+      $("weekWins").value=plan?.wins||"";
+      $("weekLessons").value=plan?.lessons||"";
+      $("weekCarry").value=plan?.carry_forward||"";
+      $("weekEditor").showModal();
+    }
+
+    async function saveWeek(e){
+      e.preventDefault();
+      try{
+        const plan=currentWeeklyPlan();
+        const payload={
+          household_id:state.member.household_id,
+          owner_user_id:state.user.id,
+          week_start:dateOnlyLocal(startOfWeek()),
+          priority_1:$("weekPriority1").value.trim()||null,
+          priority_2:$("weekPriority2").value.trim()||null,
+          priority_3:$("weekPriority3").value.trim()||null,
+          wins:$("weekWins").value.trim()||null,
+          lessons:$("weekLessons").value.trim()||null,
+          carry_forward:$("weekCarry").value.trim()||null,
+          updated_at:new Date().toISOString()
+        };
+        if(plan){
+          const {error}=await sb.from("weekly_plans").update(payload).eq("id",plan.id); if(error) throw error;
+        }else{
+          const {error}=await sb.from("weekly_plans").insert(payload); if(error) throw error;
+        }
+        $("weekEditor").close();
+        await loadData(); renderAll(); toast("Weekly plan saved.");
+      }catch(err){toast(err?.message||"Unable to save weekly plan.",true);}
     }
 
     function activeGoal(){
@@ -821,6 +970,11 @@
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
+    $("planWeek").addEventListener("click",openWeekEditor);
+    $("closeWeekEditor").addEventListener("click",()=>$("weekEditor").close());
+    $("cancelWeekEdit").addEventListener("click",()=>$("weekEditor").close());
+    $("weekForm").addEventListener("submit",saveWeek);
+
     $("newTask").addEventListener("click",()=>openEditor());
     $("newEvent").addEventListener("click",()=>openEventEditor());
     $("editGoal").addEventListener("click",openGoalEditor);

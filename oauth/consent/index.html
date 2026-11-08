@@ -34,7 +34,7 @@
         <input id="email" type="email" autocomplete="username" required />
         <label for="password">Password</label>
         <input id="password" type="password" autocomplete="current-password" required />
-        <div class="row"><button class="primary" type="submit">Sign in</button></div>
+        <div class="row"><button class="primary" type="submit">Sign in</button><button id="forgotPassword" class="secondary" type="button">Forgot password?</button></div>
       </form>
     </section>
 
@@ -166,6 +166,28 @@
         return;
       }
       await loadConsent();
+    });
+
+    document.getElementById("forgotPassword").addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      if (!email) {
+        showMessage("Enter your Open Brain email first, then click Forgot password?", "error");
+        return;
+      }
+
+      const btn = document.getElementById("forgotPassword");
+      btn.disabled = true;
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: "https://chadpac.github.io/openbrain-oauth-ui"
+      });
+      btn.disabled = false;
+
+      if (error) {
+        showMessage(error.message, "error");
+        return;
+      }
+
+      showMessage("Password reset email sent. Open the email and follow the link to choose a new Open Brain password.", "ok");
     });
 
     document.getElementById("approve").addEventListener("click", async () => {

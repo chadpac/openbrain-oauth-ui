@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Authorize Open Brain</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#18212f;background:#f6f7f9}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px}
+    .card{width:min(560px,100%);background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:28px;box-shadow:0 12px 34px rgba(0,0,0,.07)}
+    h1{font-size:26px;margin:0 0 8px}.muted{color:#667085;line-height:1.5}.hidden{display:none!important}
+    label{display:block;font-weight:600;margin:14px 0 6px}
+    input{width:100%;padding:12px 13px;border:1px solid #cfd4dc;border-radius:10px;font-size:16px}
+    button{border:0;border-radius:10px;padding:11px 16px;font-size:15px;font-weight:650;cursor:pointer}
+    .primary{background:#111827;color:#fff}.secondary{background:#eef1f5;color:#18212f}.danger{background:#fff1f2;color:#9f1239}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .error{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;padding:12px;border-radius:10px;margin:14px 0}
+    .ok{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0;padding:12px;border-radius:10px;margin:14px 0}
+    .details{background:#f8fafc;border:1px solid #e2e8f0;padding:14px;border-radius:12px;margin-top:16px}
+    .small{font-size:13px}.scope{display:inline-block;background:#eef2ff;border-radius:999px;padding:5px 9px;margin:3px 4px 0 0;font-size:13px}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Authorize Open Brain</h1>
+    <p class="muted">Sign in with your Open Brain account to review this connection request.</p>
+
+    <div id="message"></div>
+
+    <section id="login" class="hidden">
+      <form id="loginForm">
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="username" required />
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required />
+        <div class="row"><button class="primary" type="submit">Sign in</button></div>
+      </form>
+    </section>
+
+    <section id="consent" class="hidden">
+      <div class="details">
+        <div><strong>Signed in as:</strong> <span id="signedInAs"></span></div>
+        <div style="margin-top:10px"><strong>Application:</strong> <span id="clientName"></span></div>
+        <div id="clientUriRow" class="small muted" style="margin-top:4px"></div>
+        <div style="margin-top:12px"><strong>Requested access:</strong></div>
+        <div id="scopes"></div>
+      </div>
+      <p class="muted small">Only Open Brain household administrators can approve AI connections.</p>
+      <div class="row">
+        <button id="approve" class="primary" type="button">Approve</button>
+        <button id="deny" class="danger" type="button">Deny</button>
+        <button id="signOut" class="secondary" type="button">Sign out</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm";
+
+    const SUPABASE_URL = "https://prctfnpbftjepdckwpao.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Dk6egByVuZmSuI8tp0h1fg_hpki5iOE";
+    const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    const params = new URLSearchParams(location.search);
+    const authorizationId = params.get("authorization_id");
+    const login = document.getElementById("login");
+    const consent = document.getElementById("consent");
+    const message = document.getElementById("message");
+
+    const showMessage = (text, kind="error") => {
+      message.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = kind;
+      div.textContent = text;
+      message.appendChild(div);
+    };
+
+    const fail = (text) => {
+      login.classList.add("hidden");
+      consent.classList.add("hidden");
+      showMessage(text, "error");
+    };
+
+    async function requireAdmin(user) {
+      const { data, error } = await sb
+        .from("household_members")
+        .select("display_name, role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data || data.role !== "admin") {
+        throw new Error("This Open Brain account is not authorized to approve AI connections.");
+      }
+      return data;
+    }
+
+    async function loadConsent() {
+      if (!authorizationId) {
+        fail("Missing authorization request. Please start the connection again from Gemini.");
+        return;
+      }
+
+      const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+      if (sessionError) {
+        fail(sessionError.message);
+        return;
+      }
+
+      const user = sessionData.session?.user;
+      if (!user) {
+        consent.classList.add("hidden");
+        login.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        const member = await requireAdmin(user);
+        const { data, error } = await sb.auth.oauth.getAuthorizationDetails(authorizationId);
+        if (error) throw error;
+
+        if (data && "redirect_url" in data && !("authorization_id" in data)) {
+          location.assign(data.redirect_url);
+          return;
+        }
+
+        document.getElementById("signedInAs").textContent =
+          member.display_name + (user.email ? " (" + user.email + ")" : "");
+        document.getElementById("clientName").textContent = data?.client?.name || "Unknown application";
+
+        const uriRow = document.getElementById("clientUriRow");
+        uriRow.textContent = data?.client?.uri ? data.client.uri : "";
+
+        const scopes = document.getElementById("scopes");
+        scopes.innerHTML = "";
+        const scopeList = (data?.scope || "email").split(/\s+/).filter(Boolean);
+        for (const scope of scopeList) {
+          const chip = document.createElement("span");
+          chip.className = "scope";
+          chip.textContent = scope;
+          scopes.appendChild(chip);
+        }
+
+        login.classList.add("hidden");
+        consent.classList.remove("hidden");
+        message.innerHTML = "";
+      } catch (err) {
+        fail(err?.message || "Unable to load authorization request.");
+      }
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const button = e.submitter;
+      button.disabled = true;
+      message.innerHTML = "";
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      button.disabled = false;
+
+      if (error) {
+        showMessage(error.message, "error");
+        return;
+      }
+      await loadConsent();
+    });
+
+    document.getElementById("approve").addEventListener("click", async () => {
+      const btn = document.getElementById("approve");
+      btn.disabled = true;
+      const { data, error } = await sb.auth.oauth.approveAuthorization(authorizationId);
+      if (error) {
+        btn.disabled = false;
+        showMessage(error.message, "error");
+        return;
+      }
+      location.assign(data.redirect_url);
+    });
+
+    document.getElementById("deny").addEventListener("click", async () => {
+      const btn = document.getElementById("deny");
+      btn.disabled = true;
+      const { data, error } = await sb.auth.oauth.denyAuthorization(authorizationId);
+      if (error) {
+        btn.disabled = false;
+        showMessage(error.message, "error");
+        return;
+      }
+      location.assign(data.redirect_url);
+    });
+
+    document.getElementById("signOut").addEventListener("click", async () => {
+      await sb.auth.signOut();
+      location.reload();
+    });
+
+    loadConsent();
+  </script>
+</body>
+</html>

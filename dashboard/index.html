@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#132238" />
+  <title>Open Brain Family Dashboard</title>
+  <style>
+    :root{
+      color-scheme:light;
+      --navy:#132238;--navy2:#20344f;--ink:#1f2937;--muted:#6b7280;
+      --bg:#f3f6f9;--card:#fff;--line:#e4e8ee;--green:#16a34a;
+      --green-soft:#ecfdf3;--blue:#2563eb;--blue-soft:#eff6ff;--amber:#d97706;
+      --amber-soft:#fffbeb;--red:#dc2626;--red-soft:#fef2f2;--purple:#7c3aed;
+      --purple-soft:#f5f3ff;--shadow:0 10px 30px rgba(18,34,56,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .hidden{display:none!important}
+    .shell{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
+    aside{background:var(--navy);color:#fff;padding:26px 18px;position:sticky;top:0;height:100vh}
+    .brand{display:flex;gap:12px;align-items:center;padding:4px 8px 26px}
+    .brain{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#34d399,#2dd4bf);display:grid;place-items:center;color:#082f2a;font-weight:900;font-size:20px}
+    .brand h1{font-size:18px;margin:0}.brand small{color:#b9c7d9}
+    nav{display:grid;gap:6px}.navitem{border:0;background:transparent;color:#c7d2e0;border-radius:11px;padding:11px 12px;text-align:left;font-weight:650}
+    .navitem.active{background:#fff;color:var(--navy)}.navitem.disabled{opacity:.45;cursor:default}
+    .aside-foot{position:absolute;left:18px;right:18px;bottom:22px;color:#9fb0c5;font-size:12px;line-height:1.5}
+    main{padding:30px;min-width:0}
+    .topbar{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:26px}
+    .topbar h2{font-size:28px;margin:0 0 4px}.subtitle{color:var(--muted);font-size:14px}
+    .userbox{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:#dbeafe;color:#1d4ed8;display:grid;place-items:center;font-weight:800}
+    .ghost{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--ink)}
+    .primary{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:750}
+    .primary:hover{background:var(--navy2)}
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
+    .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 3px 15px rgba(18,34,56,.04)}
+    .stat .label{font-size:13px;color:var(--muted);font-weight:650}.stat .num{font-size:28px;font-weight:850;margin-top:4px}.stat .hint{font-size:12px;color:var(--muted);margin-top:3px}
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+    .panelhead{display:flex;gap:14px;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line)}
+    .panelhead h3{margin:0;font-size:18px}.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .filterbar{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap}.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700;color:#536070}
+    .tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+    .search{min-width:220px;flex:1;max-width:360px}.search input,.filterbar select{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff}
+    .tasklist{display:grid}
+    .task{display:grid;grid-template-columns:minmax(260px,1.6fr) minmax(160px,.75fr) minmax(190px,.9fr) minmax(250px,1fr);gap:18px;align-items:center;padding:17px 20px;border-bottom:1px solid var(--line)}
+    .task:last-child{border-bottom:0}.task:hover{background:#fafbfd}
+    .title{font-weight:780;line-height:1.3}.desc{color:var(--muted);font-size:13px;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .meta{font-size:13px;color:#4b5563}.meta strong{display:block;color:#111827;margin-bottom:2px}
+    .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:750}
+    .b-active{background:var(--green-soft);color:#15803d}.b-paused{background:var(--amber-soft);color:#b45309}.b-cancelled{background:var(--red-soft);color:#b91c1c}.b-completed{background:#f3f4f6;color:#4b5563}.b-recurring{background:var(--purple-soft);color:var(--purple)}.b-priority{background:var(--blue-soft);color:#1d4ed8}
+    .actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}.smallbtn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 9px;font-size:12px;font-weight:750}.smallbtn:hover{background:#f8fafc}.smallbtn.warn{color:#b45309}.smallbtn.danger{color:#b91c1c}
+    .empty{padding:55px 20px;text-align:center;color:var(--muted)}.empty strong{display:block;color:var(--ink);font-size:17px;margin-bottom:5px}
+    .toast{position:fixed;right:24px;bottom:24px;z-index:50;background:#111827;color:#fff;border-radius:12px;padding:12px 15px;box-shadow:var(--shadow);max-width:360px}
+    .toast.error{background:#991b1b}
+    dialog{border:0;border-radius:18px;padding:0;width:min(640px,calc(100% - 28px));box-shadow:0 30px 70px rgba(0,0,0,.28)}
+    dialog::backdrop{background:rgba(15,23,42,.52)}
+    .modalhead{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.modalhead h3{margin:0}
+    .modalbody{padding:20px 22px;display:grid;gap:14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{font-size:13px;font-weight:720;color:#374151;display:block;margin-bottom:5px}
+    input,select,textarea{width:100%;border:1px solid #d5dbe4;border-radius:10px;padding:10px 11px;background:#fff;color:#111827}
+    textarea{min-height:88px;resize:vertical}.helper{font-size:12px;color:var(--muted);margin-top:5px}
+    .modalfoot{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:9px}
+    .loginwrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at top left,#dff7ef,transparent 32%),var(--bg)}
+    .logincard{width:min(480px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:var(--shadow)}
+    .logincard h1{margin:0 0 8px;font-size:28px}.logincard p{color:var(--muted);line-height:1.5}.loginlogo{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,#34d399,#2dd4bf);display:grid;place-items:center;font-size:24px;margin-bottom:18px}
+    .message{margin:12px 0;padding:11px 12px;border-radius:10px;font-size:13px}.message.ok{background:var(--green-soft);color:#166534}.message.err{background:var(--red-soft);color:#991b1b}
+    @media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
+    @media(max-width:760px){.shell{display:block}aside{height:auto;position:static;padding:14px 14px 10px}.brand{padding-bottom:10px}nav{display:flex;overflow:auto}.navitem{white-space:nowrap}.aside-foot{display:none}main{padding:18px 14px 30px}.topbar{align-items:flex-start}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}}
+  </style>
+</head>
+<body>
+  <section id="loginScreen" class="loginwrap">
+    <div class="logincard">
+      <div class="loginlogo">🧠</div>
+      <h1>Open Brain</h1>
+      <p>Family dashboard for reminders, tasks, memories, and household organization.</p>
+      <div id="loginMessage"></div>
+      <form id="loginForm">
+        <label for="loginEmail">Open Brain email</label>
+        <input id="loginEmail" type="email" autocomplete="email" required />
+        <button class="primary" type="submit" style="width:100%;margin-top:14px">Email me a sign-in link</button>
+      </form>
+      <p class="helper">Only existing Open Brain family accounts can sign in.</p>
+    </div>
+  </section>
+
+  <div id="app" class="shell hidden">
+    <aside>
+      <div class="brand">
+        <div class="brain">OB</div>
+        <div><h1>Open Brain</h1><small>Family Dashboard</small></div>
+      </div>
+      <nav>
+        <button class="navitem active">Reminders & Tasks</button>
+        <button class="navitem disabled" title="Coming next">Memories · soon</button>
+        <button class="navitem disabled" title="Coming next">Family · soon</button>
+        <button class="navitem disabled" title="Coming next">Settings · soon</button>
+      </nav>
+      <div class="aside-foot">Dashboard v0.1<br>Times use this device's time zone.</div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div>
+          <h2>Reminders & Tasks</h2>
+          <div class="subtitle">Manage Open Brain reminders without going into Supabase.</div>
+        </div>
+        <div class="userbox">
+          <div id="avatar" class="avatar">OB</div>
+          <div class="name"><strong id="displayName">Open Brain</strong><div id="roleText" class="subtitle"></div></div>
+          <button id="signOut" class="ghost">Sign out</button>
+        </div>
+      </div>
+
+      <section class="stats">
+        <div class="stat"><div class="label">Active</div><div id="statActive" class="num">—</div><div class="hint">Pending household tasks</div></div>
+        <div class="stat"><div class="label">Recurring</div><div id="statRecurring" class="num">—</div><div class="hint">Active repeating reminders</div></div>
+        <div class="stat"><div class="label">Paused</div><div id="statPaused" class="num">—</div><div class="hint">Ready to resume later</div></div>
+        <div class="stat"><div class="label">Family</div><div id="statFamily" class="num">—</div><div class="hint">Open Brain household members</div></div>
+      </section>
+
+      <section class="panel">
+        <div class="panelhead">
+          <div><h3>Family reminders</h3><div class="subtitle" id="timezoneNote"></div></div>
+          <div class="controls"><button id="refresh" class="ghost">Refresh</button><button id="newTask" class="primary">+ New reminder</button></div>
+        </div>
+        <div class="filterbar">
+          <div class="tabs">
+            <button class="tab active" data-filter="active">Active</button>
+            <button class="tab" data-filter="paused">Paused</button>
+            <button class="tab" data-filter="history">History</button>
+            <button class="tab" data-filter="all">All</button>
+          </div>
+          <div class="search"><input id="search" type="search" placeholder="Search reminders…" /></div>
+          <select id="memberFilter"><option value="">Everyone</option></select>
+        </div>
+        <div id="taskList" class="tasklist"><div class="empty">Loading Open Brain…</div></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="editor">
+    <form id="taskForm">
+      <div class="modalhead"><h3 id="editorTitle">New reminder</h3><button id="closeEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="taskId" type="hidden" />
+        <div>
+          <label for="taskTitle">Title</label>
+          <input id="taskTitle" required maxlength="180" placeholder="e.g. Fill up water bottles" />
+        </div>
+        <div>
+          <label for="taskDescription">Details (optional)</label>
+          <textarea id="taskDescription" placeholder="Anything helpful to include in the Telegram reminder"></textarea>
+        </div>
+        <div class="grid2">
+          <div>
+            <label for="taskMember">Assigned to</label>
+            <select id="taskMember" required></select>
+          </div>
+          <div>
+            <label for="taskPriority">Priority</label>
+            <select id="taskPriority">
+              <option value="low">Low</option>
+              <option value="normal" selected>Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid2">
+          <div>
+            <label for="taskReminder">Reminder time</label>
+            <input id="taskReminder" type="datetime-local" required />
+            <div class="helper">Uses this device's local time.</div>
+          </div>
+          <div>
+            <label for="taskDue">Due time (optional)</label>
+            <input id="taskDue" type="datetime-local" />
+          </div>
+        </div>
+        <div class="grid2">
+          <div>
+            <label for="taskRepeat">Repeats</label>
+            <select id="taskRepeat">
+              <option value="">Does not repeat</option>
+              <option value="daily">Daily</option>
+              <option value="weekdays">Weekdays (Mon–Fri)</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="weekdays:mon">Every Monday</option>
+              <option value="weekdays:tue">Every Tuesday</option>
+              <option value="weekdays:wed">Every Wednesday</option>
+              <option value="weekdays:thu">Every Thursday</option>
+              <option value="weekdays:fri">Every Friday</option>
+              <option value="weekdays:sat">Every Saturday</option>
+              <option value="weekdays:sun">Every Sunday</option>
+              <option value="weekdays:mon,wed,fri">Mon / Wed / Fri</option>
+              <option value="__custom">Custom…</option>
+            </select>
+          </div>
+          <div id="customRepeatWrap" class="hidden">
+            <label for="taskRepeatCustom">Custom rule</label>
+            <input id="taskRepeatCustom" placeholder="e.g. weeks:2" />
+            <div class="helper">Examples: days:2, weeks:2, months:3</div>
+          </div>
+        </div>
+      </div>
+      <div class="modalfoot"><button id="cancelEdit" class="ghost" type="button">Cancel</button><button id="saveTask" class="primary" type="submit">Save reminder</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm";
+
+    const SUPABASE_URL = "https://prctfnpbftjepdckwpao.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Dk6egByVuZmSuI8tp0h1fg_hpki5iOE";
+    const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    const $ = (id) => document.getElementById(id);
+    const state = { user:null, member:null, household:null, members:[], tasks:[], filter:"active", search:"", memberFilter:"" };
+
+    function toast(message, error=false){
+      const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
+      clearTimeout(toast.timer); toast.timer=setTimeout(()=>el.classList.add("hidden"),3200);
+    }
+
+    function esc(value=""){
+      return String(value).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+    }
+
+    function initials(name="OB"){
+      return name.split(/\s+/).filter(Boolean).map(x=>x[0]).join("").slice(0,2).toUpperCase() || "OB";
+    }
+
+    function statusLabel(status){
+      return ({pending:"Active",in_progress:"In progress",paused:"Paused",cancelled:"Cancelled",completed:"Completed"})[status] || status;
+    }
+
+    function statusClass(status){
+      if(status==="paused") return "b-paused";
+      if(status==="cancelled") return "b-cancelled";
+      if(status==="completed") return "b-completed";
+      return "b-active";
+    }
+
+    function recurrenceLabel(rule){
+      if(!rule) return "One time";
+      const map={
+        daily:"Daily",weekdays:"Weekdays",weekly:"Weekly",monthly:"Monthly",
+        "weekdays:mon":"Every Monday","weekdays:tue":"Every Tuesday","weekdays:wed":"Every Wednesday",
+        "weekdays:thu":"Every Thursday","weekdays:fri":"Every Friday","weekdays:sat":"Every Saturday",
+        "weekdays:sun":"Every Sunday","weekdays:mon,wed,fri":"Mon / Wed / Fri"
+      };
+      if(map[rule]) return map[rule];
+      const m=rule.match(/^(days|weeks|months):(\d+)$/);
+      if(m) return `Every ${m[2]} ${m[1]}`;
+      return rule;
+    }
+
+    function formatDate(value){
+      if(!value) return "No reminder";
+      const d=new Date(value);
+      if(Number.isNaN(d.getTime())) return "Invalid date";
+      return new Intl.DateTimeFormat(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(d);
+    }
+
+    function toLocalInput(value){
+      if(!value) return "";
+      const d=new Date(value);
+      const pad=n=>String(n).padStart(2,"0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function toIsoOrNull(value){
+      return value ? new Date(value).toISOString() : null;
+    }
+
+    async function requireAdmin(user){
+      const {data,error}=await sb.from("household_members")
+        .select("user_id, household_id, display_name, role")
+        .eq("user_id",user.id).maybeSingle();
+      if(error) throw error;
+      if(!data || data.role!=="admin") throw new Error("This dashboard is currently limited to Open Brain household administrators.");
+      return data;
+    }
+
+    async function start(){
+      const {data:{session},error}=await sb.auth.getSession();
+      if(error){ showLogin(error.message,true); return; }
+      if(!session){ showLogin(); return; }
+      try{
+        state.user=session.user;
+        state.member=await requireAdmin(session.user);
+        await loadData();
+        showApp();
+      }catch(err){
+        await sb.auth.signOut();
+        showLogin(err?.message || "Unable to open the dashboard.",true);
+      }
+    }
+
+    function showLogin(message="",isError=false){
+      $("app").classList.add("hidden"); $("loginScreen").classList.remove("hidden");
+      const box=$("loginMessage"); box.innerHTML="";
+      if(message){
+        const div=document.createElement("div"); div.className="message "+(isError?"err":"ok"); div.textContent=message; box.appendChild(div);
+      }
+    }
+
+    function showApp(){
+      $("loginScreen").classList.add("hidden"); $("app").classList.remove("hidden");
+      $("displayName").textContent=state.member.display_name;
+      $("roleText").textContent="Household admin";
+      $("avatar").textContent=initials(state.member.display_name);
+      $("timezoneNote").textContent="Times shown in "+Intl.DateTimeFormat().resolvedOptions().timeZone+".";
+      renderAll();
+    }
+
+    async function loadData(){
+      const [membersRes, householdRes, tasksRes]=await Promise.all([
+        sb.from("household_members").select("user_id,household_id,display_name,role").eq("household_id",state.member.household_id).order("display_name"),
+        sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
+        sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false})
+      ]);
+      if(membersRes.error) throw membersRes.error;
+      if(householdRes.error) throw householdRes.error;
+      if(tasksRes.error) throw tasksRes.error;
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[];
+      populateMembers();
+    }
+
+    function populateMembers(){
+      const filter=$("memberFilter"), editor=$("taskMember");
+      const currentFilter=filter.value, currentEditor=editor.value;
+      filter.innerHTML='<option value="">Everyone</option>';
+      editor.innerHTML="";
+      for(const m of state.members){
+        const o1=document.createElement("option"); o1.value=m.user_id; o1.textContent=m.display_name; filter.appendChild(o1);
+        const o2=document.createElement("option"); o2.value=m.user_id; o2.textContent=m.display_name; editor.appendChild(o2);
+      }
+      filter.value=currentFilter; if(currentEditor) editor.value=currentEditor;
+    }
+
+    function renderAll(){
+      const active=state.tasks.filter(t=>["pending","in_progress"].includes(t.status));
+      $("statActive").textContent=active.length;
+      $("statRecurring").textContent=active.filter(t=>t.recurrence_rule).length;
+      $("statPaused").textContent=state.tasks.filter(t=>t.status==="paused").length;
+      $("statFamily").textContent=state.members.length;
+      renderTasks();
+    }
+
+    function filteredTasks(){
+      let rows=[...state.tasks];
+      if(state.filter==="active") rows=rows.filter(t=>["pending","in_progress"].includes(t.status));
+      if(state.filter==="paused") rows=rows.filter(t=>t.status==="paused");
+      if(state.filter==="history") rows=rows.filter(t=>["completed","cancelled"].includes(t.status));
+      if(state.search){
+        const q=state.search.toLowerCase();
+        rows=rows.filter(t=>(t.title||"").toLowerCase().includes(q)||(t.description||"").toLowerCase().includes(q)||(t.assigned_to||"").toLowerCase().includes(q));
+      }
+      if(state.memberFilter) rows=rows.filter(t=>t.assigned_to_user_id===state.memberFilter);
+      rows.sort((a,b)=>{
+        const ah=["completed","cancelled"].includes(a.status), bh=["completed","cancelled"].includes(b.status);
+        if(ah!==bh) return ah?1:-1;
+        if(ah&&bh) return new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at);
+        return new Date(a.remind_at||"9999-12-31")-new Date(b.remind_at||"9999-12-31");
+      });
+      return rows;
+    }
+
+    function renderTasks(){
+      const rows=filteredTasks(), list=$("taskList");
+      if(!rows.length){
+        list.innerHTML='<div class="empty"><strong>No reminders here</strong>Try another filter or create a new reminder.</div>'; return;
+      }
+      list.innerHTML=rows.map(t=>{
+        const recurring=t.recurrence_rule?'<span class="badge b-recurring">↻ '+esc(recurrenceLabel(t.recurrence_rule))+'</span>':"";
+        const priority=t.priority && t.priority!=="normal"?'<span class="badge b-priority">'+esc(t.priority)+'</span>':"";
+        let buttons='<button class="smallbtn" data-action="edit" data-id="'+t.id+'">Edit</button>';
+        if(["pending","in_progress"].includes(t.status)){
+          buttons+='<button class="smallbtn warn" data-action="pause" data-id="'+t.id+'">Pause</button>';
+          buttons+='<button class="smallbtn" data-action="complete" data-id="'+t.id+'">Done</button>';
+          buttons+='<button class="smallbtn danger" data-action="cancel" data-id="'+t.id+'">Cancel</button>';
+        }else if(t.status==="paused"){
+          buttons+='<button class="smallbtn" data-action="resume" data-id="'+t.id+'">Resume</button>';
+          buttons+='<button class="smallbtn danger" data-action="cancel" data-id="'+t.id+'">Cancel</button>';
+        }
+        return '<article class="task">'+
+          '<div><div class="title">'+esc(t.title)+'</div>'+(t.description?'<div class="desc">'+esc(t.description)+'</div>':'')+
+          '<div class="badges"><span class="badge '+statusClass(t.status)+'">'+esc(statusLabel(t.status))+'</span>'+recurring+priority+'</div></div>'+
+          '<div class="meta"><strong>'+esc(t.assigned_to||"Unassigned")+'</strong>'+esc(t.category||"household")+'</div>'+
+          '<div class="meta"><strong>'+esc(formatDate(t.remind_at))+'</strong>'+esc(t.recurrence_rule?"Repeats "+recurrenceLabel(t.recurrence_rule):"One-time reminder")+'</div>'+
+          '<div class="actions">'+buttons+'</div>'+
+        '</article>';
+      }).join("");
+    }
+
+    function openEditor(task=null){
+      $("taskForm").reset(); $("taskId").value=task?.id||"";
+      $("editorTitle").textContent=task?"Edit reminder":"New reminder";
+      $("taskTitle").value=task?.title||""; $("taskDescription").value=task?.description||"";
+      $("taskPriority").value=task?.priority||"normal";
+      $("taskMember").value=task?.assigned_to_user_id||state.member.user_id;
+      $("taskReminder").value=task?.remind_at?toLocalInput(task.remind_at):toLocalInput(new Date(Date.now()+60*60*1000));
+      $("taskDue").value=task?.due_at?toLocalInput(task.due_at):"";
+      const known=[...$("taskRepeat").options].map(o=>o.value);
+      if(task?.recurrence_rule && !known.includes(task.recurrence_rule)){
+        $("taskRepeat").value="__custom"; $("taskRepeatCustom").value=task.recurrence_rule; $("customRepeatWrap").classList.remove("hidden");
+      }else{
+        $("taskRepeat").value=task?.recurrence_rule||""; $("taskRepeatCustom").value=""; $("customRepeatWrap").classList.add("hidden");
+      }
+      $("editor").showModal();
+    }
+
+    async function saveTask(e){
+      e.preventDefault();
+      const btn=$("saveTask"); btn.disabled=true;
+      try{
+        const id=$("taskId").value;
+        const member=state.members.find(m=>m.user_id===$("taskMember").value);
+        if(!member) throw new Error("Choose a family member.");
+        const repeat=$("taskRepeat").value==="__custom"?$("taskRepeatCustom").value.trim():$("taskRepeat").value;
+        const remindAt=toIsoOrNull($("taskReminder").value);
+        const dueAt=toIsoOrNull($("taskDue").value);
+        const payload={
+          title:$("taskTitle").value.trim(),
+          description:$("taskDescription").value.trim()||null,
+          assigned_to:member.display_name,
+          assigned_to_user_id:member.user_id,
+          priority:$("taskPriority").value,
+          remind_at:remindAt,
+          due_at:dueAt,
+          recurrence_rule:repeat||null,
+          category:"household",
+          visibility:"household",
+          updated_at:new Date().toISOString()
+        };
+        if(!payload.title) throw new Error("Give the reminder a title.");
+        if(!remindAt) throw new Error("Choose a reminder time.");
+
+        if(id){
+          const original=state.tasks.find(t=>t.id===id);
+          if(original?.remind_at!==remindAt){
+            payload.reminder_sent_at=null; payload.reminder_error=null;
+          }
+          const {error}=await sb.from("family_tasks").update(payload).eq("id",id);
+          if(error) throw error;
+          toast("Reminder updated.");
+        }else{
+          Object.assign(payload,{
+            household_id:state.member.household_id,
+            created_by:state.user.id,
+            status:"pending"
+          });
+          const {error}=await sb.from("family_tasks").insert(payload);
+          if(error) throw error;
+          toast("Reminder created.");
+        }
+        $("editor").close();
+        await loadData(); renderAll();
+      }catch(err){ toast(err?.message||"Unable to save reminder.",true); }
+      finally{btn.disabled=false;}
+    }
+
+    async function setStatus(id,status){
+      const task=state.tasks.find(t=>t.id===id); if(!task) return;
+      if(status==="pending" && task.remind_at && new Date(task.remind_at)<new Date()){
+        toast("That reminder time has passed. Edit the time first, then resume it.",true); openEditor(task); return;
+      }
+      const payload={status,updated_at:new Date().toISOString()};
+      if(status==="pending"){payload.completed_at=null;payload.reminder_sent_at=null;payload.reminder_error=null;}
+      if(status==="completed") payload.completed_at=new Date().toISOString();
+      const {error}=await sb.from("family_tasks").update(payload).eq("id",id);
+      if(error){toast(error.message,true);return;}
+      const labels={paused:"Reminder paused.",pending:"Reminder resumed.",cancelled:"Reminder cancelled.",completed:task.recurrence_rule?"Done. The next recurring reminder was created.":"Task completed."};
+      toast(labels[status]||"Updated.");
+      await loadData(); renderAll();
+    }
+
+    $("loginForm").addEventListener("submit",async(e)=>{
+      e.preventDefault(); const btn=e.submitter; btn.disabled=true;
+      const email=$("loginEmail").value.trim();
+      const {error}=await sb.auth.signInWithOtp({
+        email,
+        options:{shouldCreateUser:false,emailRedirectTo:"https://chadpac.github.io/openbrain-oauth-ui"}
+      });
+      btn.disabled=false;
+      if(error){showLogin(error.message,true);return;}
+      showLogin("Sign-in link sent. Open the email on this device and click the link.",false);
+    });
+
+    $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
+    $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
+    $("newTask").addEventListener("click",()=>openEditor());
+    $("closeEditor").addEventListener("click",()=>$("editor").close());
+    $("cancelEdit").addEventListener("click",()=>$("editor").close());
+    $("taskForm").addEventListener("submit",saveTask);
+    $("taskRepeat").addEventListener("change",()=>$("customRepeatWrap").classList.toggle("hidden",$("taskRepeat").value!=="__custom"));
+    $("search").addEventListener("input",e=>{state.search=e.target.value.trim();renderTasks();});
+    $("memberFilter").addEventListener("change",e=>{state.memberFilter=e.target.value;renderTasks();});
+    document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active");state.filter=btn.dataset.filter;renderTasks();
+    }));
+    $("taskList").addEventListener("click",async(e)=>{
+      const btn=e.target.closest("button[data-action]"); if(!btn)return;
+      const id=btn.dataset.id, action=btn.dataset.action, task=state.tasks.find(t=>t.id===id);
+      if(!task)return;
+      if(action==="edit"){openEditor(task);return;}
+      if(action==="pause"){await setStatus(id,"paused");return;}
+      if(action==="resume"){await setStatus(id,"pending");return;}
+      if(action==="complete"){await setStatus(id,"completed");return;}
+      if(action==="cancel"){
+        if(confirm('Cancel "'+task.title+'"? It will stay in history but will no longer send reminders.')) await setStatus(id,"cancelled");
+      }
+    });
+
+    sb.auth.onAuthStateChange((event)=>{
+      if(event==="SIGNED_OUT"){location.reload();}
+    });
+
+    start();
+  </script>
+</body>
+</html>

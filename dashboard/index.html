@@ -54,6 +54,12 @@
     .week-side{background:#f6faf9;border:1px solid #dfe9e8;border-radius:14px;padding:14px}.week-side h4{margin:0 0 8px}.week-metric{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #e2eceb;font-size:13px}.week-metric:first-of-type{border-top:0}
     .week-anchor{margin-top:12px;padding:11px 12px;border-radius:12px;background:var(--peach-soft);font-size:13px}.week-anchor strong{display:block;margin-bottom:3px;color:#76513f}
     .review-note{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.45}
+    .inbox-panel{margin-bottom:18px}.inbox-count{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:var(--peach-soft);color:#7a5744;font-size:12px;font-weight:850}
+    .inbox-list{display:grid}.inbox-item{display:grid;grid-template-columns:minmax(260px,1.4fr) minmax(170px,.65fr) minmax(320px,1fr);gap:16px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+    .inbox-item:last-child{border-bottom:0}.inbox-content{font-weight:720;line-height:1.4}.inbox-time{font-size:11px;color:var(--muted);margin-top:5px}
+    .suggestion{font-size:13px;color:var(--muted)}.suggestion strong{display:block;color:var(--ink);margin-bottom:4px}.type-chip{display:inline-flex;padding:5px 9px;border-radius:999px;background:var(--blue-soft);color:#3f7779;font-size:11px;font-weight:850;text-transform:capitalize}
+    .confidence{font-size:11px;color:var(--muted);margin-left:6px}.inbox-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+    @media(max-width:1100px){.inbox-item{grid-template-columns:1fr}.inbox-actions{justify-content:flex-start}}
     .overview{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px;margin-bottom:18px}
     .overview-card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
     .overview-card.goal{background:linear-gradient(145deg,#fff,var(--peach-soft));border-color:#ead5c7}
@@ -126,6 +132,7 @@
       </div>
       <nav>
         <button class="navitem active" data-scroll="todayHome">Home / Today</button>
+        <button class="navitem" data-scroll="inboxPanel">Inbox <span id="navInboxCount"></span></button>
         <button class="navitem" data-scroll="remindersPanel">Reminders & Tasks</button>
         <button class="navitem disabled" title="Coming next">Memories · soon</button>
         <button class="navitem disabled" title="Coming next">Family · soon</button>
@@ -159,9 +166,10 @@
         <div class="quick-capture">
           <input id="quickCapture" maxlength="220" placeholder="Quick add… e.g. Call the dentist, Track meet Friday, Walk after breakfast" />
           <div class="quick-actions">
-            <button id="quickTask" class="quickbtn" type="button">+ Task</button>
-            <button id="quickEvent" class="quickbtn" type="button">+ Event</button>
-            <button id="quickGoal" class="quickbtn" type="button">+ Goal</button>
+            <button id="quickInbox" class="primary" type="button">Save to Inbox</button>
+            <button id="quickTask" class="quickbtn" type="button">Task</button>
+            <button id="quickEvent" class="quickbtn" type="button">Event</button>
+            <button id="quickGoal" class="quickbtn" type="button">Goal</button>
           </div>
         </div>
       </section>
@@ -209,6 +217,17 @@
             <div id="weekGoalAnchor" class="week-anchor hidden"></div>
           </div>
         </div>
+      </section>
+
+      <section id="inboxPanel" class="panel inbox-panel">
+        <div class="panelhead">
+          <div>
+            <h3>Inbox <span id="inboxCount" class="inbox-count">0</span></h3>
+            <div class="subtitle">Capture first, decide later. AI suggestions are just suggestions—you stay in control.</div>
+          </div>
+          <div class="controls"><button id="refreshInbox" class="ghost">Refresh</button></div>
+        </div>
+        <div id="inboxList" class="inbox-list"><div class="empty">Your inbox is clear.</div></div>
       </section>
 
       <section class="overview">
@@ -388,7 +407,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], goals:[], weeklyPlans:[], filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], goals:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -488,13 +507,14 @@
     }
 
     async function loadData(){
-      const [membersRes, householdRes, tasksRes, eventsRes, goalsRes, weeksRes]=await Promise.all([
+      const [membersRes, householdRes, tasksRes, eventsRes, goalsRes, weeksRes, inboxRes]=await Promise.all([
         sb.from("household_members").select("user_id,household_id,display_name,role").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
         sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
         sb.from("family_events").select("*").eq("household_id",state.member.household_id).gte("starts_at",new Date(Date.now()-86400000).toISOString()).order("starts_at",{ascending:true}).limit(12),
         sb.from("family_goals").select("*").eq("household_id",state.member.household_id).eq("status","active").order("updated_at",{ascending:false}),
-        sb.from("weekly_plans").select("*").eq("owner_user_id",state.user.id).order("week_start",{ascending:false}).limit(12)
+        sb.from("weekly_plans").select("*").eq("owner_user_id",state.user.id).order("week_start",{ascending:false}).limit(12),
+        sb.from("inbox_items").select("*").eq("owner_user_id",state.user.id).eq("status","unprocessed").order("created_at",{ascending:false}).limit(50)
       ]);
       if(membersRes.error) throw membersRes.error;
       if(householdRes.error) throw householdRes.error;
@@ -502,7 +522,8 @@
       if(eventsRes.error) throw eventsRes.error;
       if(goalsRes.error) throw goalsRes.error;
       if(weeksRes.error) throw weeksRes.error;
-      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.goals=goalsRes.data||[]; state.weeklyPlans=weeksRes.data||[];
+      if(inboxRes.error) throw inboxRes.error;
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.goals=goalsRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
       if(!state.memberFilter) state.memberFilter=state.member.user_id;
       populateMembers();
     }
@@ -527,6 +548,7 @@
       $("statFamily").textContent=state.members.length;
       renderToday();
       renderWeek();
+      renderInbox();
       renderOverview();
       renderTasks();
     }
@@ -682,6 +704,138 @@
       }catch(err){toast(err?.message||"Unable to save weekly plan.",true);}
     }
 
+    function inboxTypeLabel(type){
+      return ({task:"Task",event:"Event",goal:"Goal",memory:"Memory",list_item:"List item",note:"Note"})[type]||"Unsorted";
+    }
+
+    function renderInbox(){
+      $("inboxCount").textContent=state.inbox.length;
+      $("navInboxCount").textContent=state.inbox.length?"("+state.inbox.length+")":"";
+      const box=$("inboxList");
+      if(!state.inbox.length){
+        box.innerHTML='<div class="empty"><strong>Inbox clear</strong>Anything you quick-capture without choosing a destination will wait here.</div>';
+        return;
+      }
+
+      box.innerHTML=state.inbox.map(item=>{
+        const type=item.suggested_type||"note";
+        const confidence=item.confidence==null?"":Math.round(Number(item.confidence)*100)+"%";
+        const title=item.suggested_title||item.content;
+        let primary="";
+        if(type==="task") primary='<button class="smallbtn" data-inbox-action="task" data-id="'+item.id+'">Make task</button>';
+        else if(type==="event") primary='<button class="smallbtn" data-inbox-action="event" data-id="'+item.id+'">Make event</button>';
+        else if(type==="goal") primary='<button class="smallbtn" data-inbox-action="goal" data-id="'+item.id+'">Make goal</button>';
+        else if(type==="memory") primary='<button class="smallbtn" data-inbox-action="memory" data-id="'+item.id+'">Save memory</button>';
+        else if(type==="list_item") primary='<button class="smallbtn" data-inbox-action="list_item" data-id="'+item.id+'">Add to list</button>';
+        else primary='<button class="smallbtn" data-inbox-action="memory" data-id="'+item.id+'">Keep as memory</button>';
+
+        return '<article class="inbox-item">'+
+          '<div><div class="inbox-content">'+esc(item.content)+'</div><div class="inbox-time">'+esc(formatDate(item.created_at))+'</div></div>'+
+          '<div class="suggestion"><strong>'+esc(title)+'</strong><span class="type-chip">'+esc(inboxTypeLabel(type))+'</span>'+(confidence?'<span class="confidence">'+esc(confidence)+' confidence</span>':'')+'</div>'+
+          '<div class="inbox-actions">'+primary+
+            '<button class="smallbtn" data-inbox-action="task" data-id="'+item.id+'">Task</button>'+
+            '<button class="smallbtn" data-inbox-action="event" data-id="'+item.id+'">Event</button>'+
+            '<button class="smallbtn" data-inbox-action="goal" data-id="'+item.id+'">Goal</button>'+
+            '<button class="smallbtn" data-inbox-action="memory" data-id="'+item.id+'">Memory</button>'+
+            '<button class="smallbtn" data-inbox-action="list_item" data-id="'+item.id+'">List</button>'+
+            '<button class="smallbtn danger" data-inbox-action="archive" data-id="'+item.id+'">Archive</button>'+
+          '</div>'+
+        '</article>';
+      }).join("");
+    }
+
+    async function saveToInbox(){
+      const content=quickText();
+      if(!content){toast("Type something to capture first.",true);return;}
+      const btn=$("quickInbox"); btn.disabled=true;
+      try{
+        const {data:item,error}=await sb.from("inbox_items").insert({
+          household_id:state.member.household_id,
+          owner_user_id:state.user.id,
+          content
+        }).select("*").single();
+        if(error) throw error;
+
+        clearQuick();
+        toast("Saved to Inbox. Open Brain is sorting it…");
+
+        const {data:classification,error:classError}=await sb.functions.invoke("classify-inbox-item",{body:{content}});
+        if(!classError && classification?.type){
+          const {error:updateError}=await sb.from("inbox_items").update({
+            suggested_type:classification.type,
+            suggested_title:classification.title||null,
+            suggested_details:classification.details||{},
+            confidence:classification.confidence??null,
+            updated_at:new Date().toISOString()
+          }).eq("id",item.id);
+          if(updateError) console.warn(updateError);
+        }
+
+        await loadData(); renderAll();
+        if(classError) toast("Saved to Inbox. AI suggestion was unavailable, but nothing was lost.");
+      }catch(err){toast(err?.message||"Unable to save to Inbox.",true);}
+      finally{btn.disabled=false;}
+    }
+
+    async function finishInbox(item,type,targetId=null){
+      const {error}=await sb.from("inbox_items").update({
+        status:"processed",
+        processed_to_type:type,
+        processed_to_id:targetId,
+        processed_at:new Date().toISOString(),
+        updated_at:new Date().toISOString()
+      }).eq("id",item.id);
+      if(error) throw error;
+      state.pendingInboxProcess=null;
+      await loadData(); renderAll();
+    }
+
+    function beginInboxConversion(item,type){
+      state.pendingInboxProcess={id:item.id,type};
+      const title=item.suggested_title||item.content;
+      const details=item.suggested_details||{};
+      if(type==="task"){
+        openEditor();
+        $("taskTitle").value=title;
+        if(title!==item.content) $("taskDescription").value=item.content;
+      }else if(type==="event"){
+        openEventEditor();
+        $("eventTitle").value=title;
+        if(title!==item.content) $("eventDescription").value=item.content;
+      }else if(type==="goal"){
+        openGoalEditor();
+        $("goalTitle").value=title;
+        if(details.next_action) $("goalNext").value=details.next_action;
+        if(title!==item.content) $("goalWhy").value=item.content;
+      }
+    }
+
+    async function saveInboxMemory(item){
+      try{
+        const {data,error}=await sb.functions.invoke("capture-inbox-memory",{body:{content:item.content}});
+        if(error) throw error;
+        await finishInbox(item,"memory",data?.id||null);
+        toast("Saved as a private searchable Open Brain memory.");
+      }catch(err){toast(err?.message||"Unable to save memory.",true);}
+    }
+
+    async function saveInboxListItem(item){
+      try{
+        const details=item.suggested_details||{};
+        const listName=(details.list_name||"General").toString().slice(0,80);
+        const {data,error}=await sb.from("list_items").insert({
+          household_id:state.member.household_id,
+          owner_user_id:state.user.id,
+          list_name:listName,
+          content:item.suggested_title||item.content,
+          visibility:"private"
+        }).select("id").single();
+        if(error) throw error;
+        await finishInbox(item,"list_item",data.id);
+        toast('Added to "'+listName+'" list.');
+      }catch(err){toast(err?.message||"Unable to add list item.",true);}
+    }
+
     function activeGoal(){
       return state.goals.find(g=>g.owner_user_id===state.user.id && g.featured)
         || state.goals.find(g=>g.owner_user_id===state.user.id)
@@ -749,7 +903,11 @@
           toast("Family event updated.");
         }else{
           Object.assign(payload,{household_id:state.member.household_id,created_by:state.user.id});
-          const {error}=await sb.from("family_events").insert(payload); if(error) throw error;
+          const {data:created,error}=await sb.from("family_events").insert(payload).select("id").single(); if(error) throw error;
+          if(state.pendingInboxProcess?.type==="event"){
+            const item=state.inbox.find(x=>x.id===state.pendingInboxProcess.id);
+            if(item) await finishInbox(item,"event",created.id);
+          }
           toast("Family event added.");
         }
         $("eventEditor").close(); await loadData(); renderAll();
@@ -786,7 +944,11 @@
           toast("Goal updated.");
         }else{
           Object.assign(payload,{household_id:state.member.household_id,created_by:state.user.id,status:"active"});
-          const {error}=await sb.from("family_goals").insert(payload); if(error) throw error;
+          const {data:created,error}=await sb.from("family_goals").insert(payload).select("id").single(); if(error) throw error;
+          if(state.pendingInboxProcess?.type==="goal"){
+            const item=state.inbox.find(x=>x.id===state.pendingInboxProcess.id);
+            if(item) await finishInbox(item,"goal",created.id);
+          }
           toast("Goal added.");
         }
         $("goalEditor").close(); await loadData(); renderAll();
@@ -896,8 +1058,12 @@
             created_by:state.user.id,
             status:"pending"
           });
-          const {error}=await sb.from("family_tasks").insert(payload);
+          const {data:created,error}=await sb.from("family_tasks").insert(payload).select("id").single();
           if(error) throw error;
+          if(state.pendingInboxProcess?.type==="task"){
+            const item=state.inbox.find(x=>x.id===state.pendingInboxProcess.id);
+            if(item) await finishInbox(item,"task",created.id);
+          }
           toast("Reminder created.");
         }
         $("editor").close();
@@ -942,6 +1108,7 @@
       }
     }));
 
+    $("quickInbox").addEventListener("click",saveToInbox);
     $("quickTask").addEventListener("click",()=>{
       const text=quickText();
       openEditor();
@@ -961,7 +1128,7 @@
       clearQuick();
     });
     $("quickCapture").addEventListener("keydown",(e)=>{
-      if(e.key==="Enter"){e.preventDefault();$("quickTask").click();}
+      if(e.key==="Enter"){e.preventDefault();$("quickInbox").click();}
     });
     $("todayTasks").addEventListener("click",async(e)=>{
       const btn=e.target.closest("[data-today-done]"); if(!btn)return;
@@ -996,6 +1163,21 @@
     $("upcomingEvents").addEventListener("click",(e)=>{
       const btn=e.target.closest("[data-event-edit]"); if(!btn)return;
       const event=state.events.find(x=>x.id===btn.dataset.eventEdit); if(event) openEventEditor(event);
+    });
+
+    $("refreshInbox").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Inbox refreshed.");}catch(e){toast(e.message,true);}});
+    $("inboxList").addEventListener("click",async(e)=>{
+      const btn=e.target.closest("[data-inbox-action]"); if(!btn)return;
+      const item=state.inbox.find(x=>x.id===btn.dataset.id); if(!item)return;
+      const action=btn.dataset.inboxAction;
+      if(["task","event","goal"].includes(action)){beginInboxConversion(item,action);return;}
+      if(action==="memory"){await saveInboxMemory(item);return;}
+      if(action==="list_item"){await saveInboxListItem(item);return;}
+      if(action==="archive"){
+        const {error}=await sb.from("inbox_items").update({status:"archived",updated_at:new Date().toISOString()}).eq("id",item.id);
+        if(error){toast(error.message,true);return;}
+        await loadData();renderAll();toast("Inbox item archived.");
+      }
     });
 
     $("taskList").addEventListener("click",async(e)=>{

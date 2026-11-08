@@ -8,11 +8,12 @@
   <style>
     :root{
       color-scheme:light;
-      --navy:#132238;--navy2:#20344f;--ink:#1f2937;--muted:#6b7280;
-      --bg:#f3f6f9;--card:#fff;--line:#e4e8ee;--green:#16a34a;
-      --green-soft:#ecfdf3;--blue:#2563eb;--blue-soft:#eff6ff;--amber:#d97706;
-      --amber-soft:#fffbeb;--red:#dc2626;--red-soft:#fef2f2;--purple:#7c3aed;
-      --purple-soft:#f5f3ff;--shadow:0 10px 30px rgba(18,34,56,.08);
+      --navy:#469597;--navy2:#397f81;--ink:#2f3e40;--muted:#6f7f81;
+      --bg:#f6f7f7;--card:#fff;--line:#e5e3e4;--green:#5ba199;
+      --green-soft:#edf6f4;--blue:#469597;--blue-soft:#eef6f6;--amber:#b98362;
+      --amber-soft:#fbf3ee;--red:#a95d5d;--red-soft:#fbefef;--purple:#7a8d91;
+      --purple-soft:#f0f3f4;--peach:#ddbeaa;--peach-soft:#f9f1ec;--slate:#bbc6c8;
+      --shadow:0 10px 30px rgba(70,149,151,.12);
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
@@ -22,7 +23,7 @@
     .shell{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
     aside{background:var(--navy);color:#fff;padding:26px 18px;position:sticky;top:0;height:100vh}
     .brand{display:flex;gap:12px;align-items:center;padding:4px 8px 26px}
-    .brain{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#34d399,#2dd4bf);display:grid;place-items:center;color:#082f2a;font-weight:900;font-size:20px}
+    .brain{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,var(--peach),var(--slate));display:grid;place-items:center;color:#355e60;font-weight:900;font-size:20px}
     .brand h1{font-size:18px;margin:0}.brand small{color:#b9c7d9}
     nav{display:grid;gap:6px}.navitem{border:0;background:transparent;color:#c7d2e0;border-radius:11px;padding:11px 12px;text-align:left;font-weight:650}
     .navitem.active{background:#fff;color:var(--navy)}.navitem.disabled{opacity:.45;cursor:default}
@@ -30,10 +31,21 @@
     main{padding:30px;min-width:0}
     .topbar{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:26px}
     .topbar h2{font-size:28px;margin:0 0 4px}.subtitle{color:var(--muted);font-size:14px}
-    .userbox{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:#dbeafe;color:#1d4ed8;display:grid;place-items:center;font-weight:800}
+    .userbox{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:var(--peach-soft);color:#8b624b;display:grid;place-items:center;font-weight:800}
     .ghost{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--ink)}
     .primary{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:750}
     .primary:hover{background:var(--navy2)}
+    .overview{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px;margin-bottom:18px}
+    .overview-card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
+    .overview-card.goal{background:linear-gradient(145deg,#fff,var(--peach-soft));border-color:#ead5c7}
+    .overview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .overview-head h3{margin:0;font-size:18px}.overview-head .eyebrow{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+    .event-list{display:grid;gap:8px}.event-row{display:grid;grid-template-columns:78px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+    .event-row:first-child{border-top:0}.event-date{font-size:12px;font-weight:800;color:#3f7779}.event-title{font-weight:760}.event-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .goal-title{font-size:21px;font-weight:850;margin-bottom:6px}.goal-why{font-size:13px;color:var(--muted);line-height:1.45}
+    .progress-track{height:10px;border-radius:999px;background:#e7ecec;overflow:hidden;margin:14px 0 6px}.progress-fill{height:100%;background:linear-gradient(90deg,var(--navy),var(--green));border-radius:999px}
+    .goal-meta{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}.goal-next{margin-top:13px;padding:11px 12px;background:#fff;border:1px solid #ead9ce;border-radius:12px;font-size:13px}
+    .goal-next strong{display:block;color:#6f4d3b;margin-bottom:3px}.overview-empty{color:var(--muted);font-size:13px;padding:8px 0}
     .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
     .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 3px 15px rgba(18,34,56,.04)}
     .stat .label{font-size:13px;color:var(--muted);font-weight:650}.stat .num{font-size:28px;font-weight:850;margin-top:4px}.stat .hint{font-size:12px;color:var(--muted);margin-top:3px}
@@ -63,11 +75,11 @@
     input,select,textarea{width:100%;border:1px solid #d5dbe4;border-radius:10px;padding:10px 11px;background:#fff;color:#111827}
     textarea{min-height:88px;resize:vertical}.helper{font-size:12px;color:var(--muted);margin-top:5px}
     .modalfoot{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:9px}
-    .loginwrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at top left,#dff7ef,transparent 32%),var(--bg)}
+    .loginwrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at top left,#eaf4f3,transparent 34%),radial-gradient(circle at bottom right,#f7eee8,transparent 30%),var(--bg)}
     .logincard{width:min(480px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:var(--shadow)}
-    .logincard h1{margin:0 0 8px;font-size:28px}.logincard p{color:var(--muted);line-height:1.5}.loginlogo{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,#34d399,#2dd4bf);display:grid;place-items:center;font-size:24px;margin-bottom:18px}
+    .logincard h1{margin:0 0 8px;font-size:28px}.logincard p{color:var(--muted);line-height:1.5}.loginlogo{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,var(--peach),var(--slate));display:grid;place-items:center;font-size:24px;margin-bottom:18px}
     .message{margin:12px 0;padding:11px 12px;border-radius:10px;font-size:13px}.message.ok{background:var(--green-soft);color:#166534}.message.err{background:var(--red-soft);color:#991b1b}
-    @media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
+    @media(max-width:1100px){.overview{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
     @media(max-width:760px){.shell{display:block}aside{height:auto;position:static;padding:14px 14px 10px}.brand{padding-bottom:10px}nav{display:flex;overflow:auto}.navitem{white-space:nowrap}.aside-foot{display:none}main{padding:18px 14px 30px}.topbar{align-items:flex-start}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}}
   </style>
 </head>
@@ -114,6 +126,23 @@
           <button id="signOut" class="ghost">Sign out</button>
         </div>
       </div>
+
+      <section class="overview">
+        <div class="overview-card">
+          <div class="overview-head">
+            <div><div class="eyebrow">Family dashboard</div><h3>Upcoming events</h3></div>
+            <button id="newEvent" class="ghost">+ Event</button>
+          </div>
+          <div id="upcomingEvents" class="event-list"><div class="overview-empty">No upcoming family events yet.</div></div>
+        </div>
+        <div class="overview-card goal">
+          <div class="overview-head">
+            <div><div class="eyebrow">Goal reminder</div><h3>Focus goal</h3></div>
+            <button id="editGoal" class="ghost">Set goal</button>
+          </div>
+          <div id="goalFocus"><div class="overview-empty">Choose one goal to keep visible here.</div></div>
+        </div>
+      </section>
 
       <section class="stats">
         <div class="stat"><div class="label">Active</div><div id="statActive" class="num">—</div><div class="hint">Pending household tasks</div></div>
@@ -212,6 +241,41 @@
     </form>
   </dialog>
 
+  <dialog id="eventEditor">
+    <form id="eventForm">
+      <div class="modalhead"><h3 id="eventEditorTitle">New family event</h3><button id="closeEventEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="eventId" type="hidden" />
+        <div><label for="eventTitle">Event</label><input id="eventTitle" required maxlength="180" placeholder="e.g. Orchestra concert" /></div>
+        <div class="grid2">
+          <div><label for="eventStart">Starts</label><input id="eventStart" type="datetime-local" required /></div>
+          <div><label for="eventEnd">Ends (optional)</label><input id="eventEnd" type="datetime-local" /></div>
+        </div>
+        <div><label for="eventLocation">Location (optional)</label><input id="eventLocation" maxlength="180" /></div>
+        <div><label for="eventDescription">Details (optional)</label><textarea id="eventDescription"></textarea></div>
+      </div>
+      <div class="modalfoot"><button id="cancelEventEdit" class="ghost" type="button">Cancel</button><button class="primary" type="submit">Save event</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="goalEditor">
+    <form id="goalForm">
+      <div class="modalhead"><h3>Focus goal</h3><button id="closeGoalEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="goalId" type="hidden" />
+        <div><label for="goalTitle">Goal</label><input id="goalTitle" required maxlength="180" placeholder="e.g. Build a consistent exercise routine" /></div>
+        <div><label for="goalWhy">Why it matters (optional)</label><textarea id="goalWhy" placeholder="The reason this goal matters to you"></textarea></div>
+        <div><label for="goalNext">Next action</label><input id="goalNext" maxlength="240" placeholder="e.g. Walk for 20 minutes after breakfast" /></div>
+        <div class="grid2">
+          <div><label for="goalProgress">Progress %</label><input id="goalProgress" type="number" min="0" max="100" step="1" value="0" /></div>
+          <div><label for="goalTarget">Target date (optional)</label><input id="goalTarget" type="date" /></div>
+        </div>
+        <div><label for="goalVisibility">Visibility</label><select id="goalVisibility"><option value="private">Private to me</option><option value="household">Share with household</option></select></div>
+      </div>
+      <div class="modalfoot"><button id="cancelGoalEdit" class="ghost" type="button">Cancel</button><button class="primary" type="submit">Save goal</button></div>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast hidden"></div>
 
   <script type="module">
@@ -222,7 +286,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], tasks:[], filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], goals:[], filter:"active", search:"", memberFilter:"" };
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -322,15 +386,20 @@
     }
 
     async function loadData(){
-      const [membersRes, householdRes, tasksRes]=await Promise.all([
+      const [membersRes, householdRes, tasksRes, eventsRes, goalsRes]=await Promise.all([
         sb.from("household_members").select("user_id,household_id,display_name,role").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
-        sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false})
+        sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
+        sb.from("family_events").select("*").eq("household_id",state.member.household_id).gte("starts_at",new Date(Date.now()-86400000).toISOString()).order("starts_at",{ascending:true}).limit(12),
+        sb.from("family_goals").select("*").eq("household_id",state.member.household_id).eq("status","active").order("updated_at",{ascending:false})
       ]);
       if(membersRes.error) throw membersRes.error;
       if(householdRes.error) throw householdRes.error;
       if(tasksRes.error) throw tasksRes.error;
-      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[];
+      if(eventsRes.error) throw eventsRes.error;
+      if(goalsRes.error) throw goalsRes.error;
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.goals=goalsRes.data||[];
+      if(!state.memberFilter) state.memberFilter=state.member.user_id;
       populateMembers();
     }
 
@@ -343,7 +412,7 @@
         const o1=document.createElement("option"); o1.value=m.user_id; o1.textContent=m.display_name; filter.appendChild(o1);
         const o2=document.createElement("option"); o2.value=m.user_id; o2.textContent=m.display_name; editor.appendChild(o2);
       }
-      filter.value=currentFilter; if(currentEditor) editor.value=currentEditor;
+      filter.value=state.memberFilter||currentFilter; if(currentEditor) editor.value=currentEditor;
     }
 
     function renderAll(){
@@ -352,7 +421,119 @@
       $("statRecurring").textContent=active.filter(t=>t.recurrence_rule).length;
       $("statPaused").textContent=state.tasks.filter(t=>t.status==="paused").length;
       $("statFamily").textContent=state.members.length;
+      renderOverview();
       renderTasks();
+    }
+
+    function activeGoal(){
+      return state.goals.find(g=>g.owner_user_id===state.user.id && g.featured)
+        || state.goals.find(g=>g.owner_user_id===state.user.id)
+        || state.goals.find(g=>g.visibility==="household" && g.featured)
+        || state.goals.find(g=>g.visibility==="household")
+        || null;
+    }
+
+    function renderOverview(){
+      const eventBox=$("upcomingEvents");
+      const upcoming=state.events.filter(e=>new Date(e.starts_at)>=new Date(Date.now()-6*60*60*1000)).slice(0,4);
+      if(!upcoming.length){
+        eventBox.innerHTML='<div class="overview-empty">No upcoming family events yet. Add appointments, school events, practices, trips, birthdays, or anything the whole family needs to see.</div>';
+      }else{
+        eventBox.innerHTML=upcoming.map(e=>{
+          const d=new Date(e.starts_at);
+          const date=new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(d);
+          const time=e.all_day?"All day":new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(d);
+          return '<div class="event-row"><div class="event-date">'+esc(date)+'<br>'+esc(time)+'</div><div><div class="event-title">'+esc(e.title)+'</div><div class="event-sub">'+esc(e.location||e.description||"Family event")+'</div></div><button class="smallbtn" data-event-edit="'+e.id+'">Edit</button></div>';
+        }).join("");
+      }
+
+      const goal=activeGoal(), box=$("goalFocus");
+      if(!goal){
+        box.innerHTML='<div class="overview-empty">Keep one meaningful goal visible every time you open Open Brain. Add a next action so the goal turns into something you can do today.</div>';
+        $("editGoal").textContent="Set goal";
+      }else{
+        const p=Math.max(0,Math.min(100,Number(goal.progress_percent||0)));
+        const target=goal.target_date?new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",year:"numeric"}).format(new Date(goal.target_date+"T12:00:00")):"No target date";
+        box.innerHTML='<div class="goal-title">'+esc(goal.title)+'</div>'+
+          (goal.why_it_matters?'<div class="goal-why">'+esc(goal.why_it_matters)+'</div>':'')+
+          '<div class="progress-track"><div class="progress-fill" style="width:'+p+'%"></div></div>'+
+          '<div class="goal-meta"><span>'+Math.round(p)+'% complete</span><span>'+esc(target)+'</span></div>'+
+          (goal.next_action?'<div class="goal-next"><strong>Next action</strong>'+esc(goal.next_action)+'</div>':'');
+        $("editGoal").textContent="Edit goal";
+      }
+    }
+
+    function openEventEditor(event=null){
+      $("eventForm").reset(); $("eventId").value=event?.id||"";
+      $("eventEditorTitle").textContent=event?"Edit family event":"New family event";
+      $("eventTitle").value=event?.title||"";
+      $("eventStart").value=event?.starts_at?toLocalInput(event.starts_at):toLocalInput(new Date(Date.now()+24*60*60*1000));
+      $("eventEnd").value=event?.ends_at?toLocalInput(event.ends_at):"";
+      $("eventLocation").value=event?.location||"";
+      $("eventDescription").value=event?.description||"";
+      $("eventEditor").showModal();
+    }
+
+    async function saveEvent(e){
+      e.preventDefault();
+      try{
+        const id=$("eventId").value;
+        const payload={
+          title:$("eventTitle").value.trim(),
+          starts_at:toIsoOrNull($("eventStart").value),
+          ends_at:toIsoOrNull($("eventEnd").value),
+          location:$("eventLocation").value.trim()||null,
+          description:$("eventDescription").value.trim()||null,
+          updated_at:new Date().toISOString()
+        };
+        if(!payload.title||!payload.starts_at) throw new Error("Add an event title and start time.");
+        if(id){
+          const {error}=await sb.from("family_events").update(payload).eq("id",id); if(error) throw error;
+          toast("Family event updated.");
+        }else{
+          Object.assign(payload,{household_id:state.member.household_id,created_by:state.user.id});
+          const {error}=await sb.from("family_events").insert(payload); if(error) throw error;
+          toast("Family event added.");
+        }
+        $("eventEditor").close(); await loadData(); renderAll();
+      }catch(err){toast(err?.message||"Unable to save event.",true);}
+    }
+
+    function openGoalEditor(){
+      const g=activeGoal();
+      $("goalForm").reset(); $("goalId").value=g?.id||"";
+      $("goalTitle").value=g?.title||""; $("goalWhy").value=g?.why_it_matters||""; $("goalNext").value=g?.next_action||"";
+      $("goalProgress").value=Math.round(Number(g?.progress_percent||0));
+      $("goalTarget").value=g?.target_date||""; $("goalVisibility").value=g?.visibility||"private";
+      $("goalEditor").showModal();
+    }
+
+    async function saveGoal(e){
+      e.preventDefault();
+      try{
+        const id=$("goalId").value;
+        const payload={
+          title:$("goalTitle").value.trim(),
+          why_it_matters:$("goalWhy").value.trim()||null,
+          next_action:$("goalNext").value.trim()||null,
+          progress_percent:Number($("goalProgress").value||0),
+          target_date:$("goalTarget").value||null,
+          visibility:$("goalVisibility").value,
+          featured:true,
+          owner_user_id:state.user.id,
+          updated_at:new Date().toISOString()
+        };
+        if(!payload.title) throw new Error("Give the goal a title.");
+        if(id){
+          const {error}=await sb.from("family_goals").update(payload).eq("id",id); if(error) throw error;
+          toast("Goal updated.");
+        }else{
+          Object.assign(payload,{household_id:state.member.household_id,created_by:state.user.id,status:"active"});
+          const {error}=await sb.from("family_goals").insert(payload); if(error) throw error;
+          toast("Goal added.");
+        }
+        $("goalEditor").close(); await loadData(); renderAll();
+      }catch(err){toast(err?.message||"Unable to save goal.",true);}
     }
 
     function filteredTasks(){
@@ -498,6 +679,14 @@
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
     $("newTask").addEventListener("click",()=>openEditor());
+    $("newEvent").addEventListener("click",()=>openEventEditor());
+    $("editGoal").addEventListener("click",openGoalEditor);
+    $("closeEventEditor").addEventListener("click",()=>$("eventEditor").close());
+    $("cancelEventEdit").addEventListener("click",()=>$("eventEditor").close());
+    $("eventForm").addEventListener("submit",saveEvent);
+    $("closeGoalEditor").addEventListener("click",()=>$("goalEditor").close());
+    $("cancelGoalEdit").addEventListener("click",()=>$("goalEditor").close());
+    $("goalForm").addEventListener("submit",saveGoal);
     $("closeEditor").addEventListener("click",()=>$("editor").close());
     $("cancelEdit").addEventListener("click",()=>$("editor").close());
     $("taskForm").addEventListener("submit",saveTask);
@@ -507,6 +696,11 @@
     document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{
       document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active");state.filter=btn.dataset.filter;renderTasks();
     }));
+    $("upcomingEvents").addEventListener("click",(e)=>{
+      const btn=e.target.closest("[data-event-edit]"); if(!btn)return;
+      const event=state.events.find(x=>x.id===btn.dataset.eventEdit); if(event) openEventEditor(event);
+    });
+
     $("taskList").addEventListener("click",async(e)=>{
       const btn=e.target.closest("button[data-action]"); if(!btn)return;
       const id=btn.dataset.id, action=btn.dataset.action, task=state.tasks.find(t=>t.id===id);

@@ -1111,18 +1111,21 @@
     $("quickInbox").addEventListener("click",saveToInbox);
     $("quickTask").addEventListener("click",()=>{
       const text=quickText();
+      state.pendingInboxProcess=null;
       openEditor();
       if(text) $("taskTitle").value=text;
       clearQuick();
     });
     $("quickEvent").addEventListener("click",()=>{
       const text=quickText();
+      state.pendingInboxProcess=null;
       openEventEditor();
       if(text) $("eventTitle").value=text;
       clearQuick();
     });
     $("quickGoal").addEventListener("click",()=>{
       const text=quickText();
+      state.pendingInboxProcess=null;
       openGoalEditor();
       if(text) $("goalTitle").value=text;
       clearQuick();
@@ -1142,17 +1145,17 @@
     $("cancelWeekEdit").addEventListener("click",()=>$("weekEditor").close());
     $("weekForm").addEventListener("submit",saveWeek);
 
-    $("newTask").addEventListener("click",()=>openEditor());
-    $("newEvent").addEventListener("click",()=>openEventEditor());
-    $("editGoal").addEventListener("click",openGoalEditor);
-    $("closeEventEditor").addEventListener("click",()=>$("eventEditor").close());
-    $("cancelEventEdit").addEventListener("click",()=>$("eventEditor").close());
+    $("newTask").addEventListener("click",()=>{state.pendingInboxProcess=null;openEditor();});
+    $("newEvent").addEventListener("click",()=>{state.pendingInboxProcess=null;openEventEditor();});
+    $("editGoal").addEventListener("click",()=>{state.pendingInboxProcess=null;openGoalEditor();});
+    $("closeEventEditor").addEventListener("click",()=>{state.pendingInboxProcess=null;$("eventEditor").close();});
+    $("cancelEventEdit").addEventListener("click",()=>{state.pendingInboxProcess=null;$("eventEditor").close();});
     $("eventForm").addEventListener("submit",saveEvent);
-    $("closeGoalEditor").addEventListener("click",()=>$("goalEditor").close());
-    $("cancelGoalEdit").addEventListener("click",()=>$("goalEditor").close());
+    $("closeGoalEditor").addEventListener("click",()=>{state.pendingInboxProcess=null;$("goalEditor").close();});
+    $("cancelGoalEdit").addEventListener("click",()=>{state.pendingInboxProcess=null;$("goalEditor").close();});
     $("goalForm").addEventListener("submit",saveGoal);
-    $("closeEditor").addEventListener("click",()=>$("editor").close());
-    $("cancelEdit").addEventListener("click",()=>$("editor").close());
+    $("closeEditor").addEventListener("click",()=>{state.pendingInboxProcess=null;$("editor").close();});
+    $("cancelEdit").addEventListener("click",()=>{state.pendingInboxProcess=null;$("editor").close();});
     $("taskForm").addEventListener("submit",saveTask);
     $("taskRepeat").addEventListener("change",()=>$("customRepeatWrap").classList.toggle("hidden",$("taskRepeat").value!=="__custom"));
     $("search").addEventListener("input",e=>{state.search=e.target.value.trim();renderTasks();});

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#132238" />
+  <meta name="theme-color" content="#469597" />
   <title>Open Brain Family Dashboard</title>
   <style>
     :root{
@@ -35,6 +35,18 @@
     .ghost{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--ink)}
     .primary{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:750}
     .primary:hover{background:var(--navy2)}
+    .today-hero{background:linear-gradient(135deg,#fff 0%,#eef7f6 62%,#f8efe9 100%);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:24px;margin-bottom:18px}
+    .today-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.today-kicker{font-size:12px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:var(--navy)}
+    .today-hero h2{font-size:30px;margin:4px 0 5px}.today-date{color:var(--muted);font-size:14px}
+    .quick-capture{margin-top:20px;display:flex;gap:9px;align-items:center}.quick-capture input{flex:1;background:#fff;border:1px solid #d8e2e2;border-radius:12px;padding:12px 14px;min-width:160px}
+    .quick-actions{display:flex;gap:7px;flex-wrap:wrap}.quickbtn{border:1px solid #d7e2e2;background:#fff;border-radius:10px;padding:10px 11px;font-size:13px;font-weight:760;color:#3e6f71}
+    .quickbtn:hover{background:#f4f9f8}.today-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:16px;margin-bottom:18px}
+    .today-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
+    .today-card h3{margin:0;font-size:18px}.today-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
+    .today-list{display:grid;gap:8px}.today-task{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border-top:1px solid var(--line);padding:10px 0}.today-task:first-child{border-top:0}
+    .today-task-title{font-weight:770}.today-task-meta{font-size:12px;color:var(--muted);margin-top:3px}.today-overdue{color:#a95d5d;font-weight:750}
+    .today-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.today-mini{background:#f8faf9;border:1px solid var(--line);border-radius:12px;padding:11px}
+    .today-mini .n{font-size:22px;font-weight:850}.today-mini .l{font-size:11px;color:var(--muted);margin-top:1px}
     .overview{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px;margin-bottom:18px}
     .overview-card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
     .overview-card.goal{background:linear-gradient(145deg,#fff,var(--peach-soft));border-color:#ead5c7}
@@ -79,8 +91,8 @@
     .logincard{width:min(480px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:var(--shadow)}
     .logincard h1{margin:0 0 8px;font-size:28px}.logincard p{color:var(--muted);line-height:1.5}.loginlogo{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,var(--peach),var(--slate));display:grid;place-items:center;font-size:24px;margin-bottom:18px}
     .message{margin:12px 0;padding:11px 12px;border-radius:10px;font-size:13px}.message.ok{background:var(--green-soft);color:#166534}.message.err{background:var(--red-soft);color:#991b1b}
-    @media(max-width:1100px){.overview{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
-    @media(max-width:760px){.shell{display:block}aside{height:auto;position:static;padding:14px 14px 10px}.brand{padding-bottom:10px}nav{display:flex;overflow:auto}.navitem{white-space:nowrap}.aside-foot{display:none}main{padding:18px 14px 30px}.topbar{align-items:flex-start}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}}
+    @media(max-width:1100px){.today-grid,.overview{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
+    @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:14px 14px 10px}.brand{padding-bottom:10px}nav{display:flex;overflow:auto}.navitem{white-space:nowrap}.aside-foot{display:none}main{padding:18px 14px 30px}.topbar{align-items:flex-start}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}}
   </style>
 </head>
 <body>
@@ -106,7 +118,8 @@
         <div><h1>Open Brain</h1><small>Family Dashboard</small></div>
       </div>
       <nav>
-        <button class="navitem active">Reminders & Tasks</button>
+        <button class="navitem active" data-scroll="todayHome">Home / Today</button>
+        <button class="navitem" data-scroll="remindersPanel">Reminders & Tasks</button>
         <button class="navitem disabled" title="Coming next">Memories · soon</button>
         <button class="navitem disabled" title="Coming next">Family · soon</button>
         <button class="navitem disabled" title="Coming next">Settings · soon</button>
@@ -117,8 +130,8 @@
     <main>
       <div class="topbar">
         <div>
-          <h2>Reminders & Tasks</h2>
-          <div class="subtitle">Manage Open Brain reminders without going into Supabase.</div>
+          <h2>Open Brain</h2>
+          <div class="subtitle">A calm view of what matters today and what is coming next.</div>
         </div>
         <div class="userbox">
           <div id="avatar" class="avatar">OB</div>
@@ -126,6 +139,46 @@
           <button id="signOut" class="ghost">Sign out</button>
         </div>
       </div>
+
+      <section id="todayHome" class="today-hero">
+        <div class="today-top">
+          <div>
+            <div class="today-kicker">Today</div>
+            <h2 id="todayGreeting">Good day</h2>
+            <div id="todayDate" class="today-date"></div>
+          </div>
+          <div class="subtitle">Personal by default · family context when you need it</div>
+        </div>
+        <div class="quick-capture">
+          <input id="quickCapture" maxlength="220" placeholder="Quick add… e.g. Call the dentist, Track meet Friday, Walk after breakfast" />
+          <div class="quick-actions">
+            <button id="quickTask" class="quickbtn" type="button">+ Task</button>
+            <button id="quickEvent" class="quickbtn" type="button">+ Event</button>
+            <button id="quickGoal" class="quickbtn" type="button">+ Goal</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="today-grid">
+        <div class="today-card">
+          <div class="today-card-head">
+            <div><div class="today-kicker">My day</div><h3>Today’s priorities</h3></div>
+            <button class="ghost" data-scroll="remindersPanel">See all</button>
+          </div>
+          <div id="todayTasks" class="today-list"><div class="overview-empty">Nothing due today.</div></div>
+        </div>
+        <div class="today-card">
+          <div class="today-card-head">
+            <div><div class="today-kicker">At a glance</div><h3>Today’s load</h3></div>
+          </div>
+          <div id="todayLoadText" class="subtitle">Loading your day…</div>
+          <div class="today-summary">
+            <div class="today-mini"><div id="todayTaskCount" class="n">—</div><div class="l">My tasks</div></div>
+            <div class="today-mini"><div id="todayEventCount" class="n">—</div><div class="l">Family events</div></div>
+            <div class="today-mini"><div id="todayOverdueCount" class="n">—</div><div class="l">Overdue</div></div>
+          </div>
+        </div>
+      </section>
 
       <section class="overview">
         <div class="overview-card">
@@ -151,7 +204,7 @@
         <div class="stat"><div class="label">Family</div><div id="statFamily" class="num">—</div><div class="hint">Open Brain household members</div></div>
       </section>
 
-      <section class="panel">
+      <section id="remindersPanel" class="panel">
         <div class="panelhead">
           <div><h3>Family reminders</h3><div class="subtitle" id="timezoneNote"></div></div>
           <div class="controls"><button id="refresh" class="ghost">Refresh</button><button id="newTask" class="primary">+ New reminder</button></div>
@@ -421,8 +474,63 @@
       $("statRecurring").textContent=active.filter(t=>t.recurrence_rule).length;
       $("statPaused").textContent=state.tasks.filter(t=>t.status==="paused").length;
       $("statFamily").textContent=state.members.length;
+      renderToday();
       renderOverview();
       renderTasks();
+    }
+
+    function localDayKey(value){
+      const d=value instanceof Date?value:new Date(value);
+      if(Number.isNaN(d.getTime())) return "";
+      return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+    }
+
+    function renderToday(){
+      const now=new Date(), hour=now.getHours();
+      const greeting=hour<12?"Good morning":hour<18?"Good afternoon":"Good evening";
+      $("todayGreeting").textContent=greeting+", "+state.member.display_name;
+      $("todayDate").textContent=new Intl.DateTimeFormat(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"}).format(now);
+
+      const todayKey=localDayKey(now);
+      const mine=state.tasks.filter(t=>t.assigned_to_user_id===state.user.id && ["pending","in_progress"].includes(t.status));
+      const overdue=mine.filter(t=>t.remind_at && new Date(t.remind_at)<now && localDayKey(t.remind_at)!==todayKey);
+      const today=mine.filter(t=>{
+        const date=t.remind_at||t.due_at;
+        return date && localDayKey(date)===todayKey;
+      });
+      const display=[...overdue,...today.filter(t=>!overdue.includes(t))].slice(0,6);
+      const todayEvents=state.events.filter(e=>localDayKey(e.starts_at)===todayKey);
+
+      $("todayTaskCount").textContent=today.length;
+      $("todayEventCount").textContent=todayEvents.length;
+      $("todayOverdueCount").textContent=overdue.length;
+
+      const total=today.length+todayEvents.length;
+      let load="Your day looks fairly open.";
+      if(total>=6) load="You have a fairly full day. Keep the priority list short.";
+      else if(total>=3) load="You have a moderate day. There is room to move one goal forward.";
+      else if(total>0) load="You have a light day with room for a meaningful next action.";
+      if(overdue.length) load+=" You also have "+overdue.length+" overdue item"+(overdue.length===1?"":"s")+" to review.";
+      $("todayLoadText").textContent=load;
+
+      const box=$("todayTasks");
+      if(!display.length){
+        box.innerHTML='<div class="overview-empty">Nothing urgent is on your list today. This is a good place to choose one next action for your focus goal.</div>';
+        return;
+      }
+      box.innerHTML=display.map(t=>{
+        const isOverdue=t.remind_at && new Date(t.remind_at)<now && localDayKey(t.remind_at)!==todayKey;
+        const when=t.remind_at?formatDate(t.remind_at):(t.due_at?formatDate(t.due_at):"No time");
+        return '<div class="today-task"><div><div class="today-task-title">'+esc(t.title)+'</div><div class="today-task-meta '+(isOverdue?"today-overdue":"")+'">'+(isOverdue?"Overdue · ":"")+esc(when)+'</div></div><button class="smallbtn" data-today-done="'+t.id+'">Done</button></div>';
+      }).join("");
+    }
+
+    function quickText(){
+      return $("quickCapture").value.trim();
+    }
+
+    function clearQuick(){
+      $("quickCapture").value="";
     }
 
     function activeGoal(){
@@ -674,6 +782,41 @@
       btn.disabled=false;
       if(error){showLogin(error.message,true);return;}
       showLogin("Sign-in link sent. Open the email on this device and click the link.",false);
+    });
+
+    document.querySelectorAll("[data-scroll]").forEach(btn=>btn.addEventListener("click",()=>{
+      const target=document.getElementById(btn.dataset.scroll);
+      if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
+      if(btn.classList.contains("navitem")){
+        document.querySelectorAll(".navitem:not(.disabled)").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+      }
+    }));
+
+    $("quickTask").addEventListener("click",()=>{
+      const text=quickText();
+      openEditor();
+      if(text) $("taskTitle").value=text;
+      clearQuick();
+    });
+    $("quickEvent").addEventListener("click",()=>{
+      const text=quickText();
+      openEventEditor();
+      if(text) $("eventTitle").value=text;
+      clearQuick();
+    });
+    $("quickGoal").addEventListener("click",()=>{
+      const text=quickText();
+      openGoalEditor();
+      if(text) $("goalTitle").value=text;
+      clearQuick();
+    });
+    $("quickCapture").addEventListener("keydown",(e)=>{
+      if(e.key==="Enter"){e.preventDefault();$("quickTask").click();}
+    });
+    $("todayTasks").addEventListener("click",async(e)=>{
+      const btn=e.target.closest("[data-today-done]"); if(!btn)return;
+      await setStatus(btn.dataset.todayDone,"completed");
     });
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});

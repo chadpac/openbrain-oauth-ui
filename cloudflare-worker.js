@@ -1,6 +1,6 @@
 const SUPABASE_MCP =
   "https://prctfnpbftjepdckwpao.supabase.co/functions/v1/open-brain-gemini-oauth";
-const AUTHORIZATION_SERVER =
+const SUPABASE_AUTH =
   "https://prctfnpbftjepdckwpao.supabase.co/auth/v1";
 
 export default {
@@ -10,22 +10,74 @@ export default {
     const resourceUrl = `${origin}/mcp`;
     const metadataUrl = `${origin}/.well-known/oauth-protected-resource/mcp`;
 
-    // RFC 9728 OAuth Protected Resource Metadata.
-    // Gemini may request either the root well-known path or a path-specific variant.
+    // RFC 9728 protected-resource metadata. Point Gemini to this Worker as
+    // the OAuth discovery origin so we can expose Supabase's DCR endpoint
+    // in a form Gemini understands.
     if (url.pathname.startsWith("/.well-known/oauth-protected-resource")) {
       return Response.json(
         {
           resource: resourceUrl,
-          authorization_servers: [AUTHORIZATION_SERVER],
+          authorization_servers: [origin],
           bearer_methods_supported: ["header"],
         },
         {
           headers: {
-            "Cache-Control": "public, max-age=300",
+            "Cache-Control": "public, max-age=60",
             "Access-Control-Allow-Origin": "*",
           },
         }
       );
+    }
+
+    // RFC 8414 authorization-server metadata for Gemini.
+    if (
+      url.pathname === "/.well-known/oauth-authorization-server" ||
+      url.pathname === "/.well-known/openid-configuration"
+    ) {
+      return Response.json(
+        {
+          issuer: origin,
+          authorization_endpoint: `${SUPABASE_AUTH}/oauth/authorize`,
+          token_endpoint: `${SUPABASE_AUTH}/oauth/token`,
+          registration_endpoint: `${origin}/oauth/register`,
+          response_types_supported: ["code"],
+          grant_types_supported: ["authorization_code", "refresh_token"],
+          code_challenge_methods_supported: ["S256"],
+          token_endpoint_auth_methods_supported: [
+            "none",
+            "client_secret_basic",
+            "client_secret_post",
+          ],
+          scopes_supported: ["openid", "email", "profile"],
+        },
+        {
+          headers: {
+            "Cache-Control": "public, max-age=60",
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
+    }
+
+    // RFC 7591 Dynamic Client Registration. Supabase handles the actual
+    // registration; this route only forwards Google's request.
+    if (url.pathname === "/oauth/register" && request.method === "POST") {
+      const upstream = await fetch(`${SUPABASE_AUTH}/oauth/clients/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": request.headers.get("Content-Type") || "application/json",
+          "Accept": "application/json",
+        },
+        body: request.body,
+      });
+
+      const headers = new Headers(upstream.headers);
+      headers.set("Access-Control-Allow-Origin", "*");
+      return new Response(upstream.body, {
+        status: upstream.status,
+        statusText: upstream.statusText,
+        headers,
+      });
     }
 
     // Gemini verifies the MCP URL with HEAD before beginning discovery.
@@ -56,8 +108,6 @@ export default {
     const responseHeaders = new Headers(upstream.headers);
     responseHeaders.set("Access-Control-Allow-Origin", "*");
 
-    // Keep OAuth discovery on this public gateway rather than the Supabase
-    // project root, which requires an API key for unrelated routes.
     if (upstream.status === 401) {
       responseHeaders.set(
         "WWW-Authenticate",

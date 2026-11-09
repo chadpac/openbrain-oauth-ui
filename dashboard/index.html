@@ -430,6 +430,7 @@
               </div>
               <div class="list-actions">
                 <button id="shoppingMode" class="ghost hidden" type="button">Shopping mode</button>
+                <button id="bulkListItems" class="ghost hidden" type="button">+ Several</button>
                 <button id="editList" class="ghost hidden">Edit list</button>
                 <button id="newListItem" class="ghost hidden">+ Item</button>
               </div>
@@ -773,6 +774,21 @@
         <button id="archiveList" class="ghost hidden" type="button" style="margin-right:auto">Archive list</button>
         <button id="cancelListEdit" class="ghost" type="button">Cancel</button>
         <button class="primary" type="submit">Save list</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="bulkListItemsDialog">
+    <form id="bulkListItemsForm">
+      <div class="modalhead"><h3>Add several items</h3><button id="closeBulkListItems" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <div class="subtitle">Paste or type one item per line. Open Brain will add them all to the active list.</div>
+        <textarea id="bulkListItemsText" required style="min-height:220px" placeholder="Milk&#10;Eggs&#10;Bread&#10;Bananas"></textarea>
+        <div class="helper">Up to 50 items at a time. Blank lines are ignored.</div>
+      </div>
+      <div class="modalfoot">
+        <button id="cancelBulkListItems" class="ghost" type="button">Cancel</button>
+        <button id="saveBulkListItems" class="primary" type="submit">Add items</button>
       </div>
     </form>
   </dialog>
@@ -2104,6 +2120,7 @@
       const list=activeList();
       $("editList").classList.toggle("hidden",!list);
       $("newListItem").classList.toggle("hidden",!list||!!list.archived_at);
+      $("bulkListItems").classList.toggle("hidden",!list||!!list.archived_at);
       $("shoppingMode").classList.toggle("hidden",!list||!!list.archived_at);
       $("listQuickAdd").classList.toggle("hidden",!list||!!list.archived_at);
       if(!list&&state.listShoppingMode)setShoppingMode(false);
@@ -2210,6 +2227,54 @@
       $("listEditor").close();
       if(!archivedAt) state.activeListId=id; else state.activeListId=null;
       await loadData();renderAll();toast(archivedAt?"List archived.":"List restored.");
+    }
+
+    function openBulkListItems(){
+      const list=activeList();if(!list||list.archived_at)return;
+      $("bulkListItemsText").value="";
+      $("bulkListItemsDialog").showModal();
+      $("bulkListItemsText").focus();
+    }
+
+    async function saveBulkListItems(e){
+      e.preventDefault();
+      const list=activeList();if(!list)return;
+      const lines=$("bulkListItemsText").value
+        .split(/\r?\n/)
+        .map(x=>x.trim())
+        .filter(Boolean)
+        .slice(0,50);
+      if(!lines.length){toast("Enter at least one item.",true);return;}
+
+      const button=$("saveBulkListItems");
+      const original=button.textContent;
+      button.disabled=true;
+      button.textContent="Adding…";
+      try{
+        const rows=lines.map(content=>({
+          household_id:state.member.household_id,
+          owner_user_id:state.user.id,
+          list_id:list.id,
+          list_name:list.name,
+          content,
+          quantity:null,
+          notes:null,
+          visibility:list.visibility,
+          completed:false
+        }));
+        const {data,error}=await sb.from("list_items").insert(rows).select("*");
+        if(error)throw error;
+        state.listItems.push(...(data||[]));
+        $("bulkListItemsDialog").close();
+        renderLists();
+        renderFamilyActivity();
+        toast(lines.length+" items added.");
+      }catch(err){
+        toast(err?.message||"Unable to add items.",true);
+      }finally{
+        button.disabled=false;
+        button.textContent=original;
+      }
     }
 
     function openListItemEditor(item=null){
@@ -3526,6 +3591,10 @@
     $("newList").addEventListener("click",()=>openListEditor());
     $("editList").addEventListener("click",()=>{const l=activeList();if(l)openListEditor(l);});
     $("newListItem").addEventListener("click",()=>openListItemEditor());
+    $("bulkListItems").addEventListener("click",openBulkListItems);
+    $("closeBulkListItems").addEventListener("click",()=>$("bulkListItemsDialog").close());
+    $("cancelBulkListItems").addEventListener("click",()=>$("bulkListItemsDialog").close());
+    $("bulkListItemsForm").addEventListener("submit",saveBulkListItems);
     $("closeListEditor").addEventListener("click",()=>$("listEditor").close());
     $("cancelListEdit").addEventListener("click",()=>$("listEditor").close());
     $("listForm").addEventListener("submit",saveList);

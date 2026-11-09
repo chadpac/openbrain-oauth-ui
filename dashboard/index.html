@@ -87,6 +87,14 @@
     .list-check.done{background:var(--navy)}.list-item-name{font-weight:760}.list-item-meta{font-size:12px;color:var(--muted);margin-top:3px}.list-type-icon{font-size:17px;margin-right:5px}
     .list-empty{padding:28px 20px;text-align:center;color:var(--muted)}.list-header-meta{font-size:12px;color:var(--muted);margin-top:4px}.list-actions{display:flex;gap:6px;flex-wrap:wrap}
     @media(max-width:850px){.lists-layout{grid-template-columns:1fr}.list-sidebar{border-right:0;border-bottom:1px solid var(--line);grid-template-columns:repeat(2,minmax(0,1fr))}.list-quickadd{grid-template-columns:1fr 90px}.list-quickadd button{grid-column:1/-1}}
+    .health-panel{margin-bottom:18px}.health-private{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;background:var(--peach-soft);color:#7f5a47;font-size:12px;font-weight:800}
+    .health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px 20px}.health-card{border:1px solid var(--line);border-radius:15px;background:#fff;padding:15px;display:grid;gap:10px}
+    .health-card.inactive{opacity:.6;background:#fafafa}.health-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.health-title{font-weight:820}.health-cat{font-size:11px;color:var(--muted);text-transform:capitalize;margin-top:3px}
+    .health-latest{font-size:26px;font-weight:880;color:var(--navy)}.health-latest small{font-size:12px;font-weight:700;color:var(--muted);margin-left:4px}.health-sub{font-size:12px;color:var(--muted)}
+    .health-spark{height:46px;width:100%;display:block}.health-spark polyline{fill:none;stroke:var(--green);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.health-spark .base{stroke:#e5e9e9;stroke-width:1}
+    .health-actions{display:flex;gap:7px;flex-wrap:wrap}.health-recent{border-top:1px solid var(--line)}.health-recent-row{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,1.2fr) auto;gap:14px;align-items:center;padding:11px 20px;border-bottom:1px solid var(--line)}
+    .health-value{font-weight:800}.rating-buttons{display:flex;gap:7px;flex-wrap:wrap}.rating-choice{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px}.rating-choice.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+    @media(max-width:1050px){.health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.health-grid{grid-template-columns:1fr}.health-recent-row{grid-template-columns:1fr auto}}
     .inbox-list{display:grid}.inbox-item{display:grid;grid-template-columns:minmax(260px,1.4fr) minmax(170px,.65fr) minmax(320px,1fr);gap:16px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
     .inbox-item:last-child{border-bottom:0}.inbox-content{font-weight:720;line-height:1.4}.inbox-time{font-size:11px;color:var(--muted);margin-top:5px}
     .suggestion{font-size:13px;color:var(--muted)}.suggestion strong{display:block;color:var(--ink);margin-bottom:4px}.type-chip{display:inline-flex;padding:5px 9px;border-radius:999px;background:var(--blue-soft);color:#3f7779;font-size:11px;font-weight:850;text-transform:capitalize}
@@ -171,6 +179,7 @@
         <button class="navitem" data-scroll="habitPanel">Habits & Routines</button>
         <button class="navitem" data-scroll="memoriesPanel">Memories</button>
         <button class="navitem" data-scroll="listsPanel">Lists & Shopping</button>
+        <button class="navitem" data-scroll="healthPanel">Health & Wellbeing</button>
         <button class="navitem" data-scroll="remindersPanel">Reminders & Tasks</button>
         <button class="navitem disabled" title="Coming next">Family · soon</button>
         <button class="navitem disabled" title="Coming next">Settings · soon</button>
@@ -354,6 +363,25 @@
         </div>
       </section>
 
+      <section id="healthPanel" class="panel health-panel">
+        <div class="panelhead">
+          <div>
+            <h3>Health & Wellbeing</h3>
+            <div class="subtitle">Private trackers for the things you choose to follow. Focus on trends rather than perfect days.</div>
+          </div>
+          <div class="controls">
+            <span class="health-private">🔒 Private to me</span>
+            <label class="notify-choice"><input id="showInactiveHealth" type="checkbox"> Inactive</label>
+            <button id="newHealthTracker" class="primary">+ Tracker</button>
+          </div>
+        </div>
+        <div id="healthGrid" class="health-grid"><div class="list-empty">No health trackers yet.</div></div>
+        <div class="panelhead" style="border-top:1px solid var(--line)">
+          <div><h3 style="font-size:16px">Recent entries</h3><div class="subtitle">Your latest private logs across all trackers.</div></div>
+        </div>
+        <div id="healthRecent" class="health-recent"><div class="list-empty">Nothing logged yet.</div></div>
+      </section>
+
       <section class="overview">
         <div class="overview-card">
           <div class="overview-head">
@@ -465,6 +493,73 @@
         </div>
       </div>
       <div class="modalfoot"><button id="cancelEdit" class="ghost" type="button">Cancel</button><button id="saveTask" class="primary" type="submit">Save reminder</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="healthTrackerEditor">
+    <form id="healthTrackerForm">
+      <div class="modalhead"><h3 id="healthTrackerEditorTitle">New health tracker</h3><button id="closeHealthTrackerEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="healthTrackerId" type="hidden" />
+        <div><label for="healthTrackerName">What do you want to track?</label><input id="healthTrackerName" required maxlength="100" placeholder="e.g. Sleep, Energy, Steps, Headache severity" /></div>
+        <div class="grid2">
+          <div><label for="healthTrackerCategory">Category</label><select id="healthTrackerCategory">
+            <option value="wellbeing">Wellbeing</option>
+            <option value="body">Body</option>
+            <option value="sleep">Sleep</option>
+            <option value="activity">Activity</option>
+            <option value="nutrition">Nutrition</option>
+            <option value="symptom">Symptom</option>
+            <option value="medication">Medication</option>
+            <option value="other">Other</option>
+          </select></div>
+          <div><label for="healthTrackerKind">Entry type</label><select id="healthTrackerKind">
+            <option value="number">Number</option>
+            <option value="rating">1–5 rating</option>
+            <option value="text">Text / note</option>
+          </select></div>
+        </div>
+        <div id="healthUnitWrap"><label for="healthTrackerUnit">Unit (optional)</label><input id="healthTrackerUnit" maxlength="30" placeholder="hours, lb, steps, mg/dL…" /></div>
+        <label class="notify-choice" style="width:max-content"><input id="healthTrackerActive" type="checkbox" checked> Active tracker</label>
+        <div class="helper">Health trackers and entries are private to the signed-in person. They are not shared with household members.</div>
+      </div>
+      <div class="modalfoot">
+        <button id="deleteHealthTracker" class="ghost hidden" type="button" style="margin-right:auto;color:var(--red)">Delete tracker</button>
+        <button id="cancelHealthTrackerEdit" class="ghost" type="button">Cancel</button>
+        <button class="primary" type="submit">Save tracker</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="healthEntryEditor">
+    <form id="healthEntryForm">
+      <div class="modalhead"><h3 id="healthEntryEditorTitle">Log health entry</h3><button id="closeHealthEntryEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="healthEntryId" type="hidden" />
+        <input id="healthEntryTrackerId" type="hidden" />
+        <div id="healthEntryPrompt" class="message ok" style="margin:0"></div>
+        <div><label for="healthEntryWhen">When</label><input id="healthEntryWhen" type="datetime-local" required /></div>
+        <div id="healthNumberWrap"><label for="healthEntryNumber">Value</label><input id="healthEntryNumber" type="number" step="any" /></div>
+        <div id="healthRatingWrap" class="hidden">
+          <label>Rating</label>
+          <input id="healthEntryRating" type="hidden" />
+          <div id="healthRatingButtons" class="rating-buttons">
+            <button class="rating-choice" type="button" data-health-rating="1">1</button>
+            <button class="rating-choice" type="button" data-health-rating="2">2</button>
+            <button class="rating-choice" type="button" data-health-rating="3">3</button>
+            <button class="rating-choice" type="button" data-health-rating="4">4</button>
+            <button class="rating-choice" type="button" data-health-rating="5">5</button>
+          </div>
+          <div class="helper">1 = low / mild · 5 = high / strong. You decide what the scale means for this tracker.</div>
+        </div>
+        <div id="healthTextWrap" class="hidden"><label for="healthEntryText">Entry</label><textarea id="healthEntryText"></textarea></div>
+        <div><label for="healthEntryNotes">Notes (optional)</label><textarea id="healthEntryNotes" placeholder="Anything useful for context…"></textarea></div>
+      </div>
+      <div class="modalfoot">
+        <button id="deleteHealthEntry" class="ghost hidden" type="button" style="margin-right:auto;color:var(--red)">Delete entry</button>
+        <button id="cancelHealthEntryEdit" class="ghost" type="button">Cancel</button>
+        <button class="primary" type="submit">Save entry</button>
+      </div>
     </form>
   </dialog>
 
@@ -690,7 +785,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -790,7 +885,7 @@
     }
 
     async function loadData(){
-      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, habitsRes, habitCompletionsRes, memoriesRes, listsRes, listItemsRes, weeksRes, inboxRes]=await Promise.all([
+      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, habitsRes, habitCompletionsRes, memoriesRes, listsRes, listItemsRes, healthTrackersRes, healthEntriesRes, weeksRes, inboxRes]=await Promise.all([
         sb.from("household_members").select("user_id,household_id,display_name,role,telegram_enabled").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
         sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
@@ -802,6 +897,8 @@
         sb.from("thoughts").select("id,content,metadata,created_at,updated_at,visibility,created_by,household_id,archived_at").eq("household_id",state.member.household_id).order("updated_at",{ascending:false}).limit(250),
         sb.from("lists").select("*").eq("household_id",state.member.household_id).order("updated_at",{ascending:false}),
         sb.from("list_items").select("*").eq("household_id",state.member.household_id).order("created_at",{ascending:true}).limit(750),
+        sb.from("health_trackers").select("*").eq("owner_user_id",state.user.id).order("created_at",{ascending:true}),
+        sb.from("health_entries").select("*").eq("owner_user_id",state.user.id).order("logged_at",{ascending:false}).limit(1000),
         sb.from("weekly_plans").select("*").eq("owner_user_id",state.user.id).order("week_start",{ascending:false}).limit(12),
         sb.from("inbox_items").select("*").eq("owner_user_id",state.user.id).eq("status","unprocessed").order("created_at",{ascending:false}).limit(50)
       ]);
@@ -816,9 +913,11 @@
       if(memoriesRes.error) throw memoriesRes.error;
       if(listsRes.error) throw listsRes.error;
       if(listItemsRes.error) throw listItemsRes.error;
+      if(healthTrackersRes.error) throw healthTrackersRes.error;
+      if(healthEntriesRes.error) throw healthEntriesRes.error;
       if(weeksRes.error) throw weeksRes.error;
       if(inboxRes.error) throw inboxRes.error;
-      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.memories=memoriesRes.data||[]; state.lists=listsRes.data||[]; state.listItems=listItemsRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.memories=memoriesRes.data||[]; state.lists=listsRes.data||[]; state.listItems=listItemsRes.data||[]; state.healthTrackers=healthTrackersRes.data||[]; state.healthEntries=healthEntriesRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
       if(state.activeListId && !state.lists.some(l=>l.id===state.activeListId)) state.activeListId=null;
       if(!state.memberFilter) state.memberFilter=state.member.user_id;
       populateMembers();
@@ -855,6 +954,7 @@
       renderHabits();
       renderMemories();
       renderLists();
+      renderHealth();
       renderWeek();
       renderInbox();
       renderOverview();
@@ -1014,6 +1114,190 @@
 
     function clearQuick(){
       $("quickCapture").value="";
+    }
+
+    function healthCategoryIcon(category){
+      return ({body:"⚖️",sleep:"🌙",activity:"🏃",nutrition:"🥗",symptom:"🩺",medication:"💊",wellbeing:"🌿",other:"•"})[category]||"🌿";
+    }
+
+    function entriesForTracker(id){
+      return state.healthEntries.filter(e=>e.tracker_id===id).sort((a,b)=>new Date(b.logged_at)-new Date(a.logged_at));
+    }
+
+    function formatHealthValue(tracker,entry){
+      if(!entry)return "No entries";
+      if(tracker.value_kind==="rating") return String(entry.rating)+"/5";
+      if(tracker.value_kind==="text") return entry.value_text||"—";
+      const raw=entry.value_number;
+      return raw==null?"—":String(Number(raw))+(tracker.unit?" "+tracker.unit:"");
+    }
+
+    function healthSparkline(tracker){
+      if(tracker.value_kind==="text")return "";
+      const entries=entriesForTracker(tracker.id).filter(e=>tracker.value_kind==="rating"?e.rating!=null:e.value_number!=null).slice(0,14).reverse();
+      if(entries.length<2)return "";
+      const vals=entries.map(e=>Number(tracker.value_kind==="rating"?e.rating:e.value_number));
+      const min=Math.min(...vals), max=Math.max(...vals), span=max-min||1;
+      const pts=vals.map((v,i)=>{
+        const x=4+(i*(92/(vals.length-1)));
+        const y=40-((v-min)/span)*32;
+        return x.toFixed(1)+","+y.toFixed(1);
+      }).join(" ");
+      return '<svg class="health-spark" viewBox="0 0 100 44" preserveAspectRatio="none" aria-hidden="true"><line class="base" x1="0" y1="41" x2="100" y2="41"></line><polyline points="'+pts+'"></polyline></svg>';
+    }
+
+    function healthTrendSummary(tracker){
+      if(tracker.value_kind==="text")return "";
+      const entries=entriesForTracker(tracker.id).filter(e=>tracker.value_kind==="rating"?e.rating!=null:e.value_number!=null);
+      if(entries.length<2)return entries.length===1?"1 logged value":"No trend yet";
+      const latest=Number(tracker.value_kind==="rating"?entries[0].rating:entries[0].value_number);
+      const previous=Number(tracker.value_kind==="rating"?entries[1].rating:entries[1].value_number);
+      const diff=latest-previous;
+      if(Math.abs(diff)<0.000001)return "No change from previous";
+      return (diff>0?"↑ ":"↓ ")+Math.abs(diff).toLocaleString(undefined,{maximumFractionDigits:2})+(tracker.unit?" "+tracker.unit:"")+" from previous";
+    }
+
+    function renderHealth(){
+      const showInactive=!!$("showInactiveHealth")?.checked;
+      const trackers=state.healthTrackers.filter(t=>showInactive?!t.active:t.active);
+      const grid=$("healthGrid");
+      if(!trackers.length){
+        grid.innerHTML='<div class="list-empty">'+(showInactive?"No inactive trackers.":"No trackers yet. Add only the health or wellbeing measures that are useful to you.")+'</div>';
+      }else{
+        grid.innerHTML=trackers.map(t=>{
+          const entries=entriesForTracker(t.id);
+          const latest=entries[0]||null;
+          const latestDate=latest?new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(latest.logged_at)):"Not logged yet";
+          const value=formatHealthValue(t,latest);
+          return '<article class="health-card '+(t.active?"":"inactive")+'">'+
+            '<div class="health-card-head"><div><div class="health-title">'+healthCategoryIcon(t.category)+' '+esc(t.name)+'</div><div class="health-cat">'+esc(t.category)+' · '+esc(t.value_kind==="rating"?"1–5 rating":t.value_kind)+'</div></div><button class="smallbtn" data-health-tracker-edit="'+t.id+'">Edit</button></div>'+
+            '<div><div class="health-latest">'+esc(value)+'</div><div class="health-sub">'+esc(latestDate)+'</div></div>'+
+            healthSparkline(t)+
+            '<div class="health-sub">'+esc(healthTrendSummary(t))+'</div>'+
+            '<div class="health-actions"><button class="primary" data-health-log="'+t.id+'" '+(t.active?"":"disabled")+'>Log entry</button></div>'+
+          '</article>';
+        }).join("");
+      }
+
+      const recent=state.healthEntries.slice(0,12);
+      const recentBox=$("healthRecent");
+      if(!recent.length){
+        recentBox.innerHTML='<div class="list-empty">Nothing logged yet.</div>';
+      }else{
+        recentBox.innerHTML=recent.map(e=>{
+          const tracker=state.healthTrackers.find(t=>t.id===e.tracker_id);if(!tracker)return "";
+          const when=new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(e.logged_at));
+          const notes=e.notes?(" · "+e.notes):"";
+          return '<div class="health-recent-row"><div><strong>'+healthCategoryIcon(tracker.category)+' '+esc(tracker.name)+'</strong><div class="health-sub">'+esc(when)+'</div></div><div><span class="health-value">'+esc(formatHealthValue(tracker,e))+'</span><span class="health-sub">'+esc(notes)+'</span></div><button class="smallbtn" data-health-entry-edit="'+e.id+'">Edit</button></div>';
+        }).join("");
+      }
+    }
+
+    function openHealthTrackerEditor(tracker=null){
+      $("healthTrackerForm").reset();
+      $("healthTrackerId").value=tracker?.id||"";
+      $("healthTrackerEditorTitle").textContent=tracker?"Edit health tracker":"New health tracker";
+      $("healthTrackerName").value=tracker?.name||"";
+      $("healthTrackerCategory").value=tracker?.category||"wellbeing";
+      $("healthTrackerKind").value=tracker?.value_kind||"number";
+      $("healthTrackerUnit").value=tracker?.unit||"";
+      $("healthTrackerActive").checked=tracker?!!tracker.active:true;
+      $("healthUnitWrap").classList.toggle("hidden",$("healthTrackerKind").value==="text");
+      $("deleteHealthTracker").classList.toggle("hidden",!tracker);
+      $("healthTrackerEditor").showModal();
+    }
+
+    async function saveHealthTracker(e){
+      e.preventDefault();
+      try{
+        const id=$("healthTrackerId").value;
+        const kind=$("healthTrackerKind").value;
+        const payload={
+          name:$("healthTrackerName").value.trim(),
+          category:$("healthTrackerCategory").value,
+          value_kind:kind,
+          unit:kind==="text"?null:($("healthTrackerUnit").value.trim()||null),
+          active:$("healthTrackerActive").checked,
+          updated_at:new Date().toISOString()
+        };
+        if(!payload.name)throw new Error("Give the tracker a name.");
+        if(id){
+          const {error}=await sb.from("health_trackers").update(payload).eq("id",id);if(error)throw error;
+          toast("Health tracker updated.");
+        }else{
+          const {error}=await sb.from("health_trackers").insert({...payload,household_id:state.member.household_id,owner_user_id:state.user.id});if(error)throw error;
+          toast("Health tracker added.");
+        }
+        $("healthTrackerEditor").close();await loadData();renderAll();
+      }catch(err){toast(err?.message||"Unable to save health tracker.",true);}
+    }
+
+    function setRatingChoice(value){
+      $("healthEntryRating").value=value?String(value):"";
+      $("healthRatingButtons").querySelectorAll("[data-health-rating]").forEach(btn=>btn.classList.toggle("active",btn.dataset.healthRating===String(value)));
+    }
+
+    function openHealthEntryEditor(tracker,entry=null){
+      $("healthEntryForm").reset();
+      $("healthEntryId").value=entry?.id||"";
+      $("healthEntryTrackerId").value=tracker.id;
+      $("healthEntryEditorTitle").textContent=(entry?"Edit ":"Log ")+tracker.name;
+      $("healthEntryPrompt").textContent=tracker.value_kind==="rating"?"Rate "+tracker.name+" from 1 to 5.":tracker.value_kind==="text"?"Add a "+tracker.name+" entry.":"Enter "+tracker.name+(tracker.unit?" in "+tracker.unit:".");
+      $("healthEntryWhen").value=toLocalInput(entry?.logged_at||new Date().toISOString());
+      $("healthEntryNumber").value=entry?.value_number??"";
+      $("healthEntryText").value=entry?.value_text||"";
+      $("healthEntryNotes").value=entry?.notes||"";
+      setRatingChoice(entry?.rating||"");
+      $("healthNumberWrap").classList.toggle("hidden",tracker.value_kind!=="number");
+      $("healthRatingWrap").classList.toggle("hidden",tracker.value_kind!=="rating");
+      $("healthTextWrap").classList.toggle("hidden",tracker.value_kind!=="text");
+      $("deleteHealthEntry").classList.toggle("hidden",!entry);
+      $("healthEntryEditor").showModal();
+    }
+
+    async function saveHealthEntry(e){
+      e.preventDefault();
+      try{
+        const id=$("healthEntryId").value;
+        const tracker=state.healthTrackers.find(t=>t.id===$("healthEntryTrackerId").value);
+        if(!tracker)throw new Error("Health tracker not found.");
+        const payload={
+          tracker_id:tracker.id,
+          household_id:state.member.household_id,
+          owner_user_id:state.user.id,
+          logged_at:toIsoOrNull($("healthEntryWhen").value),
+          value_number:tracker.value_kind==="number"&&$("healthEntryNumber").value!==""?Number($("healthEntryNumber").value):null,
+          rating:tracker.value_kind==="rating"&&$("healthEntryRating").value?Number($("healthEntryRating").value):null,
+          value_text:tracker.value_kind==="text"?($("healthEntryText").value.trim()||null):null,
+          notes:$("healthEntryNotes").value.trim()||null,
+          updated_at:new Date().toISOString()
+        };
+        if(tracker.value_kind==="number"&&payload.value_number===null)throw new Error("Enter a value.");
+        if(tracker.value_kind==="rating"&&!payload.rating)throw new Error("Choose a rating from 1 to 5.");
+        if(tracker.value_kind==="text"&&!payload.value_text)throw new Error("Enter a value or note.");
+        if(id){
+          const {error}=await sb.from("health_entries").update(payload).eq("id",id);if(error)throw error;toast("Health entry updated.");
+        }else{
+          const {error}=await sb.from("health_entries").insert(payload);if(error)throw error;toast("Health entry logged.");
+        }
+        $("healthEntryEditor").close();await loadData();renderAll();
+      }catch(err){toast(err?.message||"Unable to save health entry.",true);}
+    }
+
+    async function deleteCurrentHealthEntry(){
+      const id=$("healthEntryId").value;if(!id)return;
+      if(!confirm("Delete this health entry?"))return;
+      const {error}=await sb.from("health_entries").delete().eq("id",id);
+      if(error){toast(error.message,true);return;}
+      $("healthEntryEditor").close();await loadData();renderAll();toast("Health entry deleted.");
+    }
+
+    async function deleteCurrentHealthTracker(){
+      const id=$("healthTrackerId").value;if(!id)return;
+      if(!confirm("Delete this tracker and all of its entries? This cannot be undone."))return;
+      const {error}=await sb.from("health_trackers").delete().eq("id",id);
+      if(error){toast(error.message,true);return;}
+      $("healthTrackerEditor").close();await loadData();renderAll();toast("Health tracker deleted.");
     }
 
     function listTypeIcon(type){
@@ -2130,6 +2414,30 @@
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
+    $("newHealthTracker").addEventListener("click",()=>openHealthTrackerEditor());
+    $("closeHealthTrackerEditor").addEventListener("click",()=>$("healthTrackerEditor").close());
+    $("cancelHealthTrackerEdit").addEventListener("click",()=>$("healthTrackerEditor").close());
+    $("healthTrackerForm").addEventListener("submit",saveHealthTracker);
+    $("deleteHealthTracker").addEventListener("click",deleteCurrentHealthTracker);
+    $("healthTrackerKind").addEventListener("change",()=>$("healthUnitWrap").classList.toggle("hidden",$("healthTrackerKind").value==="text"));
+    $("showInactiveHealth").addEventListener("change",renderHealth);
+    $("healthGrid").addEventListener("click",e=>{
+      const edit=e.target.closest("[data-health-tracker-edit]");
+      if(edit){const tracker=state.healthTrackers.find(t=>t.id===edit.dataset.healthTrackerEdit);if(tracker)openHealthTrackerEditor(tracker);return;}
+      const log=e.target.closest("[data-health-log]");
+      if(log){const tracker=state.healthTrackers.find(t=>t.id===log.dataset.healthLog);if(tracker)openHealthEntryEditor(tracker);}
+    });
+    $("healthRecent").addEventListener("click",e=>{
+      const edit=e.target.closest("[data-health-entry-edit]");if(!edit)return;
+      const entry=state.healthEntries.find(x=>x.id===edit.dataset.healthEntryEdit);if(!entry)return;
+      const tracker=state.healthTrackers.find(t=>t.id===entry.tracker_id);if(tracker)openHealthEntryEditor(tracker,entry);
+    });
+    $("healthRatingButtons").addEventListener("click",e=>{const btn=e.target.closest("[data-health-rating]");if(btn)setRatingChoice(btn.dataset.healthRating);});
+    $("closeHealthEntryEditor").addEventListener("click",()=>$("healthEntryEditor").close());
+    $("cancelHealthEntryEdit").addEventListener("click",()=>$("healthEntryEditor").close());
+    $("healthEntryForm").addEventListener("submit",saveHealthEntry);
+    $("deleteHealthEntry").addEventListener("click",deleteCurrentHealthEntry);
+
     $("newList").addEventListener("click",()=>openListEditor());
     $("editList").addEventListener("click",()=>{const l=activeList();if(l)openListEditor(l);});
     $("newListItem").addEventListener("click",()=>openListItemEditor());

@@ -1559,6 +1559,7 @@
       renderAiMessages();
       renderAiBriefs();
       startListRealtime();
+      openTaskDeepLink();
       initializeAiBriefs().catch(err=>console.warn("AI brief initialization failed:",err));
     }
 
@@ -4001,6 +4002,33 @@
           '<div class="actions">'+buttons+'</div>'+
         '</article>';
       }).join("");
+    }
+
+    function openTaskDeepLink(){
+      const params=new URLSearchParams(window.location.search);
+      const taskId=params.get("open_task");
+      if(!taskId)return;
+
+      const task=state.tasks.find(t=>t.id===taskId);
+      params.delete("open_task");
+      const clean=window.location.pathname+(params.toString()?"?"+params.toString():"")+window.location.hash;
+      history.replaceState({},document.title,clean);
+
+      if(!task){
+        toast("That reminder is no longer available.",true);
+        return;
+      }
+
+      const panel=$("remindersPanel");
+      if(panel)panel.scrollIntoView({behavior:"smooth",block:"start"});
+
+      setTimeout(()=>{
+        if(canManageTask(task)){
+          openEditor(task);
+        }else{
+          toast('Opened reminder: "'+task.title+'".');
+        }
+      },180);
     }
 
     function openEditor(task=null){

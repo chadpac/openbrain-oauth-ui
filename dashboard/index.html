@@ -1969,6 +1969,43 @@
       renderAiMessages();
     }
 
+    function normalizeAiActionsForDisplay(actions){
+      const source=Array.isArray(actions)?actions:[];
+      const out=[];
+      const listGroups=new Map();
+      for(const action of source){
+        if(!action)continue;
+        if(action.type==="list_item"||action.type==="list_items"){
+          const payload=action.payload||{};
+          const key=String(payload.list_id||payload.list_name||"active").trim().toLowerCase();
+          let group=listGroups.get(key);
+          if(!group){
+            group={type:"list_items",label:"Review items",payload:{list_id:payload.list_id||null,list_name:payload.list_name||null,items:[]}};
+            listGroups.set(key,group);out.push(group);
+          }
+          const items=action.type==="list_items"&&Array.isArray(payload.items)
+            ? payload.items
+            : [{content:payload.content,quantity:payload.quantity||null,notes:payload.notes||null}];
+          for(const item of items){
+            const content=String(item?.content||"").trim();if(!content)continue;
+            const quantity=item?.quantity==null?null:String(item.quantity).trim()||null;
+            const notes=item?.notes==null?null:String(item.notes).trim()||null;
+            const dedupe=(content+"|"+(quantity||"")).toLowerCase();
+            if(!group.payload.items.some(x=>(String(x.content||"")+"|"+String(x.quantity||"")).toLowerCase()===dedupe)){
+              group.payload.items.push({content,quantity,notes});
+            }
+          }
+        }else out.push(action);
+      }
+      for(const action of out){
+        if(action.type==="list_items"){
+          const count=action.payload?.items?.length||0;
+          action.label=count===1?"Review item":"Review "+count+" items";
+        }
+      }
+      return out;
+    }
+
     function renderAiMessages(){
       const box=$("aiMessages");
       if(!box)return;
@@ -1987,13 +2024,13 @@
         return;
       }
       let html=state.aiMessages.map((m,messageIndex)=>{
-        const actions=Array.isArray(m.actions)?m.actions:(m.action?[m.action]:[]);
+        const actions=normalizeAiActionsForDisplay(Array.isArray(m.actions)?m.actions:(m.action?[m.action]:[]));
         const actionHtml=actions.map((action,actionIndex)=>{
           const typeLabel=String(action.type||"action").replaceAll("_"," ");
           const rawLabel=String(action.label||"").trim();
           const fallbackLabel=action.type==="list_items"?"Review items":"Review";
           const buttonLabel=rawLabel||fallbackLabel;
-          return '<div class="ai-action-card"><strong>Proposed '+esc(typeLabel)+'</strong><button class="primary smallbtn" type="button" data-ai-message-index="'+messageIndex+'" data-ai-action-index="'+actionIndex+'">'+esc(buttonLabel)+'</button></div>';
+          return '<div class="ai-action-card"><strong>Proposed '+esc(typeLabel)+'</strong><button class="primary smallbtn" style="background:var(--navy);color:#fff;border:0" type="button" data-ai-message-index="'+messageIndex+'" data-ai-action-index="'+actionIndex+'">'+esc(buttonLabel)+'</button></div>';
         }).join("");
         return '<div class="ai-msg '+(m.role==="user"?"user":"assistant")+'"><div class="ai-bubble">'+esc(m.content)+'</div>'+actionHtml+'</div>';
       }).join("");
@@ -2166,7 +2203,7 @@
 
     function reviewAiAction(messageIndex,actionIndex=0){
       const message=state.aiMessages[Number(messageIndex)];
-      const actions=Array.isArray(message?.actions)?message.actions:(message?.action?[message.action]:[]);
+      const actions=normalizeAiActionsForDisplay(Array.isArray(message?.actions)?message.actions:(message?.action?[message.action]:[]));
       const action=actions[Number(actionIndex)];
       if(!action)return;
       if(action.type==="task")aiSetTaskProposal(action.payload);
@@ -4204,7 +4241,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=6-visible-confirmations",
+          "/openbrain-oauth-ui/sw.js?v=7-ai-review-fix",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v5";
-const SW_VERSION = "v5-action-confirmations";
+const CACHE_NAME = "open-brain-pwa-v6";
+const SW_VERSION = "v6-visible-confirmations";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",
@@ -154,10 +154,11 @@ async function showActionConfirmation(event, info, result){
     tag,
     silent:true,
     renotify:false,
+    requireInteraction:true,
     data:{url:info.url || "/openbrain-oauth-ui/dashboard/"}
   });
 
-  await wait(2800);
+  await wait(12000);
   const confirmations = await self.registration.getNotifications({tag});
   confirmations.forEach(n => n.close());
 }

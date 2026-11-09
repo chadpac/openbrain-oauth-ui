@@ -922,6 +922,7 @@
         </div>
       </div>
       <div class="modalfoot">
+        <button id="removeFamilyMember" class="ghost hidden" type="button" style="margin-right:auto;color:var(--red)">Remove from household</button>
         <button id="cancelFamilyMemberEdit" class="ghost" type="button">Cancel</button>
         <button class="primary" type="submit">Save member</button>
       </div>
@@ -1200,6 +1201,15 @@
       $("familyMemberTelegramStatus").textContent=member.telegram_enabled
         ?"Telegram is connected for this family member."
         :"Telegram is not connected for this family member.";
+
+      const removeBtn=$("removeFamilyMember");
+      const authInfo=state.memberAuth[member.user_id]||{};
+      const pending=!!authInfo.pending;
+      const canRemove=member.user_id!==state.user.id;
+      removeBtn.classList.toggle("hidden",!canRemove);
+      removeBtn.textContent=pending?"Cancel invitation":"Remove from household";
+      removeBtn.dataset.action=pending?"cancel_invite":"remove_member";
+
       $("familyMemberEditor").showModal();
     }
 
@@ -1216,6 +1226,45 @@
         toast("Family member updated.");
       }catch(err){
         toast(err?.message||"Unable to update family member.",true);
+      }
+    }
+
+    async function removeOrCancelFamilyMember(){
+      if(!isAdmin())return;
+      const user_id=$("familyMemberUserId").value;
+      const member=state.members.find(m=>m.user_id===user_id);
+      if(!member)return;
+
+      const button=$("removeFamilyMember");
+      const action=button.dataset.action==="cancel_invite"?"cancel_invite":"remove_member";
+      const pending=action==="cancel_invite";
+      const confirmed=window.confirm(
+        pending
+          ?"Cancel the invitation for "+member.display_name+"? They will be removed from this household and the invitation will no longer be usable."
+          :"Remove "+member.display_name+" from this household? Their Open Brain account and stored data will be preserved, but their active reminders and pending event notifications will be cancelled."
+      );
+      if(!confirmed)return;
+
+      const original=button.textContent;
+      button.disabled=true;
+      button.textContent=pending?"Cancelling…":"Removing…";
+      try{
+        const result=await invokeHouseholdAdmin({action,user_id});
+        $("familyMemberEditor").close();
+        await loadData();
+        renderAll();
+        if(pending){
+          toast(result.account_deleted
+            ?"Invitation cancelled and unused invited account cleaned up."
+            :"Invitation cancelled.");
+        }else{
+          toast(member.display_name+" was removed from the household.");
+        }
+      }catch(err){
+        toast(err?.message||(pending?"Unable to cancel invitation.":"Unable to remove family member."),true);
+      }finally{
+        button.disabled=false;
+        button.textContent=original;
       }
     }
 
@@ -2703,6 +2752,7 @@
     $("closeFamilyMemberEditor").addEventListener("click",()=>$("familyMemberEditor").close());
     $("cancelFamilyMemberEdit").addEventListener("click",()=>$("familyMemberEditor").close());
     $("familyMemberForm").addEventListener("submit",saveFamilyMember);
+    $("removeFamilyMember").addEventListener("click",removeOrCancelFamilyMember);
     $("familyRoster").addEventListener("click",e=>{
       const resend=e.target.closest("[data-family-resend]");
       if(resend){resendFamilyInvite(resend.dataset.familyResend);return;}

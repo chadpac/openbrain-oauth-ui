@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v4";
-const SW_VERSION = "v4-actions";
+const CACHE_NAME = "open-brain-pwa-v5";
+const SW_VERSION = "v5-action-confirmations";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",
@@ -125,8 +125,44 @@ async function openOpenBrain(targetPath) {
   if (self.clients.openWindow) await self.clients.openWindow(target);
 }
 
-self.addEventListener("notificationclick", event => {
+function wait(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function showActionConfirmation(event, info, result){
+  const tag = event.notification?.tag || ("open-brain-confirm-" + Date.now());
+  let title = "Open Brain";
+  let body = result?.message || "Updated.";
+
+  if(result?.action === "snooze30" && result?.snoozed_until){
+    const when = new Intl.DateTimeFormat(undefined,{
+      hour:"numeric",
+      minute:"2-digit"
+    }).format(new Date(result.snoozed_until));
+    title = "Reminder snoozed";
+    body = "Snoozed until " + when + ".";
+  }else if(result?.action === "done"){
+    title = result?.resource_type === "habit" ? "Habit complete" : "Marked done";
+    body = result?.item_title ? result.item_title : (result?.message || "Marked done.");
+  }
+
   event.notification.close();
+  await self.registration.showNotification(title,{
+    body,
+    icon:"/openbrain-oauth-ui/icons/icon-192.png",
+    badge:"/openbrain-oauth-ui/icons/icon-192.png",
+    tag,
+    silent:true,
+    renotify:false,
+    data:{url:info.url || "/openbrain-oauth-ui/dashboard/"}
+  });
+
+  await wait(2800);
+  const confirmations = await self.registration.getNotifications({tag});
+  confirmations.forEach(n => n.close());
+}
+
+self.addEventListener("notificationclick", event => {
   const info = event.notification?.data || {};
   const action = event.action || "";
 
@@ -143,12 +179,20 @@ self.addEventListener("notificationclick", event => {
           throw new Error(result.error || "Open Brain could not apply that action.");
         }
 
+        await showActionConfirmation(event, info, result);
+
         const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
         for (const client of clientsList) {
-          client.postMessage({ type: "open-brain-push-action", action, message: result.message || "Updated." });
+          client.postMessage({
+            type: "open-brain-push-action",
+            action,
+            message: result.message || "Updated.",
+            snoozed_until: result.snoozed_until || null
+          });
         }
         return;
       } catch (err) {
+        event.notification.close();
         await self.registration.showNotification("Open Brain action failed", {
           body: err?.message || "Open Open Brain to update this reminder.",
           icon: "/openbrain-oauth-ui/icons/icon-192.png",
@@ -160,6 +204,7 @@ self.addEventListener("notificationclick", event => {
       }
     }
 
+    event.notification.close();
     await openOpenBrain(info.url);
   })());
 });

@@ -2027,10 +2027,11 @@
         const actions=normalizeAiActionsForDisplay(Array.isArray(m.actions)?m.actions:(m.action?[m.action]:[]));
         const actionHtml=actions.map((action,actionIndex)=>{
           const typeLabel=String(action.type||"action").replaceAll("_"," ");
+          const proposalLabel=m.proposalUpdated?"Updated "+typeLabel:"Proposed "+typeLabel;
           const rawLabel=String(action.label||"").trim();
           const fallbackLabel=action.type==="list_items"?"Review items":"Review";
           const buttonLabel=rawLabel||fallbackLabel;
-          return '<div class="ai-action-card"><strong>Proposed '+esc(typeLabel)+'</strong><button class="primary smallbtn" style="background:var(--navy);color:#fff;border:0" type="button" data-ai-message-index="'+messageIndex+'" data-ai-action-index="'+actionIndex+'">'+esc(buttonLabel)+'</button></div>';
+          return '<div class="ai-action-card"><strong>'+esc(proposalLabel)+'</strong><button class="primary smallbtn" style="background:var(--navy);color:#fff;border:0" type="button" data-ai-message-index="'+messageIndex+'" data-ai-action-index="'+actionIndex+'">'+esc(buttonLabel)+'</button></div>';
         }).join("");
         return '<div class="ai-msg '+(m.role==="user"?"user":"assistant")+'"><div class="ai-bubble">'+esc(m.content)+'</div>'+actionHtml+'</div>';
       }).join("");
@@ -2051,6 +2052,22 @@
     function closeAiPanel(){
       $("aiPanel").classList.add("hidden");
       $("aiBackdrop").classList.add("hidden");
+    }
+
+    function replaceLastAiProposal(actions){
+      const normalized=normalizeAiActionsForDisplay(actions);
+      if(!normalized.length)return false;
+      for(let i=state.aiMessages.length-1;i>=0;i--){
+        const message=state.aiMessages[i];
+        const existing=Array.isArray(message?.actions)?message.actions:(message?.action?[message.action]:[]);
+        if(message?.role==="assistant"&&existing.length){
+          message.actions=normalized;
+          message.action=null;
+          message.proposalUpdated=true;
+          return true;
+        }
+      }
+      return false;
     }
 
     async function sendAiMessage(textOverride=null){
@@ -2078,10 +2095,12 @@
         }});
         if(error)throw error;
         if(data?.error)throw new Error(data.error);
+        const responseActions=Array.isArray(data?.actions)?data.actions:(data?.action?[data.action]:[]);
+        const revised=data?.replace_previous_actions===true&&replaceLastAiProposal(responseActions);
         state.aiMessages.push({
           role:"assistant",
           content:data?.answer||"I couldn't form an answer.",
-          actions:Array.isArray(data?.actions)?data.actions:(data?.action?[data.action]:[])
+          actions:revised?[]:responseActions
         });
         saveAiChatSession();
       }catch(err){
@@ -4241,7 +4260,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=7-ai-review-fix",
+          "/openbrain-oauth-ui/sw.js?v=8-ai-proposal-revisions",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

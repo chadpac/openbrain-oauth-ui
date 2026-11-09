@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v15";
-const SW_VERSION = "v15-google-calendar";
+const CACHE_NAME = "open-brain-pwa-v16";
+const SW_VERSION = "v16-google-calendar-fixes";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",
@@ -18,7 +18,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => key.startsWith("open-brain-pwa-") && key !== CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
@@ -29,15 +29,22 @@ self.addEventListener("fetch", event => {
 
   const url = new URL(request.url);
 
-  if (request.mode === "navigate") {
+  if (url.origin === self.location.origin && request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put("/openbrain-oauth-ui/dashboard/", copy));
+          if (response.ok && !url.search && !url.hash &&
+              url.pathname === "/openbrain-oauth-ui/dashboard/") {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(url.pathname, copy)));
+          }
           return response;
         })
-        .catch(() => caches.match("/openbrain-oauth-ui/dashboard/"))
+        .catch(async () => {
+          const path=url.pathname;
+          const cached=await caches.match(path);
+          return cached || new Response("Open Brain is offline. Open the dashboard to use the saved app.",{status:503,headers:{"Content-Type":"text/plain"}});
+        })
     );
     return;
   }

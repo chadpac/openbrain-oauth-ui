@@ -1,0 +1,3 @@
+# Public OAuth callback; every POST validates its bearer token with auth.getUser.
+[functions.google-calendar-oauth]
+verify_jwt = false

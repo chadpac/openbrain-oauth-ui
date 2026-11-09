@@ -843,12 +843,20 @@
       return value ? new Date(value).toISOString() : null;
     }
 
-    async function requireAdmin(user){
+    function isAdmin(){
+      return state.member?.role==="admin";
+    }
+
+    function roleLabel(role){
+      return role==="admin"?"Household admin":"Family member";
+    }
+
+    async function requireMember(user){
       const {data,error}=await sb.from("household_members")
         .select("user_id, household_id, display_name, role")
         .eq("user_id",user.id).maybeSingle();
       if(error) throw error;
-      if(!data || data.role!=="admin") throw new Error("This dashboard is currently limited to Open Brain household administrators.");
+      if(!data) throw new Error("This account is not connected to an Open Brain household.");
       return data;
     }
 
@@ -858,7 +866,7 @@
       if(!session){ showLogin(); return; }
       try{
         state.user=session.user;
-        state.member=await requireAdmin(session.user);
+        state.member=await requireMember(session.user);
         await loadData();
         showApp();
       }catch(err){
@@ -878,7 +886,7 @@
     function showApp(){
       $("loginScreen").classList.add("hidden"); $("app").classList.remove("hidden");
       $("displayName").textContent=state.member.display_name;
-      $("roleText").textContent="Household admin";
+      $("roleText").textContent=roleLabel(state.member.role);
       $("avatar").textContent=initials(state.member.display_name);
       $("timezoneNote").textContent="Times shown in "+Intl.DateTimeFormat().resolvedOptions().timeZone+".";
       renderAll();
@@ -930,9 +938,13 @@
       editor.innerHTML="";
       for(const m of state.members){
         const o1=document.createElement("option"); o1.value=m.user_id; o1.textContent=m.display_name; filter.appendChild(o1);
-        const o2=document.createElement("option"); o2.value=m.user_id; o2.textContent=m.display_name; editor.appendChild(o2);
+        if(isAdmin() || m.user_id===state.user.id){
+          const o2=document.createElement("option"); o2.value=m.user_id; o2.textContent=m.display_name; editor.appendChild(o2);
+        }
       }
-      filter.value=state.memberFilter||currentFilter; if(currentEditor) editor.value=currentEditor;
+      filter.value=state.memberFilter||currentFilter;
+      editor.value=isAdmin()?(currentEditor||state.user.id):state.user.id;
+      editor.disabled=!isAdmin();
       const owner=$("memoryOwnerFilter");
       if(owner){
         const currentOwner=owner.value;
@@ -2027,6 +2039,18 @@
       }catch(err){toast(err?.message||"Unable to add list item.",true);}
     }
 
+    function canEditGoal(goal){
+      return !!goal && (
+        goal.created_by===state.user.id ||
+        goal.owner_user_id===state.user.id ||
+        (goal.visibility==="household" && isAdmin())
+      );
+    }
+
+    function canEditEvent(event){
+      return !!event && (isAdmin() || event.created_by===state.user.id);
+    }
+
     function activeGoal(){
       return state.goals.find(g=>g.owner_user_id===state.user.id && g.featured)
         || state.goals.find(g=>g.owner_user_id===state.user.id)
@@ -2046,7 +2070,8 @@
           const date=new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(d);
           const time=e.all_day?"All day":new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(d);
           const notify=eventNotificationSummary(e.id);
-          return '<div class="event-row"><div class="event-date">'+esc(date)+'<br>'+esc(time)+'</div><div><div class="event-title">'+esc(e.title)+'</div><div class="event-sub">'+esc(e.location||e.description||"Family event")+(notify?' · '+esc(notify):'')+'</div></div><button class="smallbtn" data-event-edit="'+e.id+'">Edit</button></div>';
+          const edit=canEditEvent(e)?'<button class="smallbtn" data-event-edit="'+e.id+'">Edit</button>':'<span class="memory-date">Read only</span>';
+          return '<div class="event-row"><div class="event-date">'+esc(date)+'<br>'+esc(time)+'</div><div><div class="event-title">'+esc(e.title)+'</div><div class="event-sub">'+esc(e.location||e.description||"Family event")+(notify?' · '+esc(notify):'')+'</div></div>'+edit+'</div>';
         }).join("");
       }
 
@@ -2062,7 +2087,7 @@
           '<div class="progress-track"><div class="progress-fill" style="width:'+p+'%"></div></div>'+
           '<div class="goal-meta"><span>'+Math.round(p)+'% complete</span><span>'+esc(target)+'</span></div>'+
           (goal.next_action?'<div class="goal-next"><strong>Next action</strong>'+esc(goal.next_action)+'</div>':'');
-        $("editGoal").textContent="Edit goal";
+        $("editGoal").textContent=canEditGoal(goal)?"Edit goal":"Set my goal";
       }
     }
 
@@ -2081,11 +2106,13 @@
 
       const membersBox=$("eventNotifyMembers");
       membersBox.innerHTML=state.members.map(m=>{
-        const enabled=!!m.telegram_enabled;
+        const allowedRecipient=isAdmin() || m.user_id===state.user.id;
+        const enabled=!!m.telegram_enabled && allowedRecipient;
         const checked=event?selectedPeople.has(m.user_id):(m.user_id===state.user.id && enabled);
+        const suffix=!m.telegram_enabled?" · Telegram not connected":(!allowedRecipient?" · admin only":"");
         return '<label class="notify-choice '+(enabled?"":"disabled")+'">'+
           '<input type="checkbox" value="'+m.user_id+'" '+(checked?"checked ":"")+(enabled?"":"disabled ")+'> '+
-          esc(m.display_name)+(enabled?"":" · Telegram not connected")+
+          esc(m.display_name)+esc(suffix)+
         '</label>';
       }).join("");
 
@@ -2143,6 +2170,7 @@
     }
 
     function openEventEditor(event=null){
+      if(event && !canEditEvent(event)){toast("You can view this family event, but only its creator or a household admin can edit it.",true);return;}
       $("eventForm").reset(); $("eventId").value=event?.id||"";
       $("eventEditorTitle").textContent=event?"Edit family event":"New family event";
       $("eventTitle").value=event?.title||"";
@@ -2188,7 +2216,8 @@
     }
 
     function openGoalEditor(){
-      const g=activeGoal();
+      const active=activeGoal();
+      const g=canEditGoal(active)?active:null;
       $("goalForm").reset(); $("goalId").value=g?.id||"";
       $("goalTitle").value=g?.title||""; $("goalWhy").value=g?.why_it_matters||""; $("goalNext").value=g?.next_action||"";
       $("goalProgress").value=Math.round(Number(g?.progress_percent||0));
@@ -2247,6 +2276,14 @@
       return rows;
     }
 
+    function canManageTask(task){
+      return isAdmin() || (task.visibility==="private" && task.created_by===state.user.id);
+    }
+
+    function canCompleteAssignedSharedTask(task){
+      return !isAdmin() && task.visibility==="household" && task.assigned_to_user_id===state.user.id && ["pending","in_progress"].includes(task.status);
+    }
+
     function renderTasks(){
       const rows=filteredTasks(), list=$("taskList");
       if(!rows.length){
@@ -2255,14 +2292,21 @@
       list.innerHTML=rows.map(t=>{
         const recurring=t.recurrence_rule?'<span class="badge b-recurring">↻ '+esc(recurrenceLabel(t.recurrence_rule))+'</span>':"";
         const priority=t.priority && t.priority!=="normal"?'<span class="badge b-priority">'+esc(t.priority)+'</span>':"";
-        let buttons='<button class="smallbtn" data-action="edit" data-id="'+t.id+'">Edit</button>';
-        if(["pending","in_progress"].includes(t.status)){
-          buttons+='<button class="smallbtn warn" data-action="pause" data-id="'+t.id+'">Pause</button>';
-          buttons+='<button class="smallbtn" data-action="complete" data-id="'+t.id+'">Done</button>';
-          buttons+='<button class="smallbtn danger" data-action="cancel" data-id="'+t.id+'">Cancel</button>';
-        }else if(t.status==="paused"){
-          buttons+='<button class="smallbtn" data-action="resume" data-id="'+t.id+'">Resume</button>';
-          buttons+='<button class="smallbtn danger" data-action="cancel" data-id="'+t.id+'">Cancel</button>';
+        let buttons="";
+        if(canManageTask(t)){
+          buttons='<button class="smallbtn" data-action="edit" data-id="'+t.id+'">Edit</button>';
+          if(["pending","in_progress"].includes(t.status)){
+            buttons+='<button class="smallbtn warn" data-action="pause" data-id="'+t.id+'">Pause</button>';
+            buttons+='<button class="smallbtn" data-action="complete" data-id="'+t.id+'">Done</button>';
+            buttons+='<button class="smallbtn danger" data-action="cancel" data-id="'+t.id+'">Cancel</button>';
+          }else if(t.status==="paused"){
+            buttons+='<button class="smallbtn" data-action="resume" data-id="'+t.id+'">Resume</button>';
+            buttons+='<button class="smallbtn danger" data-action="cancel" data-id="'+t.id+'">Cancel</button>';
+          }
+        }else if(canCompleteAssignedSharedTask(t)){
+          buttons='<button class="smallbtn" data-action="complete" data-id="'+t.id+'">Done</button>';
+        }else{
+          buttons='<span class="memory-date">Read only</span>';
         }
         return '<article class="task">'+
           '<div><div class="title">'+esc(t.title)+'</div>'+(t.description?'<div class="desc">'+esc(t.description)+'</div>':'')+
@@ -2275,11 +2319,13 @@
     }
 
     function openEditor(task=null){
+      if(task && !canManageTask(task)){toast("You can only edit your own personal reminders. Shared family reminders are managed by household admins.",true);return;}
       $("taskForm").reset(); $("taskId").value=task?.id||"";
       $("editorTitle").textContent=task?"Edit reminder":"New reminder";
       $("taskTitle").value=task?.title||""; $("taskDescription").value=task?.description||"";
       $("taskPriority").value=task?.priority||"normal";
-      $("taskMember").value=task?.assigned_to_user_id||state.member.user_id;
+      $("taskMember").value=isAdmin()?(task?.assigned_to_user_id||state.member.user_id):state.user.id;
+      $("taskMember").disabled=!isAdmin();
       $("taskReminder").value=task?.remind_at?toLocalInput(task.remind_at):toLocalInput(new Date(Date.now()+60*60*1000));
       $("taskDue").value=task?.due_at?toLocalInput(task.due_at):"";
       const known=[...$("taskRepeat").options].map(o=>o.value);
@@ -2296,7 +2342,9 @@
       const btn=$("saveTask"); btn.disabled=true;
       try{
         const id=$("taskId").value;
-        const member=state.members.find(m=>m.user_id===$("taskMember").value);
+        const member=isAdmin()
+          ? state.members.find(m=>m.user_id===$("taskMember").value)
+          : state.member;
         if(!member) throw new Error("Choose a family member.");
         const repeat=$("taskRepeat").value==="__custom"?$("taskRepeatCustom").value.trim():$("taskRepeat").value;
         const remindAt=toIsoOrNull($("taskReminder").value);
@@ -2310,8 +2358,8 @@
           remind_at:remindAt,
           due_at:dueAt,
           recurrence_rule:repeat||null,
-          category:"household",
-          visibility:"household",
+          category:isAdmin()?"household":"personal",
+          visibility:isAdmin()?"household":"private",
           updated_at:new Date().toISOString()
         };
         if(!payload.title) throw new Error("Give the reminder a title.");
@@ -2319,6 +2367,7 @@
 
         if(id){
           const original=state.tasks.find(t=>t.id===id);
+          if(!original || !canManageTask(original)) throw new Error("You do not have permission to edit this reminder.");
           if(original?.remind_at!==remindAt){
             payload.reminder_sent_at=null; payload.reminder_error=null;
           }
@@ -2347,6 +2396,19 @@
 
     async function setStatus(id,status){
       const task=state.tasks.find(t=>t.id===id); if(!task) return;
+
+      if(!canManageTask(task)){
+        if(status==="completed" && canCompleteAssignedSharedTask(task)){
+          const {data,error}=await sb.functions.invoke("complete-assigned-task",{body:{task_id:id}});
+          if(error){toast(error.message||"Unable to complete task.",true);return;}
+          if(data?.error){toast(data.error,true);return;}
+          toast(data?.recurring?"Done. The next recurring reminder was created.":"Task completed.");
+          await loadData();renderAll();return;
+        }
+        toast("You can only complete a shared family task assigned to you.",true);
+        return;
+      }
+
       if(status==="pending" && task.remind_at && new Date(task.remind_at)<new Date()){
         toast("That reminder time has passed. Edit the time first, then resume it.",true); openEditor(task); return;
       }

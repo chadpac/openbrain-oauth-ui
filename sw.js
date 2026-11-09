@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v10";
-const SW_VERSION = "v10-ai-latest-review-card";
+const CACHE_NAME = "open-brain-pwa-v11";
+const SW_VERSION = "v11-list-duplicate-check";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",

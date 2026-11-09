@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v14";
-const SW_VERSION = "v14-health-checkin";
+const CACHE_NAME = "open-brain-pwa-v15";
+const SW_VERSION = "v15-google-calendar";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",

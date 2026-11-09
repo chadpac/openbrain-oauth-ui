@@ -80,6 +80,10 @@
     .week-side{background:#f6faf9;border:1px solid #dfe9e8;border-radius:14px;padding:14px}.week-side h4{margin:0 0 8px}.week-metric{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #e2eceb;font-size:13px}.week-metric:first-of-type{border-top:0}
     .week-anchor{margin-top:12px;padding:11px 12px;border-radius:12px;background:var(--peach-soft);font-size:13px}.week-anchor strong{display:block;margin-bottom:3px;color:#76513f}
     .review-note{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.45}
+    .activity-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
+    .activity-list{display:grid;margin-top:10px}.activity-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+    .activity-row:first-child{border-top:0}.activity-icon{width:32px;height:32px;border-radius:10px;background:#f3f8f7;display:grid;place-items:center;font-size:16px}
+    .activity-title{font-size:13px;font-weight:780}.activity-meta{font-size:11px;color:var(--muted);margin-top:2px}.activity-time{font-size:11px;color:var(--muted);white-space:nowrap}
     .inbox-panel{margin-bottom:18px}.inbox-count{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:var(--peach-soft);color:#7a5744;font-size:12px;font-weight:850}
     .memory-panel{margin-bottom:18px}.memory-toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.memory-toolbar input{min-width:260px;flex:1}
     .memory-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px 20px 20px}.memory-card{border:1px solid var(--line);border-radius:15px;padding:15px;background:#fff;display:grid;gap:10px}
@@ -340,6 +344,17 @@
             <div id="weekGoalAnchor" class="week-anchor hidden"></div>
           </div>
         </div>
+      </section>
+
+      <section id="familyActivityPanel" class="activity-card">
+        <div class="overview-head">
+          <div>
+            <div class="eyebrow">Household</div>
+            <h3>Recent family activity</h3>
+            <div class="subtitle">A quick view of shared activity only. Private reminders, memories, and health data never appear here.</div>
+          </div>
+        </div>
+        <div id="familyActivityList" class="activity-list"><div class="overview-empty">No recent household activity yet.</div></div>
       </section>
 
       <section id="inboxPanel" class="panel inbox-panel">
@@ -1727,6 +1742,7 @@
       renderHealth();
       renderFamily();
       renderWeek();
+      renderFamilyActivity();
       renderInbox();
       renderOverview();
       renderTasks();
@@ -2563,6 +2579,85 @@
 
     function inboxTypeLabel(type){
       return ({task:"Task",event:"Event",goal:"Goal",memory:"Memory",list_item:"List item",note:"Note"})[type]||"Unsorted";
+    }
+
+    function activityRelativeTime(value){
+      const d=new Date(value);
+      if(Number.isNaN(d.getTime()))return "";
+      const seconds=Math.round((Date.now()-d.getTime())/1000);
+      const abs=Math.abs(seconds);
+      if(abs<60)return "just now";
+      const minutes=Math.round(abs/60);
+      if(minutes<60)return minutes+"m ago";
+      const hours=Math.round(minutes/60);
+      if(hours<24)return hours+"h ago";
+      const days=Math.round(hours/24);
+      if(days<7)return days+"d ago";
+      return new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(d);
+    }
+
+    function renderFamilyActivity(){
+      const box=$("familyActivityList");
+      if(!box)return;
+      const cutoff=Date.now()-7*86400000;
+      const activity=[];
+
+      for(const task of state.tasks){
+        if(task.visibility!=="household" || task.status!=="completed")continue;
+        const when=task.completed_at||task.updated_at;
+        if(!when || new Date(when).getTime()<cutoff)continue;
+        activity.push({
+          kind:"task",
+          icon:"✅",
+          title:(task.assigned_to||"Someone")+" completed "+task.title,
+          meta:"Shared task",
+          when
+        });
+      }
+
+      for(const event of state.events){
+        const when=event.created_at||event.updated_at;
+        if(!when || new Date(when).getTime()<cutoff)continue;
+        const who=event.created_by?memoryOwnerName(event.created_by):"Family";
+        activity.push({
+          kind:"event",
+          icon:"📅",
+          title:who+" added "+event.title,
+          meta:"Family event",
+          when
+        });
+      }
+
+      const householdLists=new Set(state.lists.filter(l=>l.visibility==="household").map(l=>l.id));
+      for(const item of state.listItems){
+        if(!householdLists.has(item.list_id) || item.visibility!=="household")continue;
+        const when=item.created_at;
+        if(!when || new Date(when).getTime()<cutoff)continue;
+        const who=memoryOwnerName(item.owner_user_id);
+        const list=state.lists.find(l=>l.id===item.list_id);
+        activity.push({
+          kind:"list",
+          icon:"🛒",
+          title:who+" added "+item.content,
+          meta:list?.name?("Shared list · "+list.name):"Shared list",
+          when
+        });
+      }
+
+      activity.sort((a,b)=>new Date(b.when)-new Date(a.when));
+      const recent=activity.slice(0,8);
+      if(!recent.length){
+        box.innerHTML='<div class="overview-empty">No shared household activity in the last 7 days.</div>';
+        return;
+      }
+
+      box.innerHTML=recent.map(item=>
+        '<div class="activity-row">'+
+          '<div class="activity-icon">'+item.icon+'</div>'+
+          '<div><div class="activity-title">'+esc(item.title)+'</div><div class="activity-meta">'+esc(item.meta)+'</div></div>'+
+          '<div class="activity-time">'+esc(activityRelativeTime(item.when))+'</div>'+
+        '</div>'
+      ).join("");
     }
 
     function renderInbox(){

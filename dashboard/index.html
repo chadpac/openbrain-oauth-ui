@@ -61,6 +61,10 @@
     .today-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.today-mini{background:#f8faf9;border:1px solid var(--line);border-radius:12px;padding:11px;text-align:left;color:var(--ink);cursor:pointer;transition:transform .12s ease,background .12s ease,border-color .12s ease}
     .today-mini:hover{background:#f0f7f6;border-color:#c9dddd;transform:translateY(-1px)}.today-mini:focus-visible{outline:3px solid rgba(70,149,151,.22);outline-offset:2px}
     .today-mini .n{font-size:22px;font-weight:850}.today-mini .l{font-size:11px;color:var(--muted);margin-top:1px}
+    .ai-home-brief{background:linear-gradient(145deg,#f7fbfa,#fff);border:1px solid #cfe2e1;border-radius:18px;box-shadow:var(--shadow);padding:16px 18px;margin-bottom:18px}
+    .ai-brief-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ai-brief-title{display:flex;align-items:center;gap:8px;font-weight:900;font-size:16px}.ai-brief-sub{font-size:11px;color:var(--muted);margin-top:3px}
+    .ai-brief-text{margin-top:10px;font-size:13px;line-height:1.55;white-space:pre-wrap;color:var(--ink)}.ai-brief-placeholder{color:var(--muted)}.ai-brief-actions{display:flex;gap:6px}
+    .week-ai-brief{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}.week-ai-brief .ai-brief-text{margin-top:8px}
     .task-scope-banner{margin:12px 18px 0;padding:10px 12px;border:1px solid #cfe2e1;border-radius:12px;background:#f1f8f7;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:#365f61}
     .task-scope-banner strong{color:var(--ink)}.task-scope-banner.hidden{display:none}
     .habit-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
@@ -329,6 +333,17 @@
         </div>
       </section>
 
+      <section class="ai-home-brief" aria-label="Open Brain AI today brief">
+        <div class="ai-brief-head">
+          <div>
+            <div class="ai-brief-title"><span>✦</span><span>Today’s Open Brain brief</span></div>
+            <div class="ai-brief-sub">A private summary from the Open Brain information available to your account.</div>
+          </div>
+          <div class="ai-brief-actions"><button id="refreshAiTodayBrief" class="ghost smallbtn" type="button">Refresh</button></div>
+        </div>
+        <div id="aiTodayBriefText" class="ai-brief-text ai-brief-placeholder">Preparing your brief…</div>
+      </section>
+
       <section id="habitPanel" class="habit-card">
         <div class="overview-head">
           <div>
@@ -362,6 +377,16 @@
             <div class="week-metric"><span>Overdue items</span><strong id="weekOverdueCount">—</strong></div>
             <div id="weekGoalAnchor" class="week-anchor hidden"></div>
           </div>
+        </div>
+        <div class="week-ai-brief">
+          <div class="ai-brief-head">
+            <div>
+              <div class="ai-brief-title"><span>✦</span><span>AI weekly perspective</span></div>
+              <div class="ai-brief-sub">Auto-prepared on Sundays; available anytime for planning.</div>
+            </div>
+            <div class="ai-brief-actions"><button id="refreshAiWeekBrief" class="ghost smallbtn" type="button">Generate</button></div>
+          </div>
+          <div id="aiWeekBriefText" class="ai-brief-text ai-brief-placeholder">Generate a short planning perspective for this week.</div>
         </div>
       </section>
 
@@ -1115,7 +1140,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
     let deferredInstallPrompt=null;
     let listRealtimeChannel=null;
     let listRealtimeTimer=null;
@@ -1515,8 +1540,12 @@
       $("roleText").textContent=roleLabel(state.member.role);
       $("avatar").textContent=initials(state.member.display_name);
       $("timezoneNote").textContent="Times shown in "+Intl.DateTimeFormat().resolvedOptions().timeZone+".";
+      loadAiChatSession();
       renderAll();
+      renderAiMessages();
+      renderAiBriefs();
       startListRealtime();
+      initializeAiBriefs().catch(err=>console.warn("AI brief initialization failed:",err));
     }
 
     async function loadData(){
@@ -1796,6 +1825,93 @@
       refreshPushStatus().catch(err=>console.warn("Push status check failed:",err));
     }
 
+    function aiBriefStorageKey(kind){
+      if(!state.user?.id)return "";
+      const now=new Date();
+      const dateKey=localDayKey(now);
+      const weekKey=dateOnlyLocal(startOfWeek(now));
+      return "open-brain-ai-"+kind+":"+state.user.id+":"+(kind==="today"?dateKey:weekKey);
+    }
+
+    function loadAiBriefCache(kind){
+      const key=aiBriefStorageKey(kind);if(!key)return null;
+      try{
+        const raw=sessionStorage.getItem(key);
+        if(!raw)return null;
+        const parsed=JSON.parse(raw);
+        return parsed&&typeof parsed.text==="string"?parsed:null;
+      }catch(_){return null;}
+    }
+
+    function saveAiBriefCache(kind,value){
+      const key=aiBriefStorageKey(kind);if(!key)return;
+      try{sessionStorage.setItem(key,JSON.stringify(value));}catch(_){}
+    }
+
+    function renderAiBriefs(){
+      const todayBox=$("aiTodayBriefText"),weekBox=$("aiWeekBriefText");
+      const todayBtn=$("refreshAiTodayBrief"),weekBtn=$("refreshAiWeekBrief");
+      if(todayBox){
+        todayBox.textContent=state.aiBriefBusy.today
+          ?"Open Brain is preparing your day…"
+          :(state.aiTodayBrief?.text||"Generate a concise summary of what matters today.");
+        todayBox.classList.toggle("ai-brief-placeholder",state.aiBriefBusy.today||!state.aiTodayBrief?.text);
+      }
+      if(weekBox){
+        weekBox.textContent=state.aiBriefBusy.week
+          ?"Open Brain is looking across your week…"
+          :(state.aiWeekBrief?.text||"Generate a short planning perspective for this week.");
+        weekBox.classList.toggle("ai-brief-placeholder",state.aiBriefBusy.week||!state.aiWeekBrief?.text);
+      }
+      if(todayBtn){todayBtn.disabled=state.aiBriefBusy.today;todayBtn.textContent=state.aiBriefBusy.today?"Working…":"Refresh";}
+      if(weekBtn){weekBtn.disabled=state.aiBriefBusy.week;weekBtn.textContent=state.aiBriefBusy.week?"Working…":(state.aiWeekBrief?.text?"Refresh":"Generate");}
+    }
+
+    async function generateAiBrief(kind,force=false){
+      if(!["today","week"].includes(kind)||state.aiBriefBusy[kind])return;
+      if(!force){
+        const cached=loadAiBriefCache(kind);
+        if(cached){
+          if(kind==="today")state.aiTodayBrief=cached;else state.aiWeekBrief=cached;
+          renderAiBriefs();return;
+        }
+      }
+
+      const prompt=kind==="today"
+        ?"Create my concise Open Brain brief for today. In 3 to 5 short lines, tell me what matters most from my tasks, overdue items, family events, habits, weekly priorities, and active goal. Be practical and calm. This is a summary only: return no proposed actions."
+        :"Create a concise Open Brain planning perspective for this week. In 4 to 6 short lines, summarize my weekly priorities, task load, overdue items, family events, habits or goal anchor, and one realistic focus suggestion. This is a summary only: return no proposed actions.";
+
+      state.aiBriefBusy[kind]=true;renderAiBriefs();
+      try{
+        const {data,error}=await sb.functions.invoke("open-brain-assistant",{body:{
+          message:prompt,
+          history:[],
+          page_context:{section_id:kind==="today"?"todayHome":"week",section_label:kind==="today"?"Today brief":"Weekly perspective",summary_kind:kind},
+          skip_memory_search:true
+        }});
+        if(error)throw error;
+        if(data?.error)throw new Error(data.error);
+        const result={text:String(data?.answer||"").trim(),generated_at:new Date().toISOString()};
+        if(!result.text)throw new Error("Open Brain returned an empty brief.");
+        if(kind==="today")state.aiTodayBrief=result;else state.aiWeekBrief=result;
+        saveAiBriefCache(kind,result);
+      }catch(err){
+        console.warn("Open Brain AI brief failed:",err);
+        const fallback={text:"I couldn't prepare this AI summary right now. You can refresh it anytime.",generated_at:null};
+        if(kind==="today")state.aiTodayBrief=fallback;else state.aiWeekBrief=fallback;
+      }finally{
+        state.aiBriefBusy[kind]=false;renderAiBriefs();
+      }
+    }
+
+    async function initializeAiBriefs(){
+      state.aiTodayBrief=loadAiBriefCache("today");
+      state.aiWeekBrief=loadAiBriefCache("week");
+      renderAiBriefs();
+      if(!state.aiTodayBrief)generateAiBrief("today").catch(()=>{});
+      if(new Date().getDay()===0&&!state.aiWeekBrief)generateAiBrief("week").catch(()=>{});
+    }
+
     function aiPageContext(){
       const sections=[
         ["todayHome","Home / Today"],["inboxPanel","Inbox"],["habitPanel","Habits & Routines"],
@@ -1825,6 +1941,32 @@
           shopping_mode:state.listShoppingMode
         }:null
       };
+    }
+
+    function aiChatStorageKey(){
+      return state.user?.id ? "open-brain-ai-chat:"+state.user.id : "";
+    }
+
+    function saveAiChatSession(){
+      const key=aiChatStorageKey();if(!key)return;
+      try{sessionStorage.setItem(key,JSON.stringify(state.aiMessages.slice(-24)));}catch(_){}
+    }
+
+    function loadAiChatSession(){
+      const key=aiChatStorageKey();if(!key)return;
+      try{
+        const stored=JSON.parse(sessionStorage.getItem(key)||"[]");
+        if(Array.isArray(stored)){
+          state.aiMessages=stored.slice(-24).filter(m=>m&&["user","assistant"].includes(m.role)&&typeof m.content==="string");
+        }
+      }catch(_){state.aiMessages=[];}
+    }
+
+    function clearAiChatSession(){
+      const key=aiChatStorageKey();
+      if(key)try{sessionStorage.removeItem(key);}catch(_){}
+      state.aiMessages=[];
+      renderAiMessages();
     }
 
     function renderAiMessages(){
@@ -1877,8 +2019,13 @@
       const message=String(textOverride??input.value).trim();
       if(!message)return;
 
-      const history=state.aiMessages.slice(-8).map(m=>({role:m.role,content:m.content}));
-      state.aiMessages.push({role:"user",content:message,action:null});
+      const history=state.aiMessages.slice(-10).map(m=>({
+        role:m.role,
+        content:m.content,
+        actions:Array.isArray(m.actions)?m.actions:(m.action?[m.action]:[])
+      }));
+      state.aiMessages.push({role:"user",content:message,actions:[]});
+      saveAiChatSession();
       input.value="";
       state.aiBusy=true;
       renderAiMessages();
@@ -1896,12 +2043,14 @@
           content:data?.answer||"I couldn't form an answer.",
           actions:Array.isArray(data?.actions)?data.actions:(data?.action?[data.action]:[])
         });
+        saveAiChatSession();
       }catch(err){
         state.aiMessages.push({
           role:"assistant",
           content:"I couldn't reach Open Brain AI just now. Your Open Brain data was not changed.",
-          action:null
+          actions:[]
         });
+        saveAiChatSession();
         console.warn("Open Brain AI request failed:",err);
       }finally{
         state.aiBusy=false;
@@ -3805,9 +3954,11 @@
     });
 
     $("aiLauncher").addEventListener("click",openAiPanel);
+    $("refreshAiTodayBrief").addEventListener("click",()=>generateAiBrief("today",true));
+    $("refreshAiWeekBrief").addEventListener("click",()=>generateAiBrief("week",true));
     $("closeAiPanel").addEventListener("click",closeAiPanel);
     $("aiBackdrop").addEventListener("click",closeAiPanel);
-    $("clearAiChat").addEventListener("click",()=>{state.aiMessages=[];renderAiMessages();$("aiInput").focus();});
+    $("clearAiChat").addEventListener("click",()=>{clearAiChatSession();$("aiInput").focus();});
     $("aiForm").addEventListener("submit",e=>{e.preventDefault();sendAiMessage();});
     $("aiInput").addEventListener("keydown",e=>{
       if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAiMessage();}

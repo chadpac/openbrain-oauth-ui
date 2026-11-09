@@ -124,7 +124,7 @@
     .ai-suggestions{display:flex;gap:7px;flex-wrap:wrap}.ai-suggestion{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 10px;font-size:12px;font-weight:740;text-align:left}
     .ai-msg{display:grid;gap:5px;max-width:88%}.ai-msg.user{justify-self:end}.ai-msg.assistant{justify-self:start}.ai-bubble{padding:10px 12px;border-radius:15px;font-size:13px;line-height:1.48;white-space:pre-wrap}
     .ai-msg.user .ai-bubble{background:var(--navy);color:#fff;border-bottom-right-radius:5px}.ai-msg.assistant .ai-bubble{background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}
-    .ai-action-card{border:1px solid #c9dddd;background:#f0f7f6;border-radius:13px;padding:10px;display:grid;gap:8px}.ai-action-card strong{font-size:12px}.ai-action-card button{justify-self:start}.ai-action-card .primary.smallbtn{background:var(--navy);color:#fff;border:0;padding:8px 11px}.ai-action-card .primary.smallbtn:hover{background:var(--navy2)}
+    .ai-action-card{border:1px solid #c9dddd;background:#f0f7f6;border-radius:13px;padding:10px;display:grid;gap:8px}.ai-action-card strong{font-size:12px}.ai-action-card button{justify-self:start}.ai-action-card .primary.smallbtn{background:var(--navy);color:#fff;border:0;padding:8px 11px}.ai-action-card .primary.smallbtn:hover{background:var(--navy2)}.ai-proposal-note{font-size:11px;color:var(--muted);font-weight:750;padding:3px 2px}
     .ai-thinking{display:flex;gap:5px;align-items:center;font-size:12px;color:var(--muted);padding:8px 2px}.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:aiPulse 1.1s infinite alternate}.ai-dot:nth-child(2){animation-delay:.18s}.ai-dot:nth-child(3){animation-delay:.36s}@keyframes aiPulse{to{opacity:.25;transform:translateY(-2px)}}
     .ai-compose{position:relative;z-index:2;border-top:1px solid var(--line);padding:11px;background:#fff;display:grid;gap:8px}.ai-compose-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}.ai-compose textarea{min-height:44px;max-height:130px;resize:vertical;padding:11px 12px}.ai-compose-note{font-size:10px;color:var(--muted);line-height:1.35}
     @media(max-width:700px){.ai-launcher{right:14px;bottom:calc(86px + env(safe-area-inset-bottom));padding:11px 14px}.ai-panel{inset:0;width:100%;height:100dvh;max-height:100dvh;border:0;border-radius:0;padding-bottom:env(safe-area-inset-bottom)}.ai-backdrop{display:none!important}.ai-messages{padding:14px 14px 28px;scroll-padding-bottom:36px}.ai-msg{max-width:92%}}
@@ -2044,7 +2044,8 @@
           const buttonLabel=rawLabel||fallbackLabel;
           return '<div class="ai-action-card"><strong>'+esc(proposalLabel)+'</strong><button class="primary smallbtn" style="background:var(--navy);color:#fff;border:0" type="button" data-ai-message-index="'+messageIndex+'" data-ai-action-index="'+actionIndex+'">'+esc(buttonLabel)+'</button></div>';
         }).join("");
-        return '<div class="ai-msg '+(m.role==="user"?"user":"assistant")+'"><div class="ai-bubble">'+esc(m.content)+'</div>'+actionHtml+'</div>';
+        const proposalNote=m.proposalSuperseded?'<div class="ai-proposal-note">Proposal updated below ↓</div>':"";
+        return '<div class="ai-msg '+(m.role==="user"?"user":"assistant")+'"><div class="ai-bubble">'+esc(m.content)+'</div>'+proposalNote+actionHtml+'</div>';
       }).join("");
       if(state.aiBusy){
         html+='<div class="ai-thinking"><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span><span>Open Brain is thinking…</span></div>';
@@ -2068,16 +2069,15 @@
       $("aiBackdrop").classList.add("hidden");
     }
 
-    function replaceLastAiProposal(actions){
-      const normalized=normalizeAiActionsForDisplay(actions);
-      if(!normalized.length)return false;
+    function retireLastAiProposal(){
       for(let i=state.aiMessages.length-1;i>=0;i--){
         const message=state.aiMessages[i];
         const existing=Array.isArray(message?.actions)?message.actions:(message?.action?[message.action]:[]);
         if(message?.role==="assistant"&&existing.length){
-          message.actions=normalized;
+          message.actions=[];
           message.action=null;
-          message.proposalUpdated=true;
+          message.proposalUpdated=false;
+          message.proposalSuperseded=true;
           return true;
         }
       }
@@ -2109,12 +2109,17 @@
         }});
         if(error)throw error;
         if(data?.error)throw new Error(data.error);
-        const responseActions=Array.isArray(data?.actions)?data.actions:(data?.action?[data.action]:[]);
-        const revised=data?.replace_previous_actions===true&&replaceLastAiProposal(responseActions);
+        const responseActions=normalizeAiActionsForDisplay(
+          Array.isArray(data?.actions)?data.actions:(data?.action?[data.action]:[])
+        );
+        const revised=data?.replace_previous_actions===true&&responseActions.length>0;
+        if(revised)retireLastAiProposal();
         state.aiMessages.push({
           role:"assistant",
           content:data?.answer||"I couldn't form an answer.",
-          actions:revised?[]:responseActions
+          actions:responseActions,
+          proposalUpdated:revised,
+          proposalSuperseded:false
         });
         saveAiChatSession();
       }catch(err){
@@ -4279,7 +4284,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=9-ai-mobile-scroll",
+          "/openbrain-oauth-ui/sw.js?v=10-ai-latest-review-card",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

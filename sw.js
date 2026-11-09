@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v12";
-const SW_VERSION = "v12-live-duplicate-check";
+const CACHE_NAME = "open-brain-pwa-v13";
+const SW_VERSION = "v13-family-shopping-default";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",

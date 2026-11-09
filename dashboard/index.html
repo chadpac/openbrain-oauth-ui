@@ -58,8 +58,11 @@
     .today-card h3{margin:0;font-size:18px}.today-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
     .today-list{display:grid;gap:8px}.today-task{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border-top:1px solid var(--line);padding:10px 0}.today-task:first-child{border-top:0}
     .today-task-title{font-weight:770}.today-task-meta{font-size:12px;color:var(--muted);margin-top:3px}.today-overdue{color:#a95d5d;font-weight:750}
-    .today-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.today-mini{background:#f8faf9;border:1px solid var(--line);border-radius:12px;padding:11px}
+    .today-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.today-mini{background:#f8faf9;border:1px solid var(--line);border-radius:12px;padding:11px;text-align:left;color:var(--ink);cursor:pointer;transition:transform .12s ease,background .12s ease,border-color .12s ease}
+    .today-mini:hover{background:#f0f7f6;border-color:#c9dddd;transform:translateY(-1px)}.today-mini:focus-visible{outline:3px solid rgba(70,149,151,.22);outline-offset:2px}
     .today-mini .n{font-size:22px;font-weight:850}.today-mini .l{font-size:11px;color:var(--muted);margin-top:1px}
+    .task-scope-banner{margin:12px 18px 0;padding:10px 12px;border:1px solid #cfe2e1;border-radius:12px;background:#f1f8f7;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:#365f61}
+    .task-scope-banner strong{color:var(--ink)}.task-scope-banner.hidden{display:none}
     .habit-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
     .habit-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
     .habit-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center;border:1px solid var(--line);border-radius:13px;padding:12px;background:#fafcfc}
@@ -292,9 +295,9 @@
           </div>
           <div id="todayLoadText" class="subtitle">Loading your day…</div>
           <div class="today-summary">
-            <div class="today-mini"><div id="todayTaskCount" class="n">—</div><div class="l">My tasks</div></div>
-            <div class="today-mini"><div id="todayEventCount" class="n">—</div><div class="l">Family events</div></div>
-            <div class="today-mini"><div id="todayOverdueCount" class="n">—</div><div class="l">Overdue</div></div>
+            <button class="today-mini" type="button" data-glance="tasks" aria-label="Show my tasks for today"><div id="todayTaskCount" class="n">—</div><div class="l">My tasks</div></button>
+            <button class="today-mini" type="button" data-glance="events" aria-label="Show today's family events"><div id="todayEventCount" class="n">—</div><div class="l">Family events</div></button>
+            <button class="today-mini" type="button" data-glance="overdue" aria-label="Show my overdue tasks"><div id="todayOverdueCount" class="n">—</div><div class="l">Overdue</div></button>
           </div>
         </div>
       </section>
@@ -439,8 +442,8 @@
       <section class="overview">
         <div class="overview-card">
           <div class="overview-head">
-            <div><div class="eyebrow">Family dashboard</div><h3>Upcoming events</h3></div>
-            <button id="newEvent" class="ghost">+ Event</button>
+            <div><div class="eyebrow">Family dashboard</div><h3 id="eventsHeading">Upcoming events</h3></div>
+            <div class="controls"><button id="clearEventScope" class="ghost hidden" type="button">Show upcoming</button><button id="newEvent" class="ghost">+ Event</button></div>
           </div>
           <div id="upcomingEvents" class="event-list"><div class="overview-empty">No upcoming family events yet.</div></div>
         </div>
@@ -530,6 +533,7 @@
           <div><h3>Family reminders</h3><div class="subtitle" id="timezoneNote"></div></div>
           <div class="controls"><button id="refresh" class="ghost">Refresh</button><button id="newTask" class="primary">+ New reminder</button></div>
         </div>
+        <div id="taskScopeBanner" class="task-scope-banner hidden"><span id="taskScopeText"></span><button id="clearTaskScope" class="ghost smallbtn" type="button">Clear view</button></div>
         <div class="filterbar">
           <div class="tabs">
             <button class="tab active" data-filter="active">Active</button>
@@ -1019,7 +1023,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"" };
     let deferredInstallPrompt=null;
 
     function isInstalledApp(){
@@ -2670,9 +2674,17 @@
 
     function renderOverview(){
       const eventBox=$("upcomingEvents");
-      const upcoming=state.events.filter(e=>new Date(e.starts_at)>=new Date(Date.now()-6*60*60*1000)).slice(0,4);
+      const now=new Date();
+      const todayKey=localDayKey(now);
+      const upcoming=state.eventScope==="today"
+        ? state.events.filter(e=>localDayKey(e.starts_at)===todayKey)
+        : state.events.filter(e=>new Date(e.starts_at)>=new Date(Date.now()-6*60*60*1000)).slice(0,4);
+      $("eventsHeading").textContent=state.eventScope==="today"?"Today’s events":"Upcoming events";
+      $("clearEventScope").classList.toggle("hidden",state.eventScope!=="today");
       if(!upcoming.length){
-        eventBox.innerHTML='<div class="overview-empty">No upcoming family events yet. Add appointments, school events, practices, trips, birthdays, or anything the whole family needs to see.</div>';
+        eventBox.innerHTML=state.eventScope==="today"
+          ? '<div class="overview-empty">There are no family events scheduled for today.</div>'
+          : '<div class="overview-empty">No upcoming family events yet. Add appointments, school events, practices, trips, birthdays, or anything the whole family needs to see.</div>';
       }else{
         eventBox.innerHTML=upcoming.map(e=>{
           const d=new Date(e.starts_at);
@@ -2866,6 +2878,37 @@
       }catch(err){toast(err?.message||"Unable to save goal.",true);}
     }
 
+    function activateTaskTab(){
+      document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.filter==="active"));
+      document.querySelectorAll(".mobile-nav-btn").forEach(x=>x.classList.remove("active"));
+      document.querySelector('[data-mobile-tab="tasks"]')?.classList.add("active");
+    }
+
+    function openGlanceTaskScope(scope){
+      state.taskScope=scope;
+      state.filter="active";
+      state.search="";
+      state.memberFilter=state.user.id;
+      $("search").value="";
+      $("memberFilter").value=state.user.id;
+      activateTaskTab();
+      renderTasks();
+      $("remindersPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    }
+
+    function clearTaskScope(){
+      state.taskScope="";
+      renderTasks();
+    }
+
+    function openGlanceEvents(){
+      state.eventScope="today";
+      renderOverview();
+      document.querySelectorAll(".mobile-nav-btn").forEach(x=>x.classList.remove("active"));
+      document.querySelector('[data-mobile-tab="home"]')?.classList.add("active");
+      $("upcomingEvents").closest(".overview-card")?.scrollIntoView({behavior:"smooth",block:"start"});
+    }
+
     function filteredTasks(){
       let rows=[...state.tasks];
       if(state.filter==="active") rows=rows.filter(t=>["pending","in_progress"].includes(t.status));
@@ -2876,6 +2919,18 @@
         rows=rows.filter(t=>(t.title||"").toLowerCase().includes(q)||(t.description||"").toLowerCase().includes(q)||(t.assigned_to||"").toLowerCase().includes(q));
       }
       if(state.memberFilter) rows=rows.filter(t=>t.assigned_to_user_id===state.memberFilter);
+      if(state.taskScope){
+        const now=new Date();
+        const todayKey=localDayKey(now);
+        if(state.taskScope==="today"){
+          rows=rows.filter(t=>{
+            const date=t.remind_at||t.due_at;
+            return date && localDayKey(date)===todayKey;
+          });
+        }else if(state.taskScope==="overdue"){
+          rows=rows.filter(t=>t.remind_at && new Date(t.remind_at)<now && localDayKey(t.remind_at)!==todayKey);
+        }
+      }
       rows.sort((a,b)=>{
         const ah=["completed","cancelled"].includes(a.status), bh=["completed","cancelled"].includes(b.status);
         if(ah!==bh) return ah?1:-1;
@@ -2894,6 +2949,17 @@
     }
 
     function renderTasks(){
+      const banner=$("taskScopeBanner");
+      const scopeText=$("taskScopeText");
+      if(state.taskScope==="today"){
+        scopeText.innerHTML="<strong>Today:</strong> showing your active tasks scheduled for today.";
+        banner.classList.remove("hidden");
+      }else if(state.taskScope==="overdue"){
+        scopeText.innerHTML="<strong>Overdue:</strong> showing your active overdue tasks.";
+        banner.classList.remove("hidden");
+      }else{
+        banner.classList.add("hidden");
+      }
       const rows=filteredTasks(), list=$("taskList");
       if(!rows.length){
         list.innerHTML='<div class="empty"><strong>No reminders here</strong>Try another filter or create a new reminder.</div>'; return;
@@ -3246,9 +3312,18 @@
     $("cancelEdit").addEventListener("click",()=>{state.pendingInboxProcess=null;$("editor").close();});
     $("taskForm").addEventListener("submit",saveTask);
     $("taskRepeat").addEventListener("change",()=>$("customRepeatWrap").classList.toggle("hidden",$("taskRepeat").value!=="__custom"));
-    $("search").addEventListener("input",e=>{state.search=e.target.value.trim();renderTasks();});
-    $("memberFilter").addEventListener("change",e=>{state.memberFilter=e.target.value;renderTasks();});
+    document.querySelectorAll("[data-glance]").forEach(btn=>btn.addEventListener("click",()=>{
+      const kind=btn.dataset.glance;
+      if(kind==="tasks")openGlanceTaskScope("today");
+      else if(kind==="overdue")openGlanceTaskScope("overdue");
+      else if(kind==="events")openGlanceEvents();
+    }));
+    $("clearTaskScope").addEventListener("click",clearTaskScope);
+    $("clearEventScope").addEventListener("click",()=>{state.eventScope="";renderOverview();});
+    $("search").addEventListener("input",e=>{state.taskScope="";state.search=e.target.value.trim();renderTasks();});
+    $("memberFilter").addEventListener("change",e=>{state.taskScope="";state.memberFilter=e.target.value;renderTasks();});
     document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{
+      state.taskScope="";
       document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active");state.filter=btn.dataset.filter;renderTasks();
     }));
     $("upcomingEvents").addEventListener("click",(e)=>{

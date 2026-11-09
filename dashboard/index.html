@@ -1128,24 +1128,7 @@
       };
     }
 
-    async function ensureMicrophoneReady(){
-      const status=currentSpeechStatus();
-      if(!navigator.mediaDevices?.getUserMedia)return true;
-      try{
-        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-        stream.getTracks().forEach(track=>track.stop());
-        return true;
-      }catch(err){
-        if(status){
-          status.textContent=(err?.name==="NotAllowedError")
-            ?"Microphone permission was blocked. Allow microphone access for this site and try again."
-            :"I couldn't access the microphone. Check your browser microphone settings and try again.";
-        }
-        return false;
-      }
-    }
-
-    async function toggleSpeechRecognition(targetId="quickCapture",buttonId="voiceCapture",statusId="voiceStatus"){
+    function toggleSpeechRecognition(targetId="quickCapture",buttonId="voiceCapture",statusId="voiceStatus"){
       if(!speechRecognition)return;
       try{
         if(speechListening){
@@ -1155,8 +1138,6 @@
           speechButtonId=buttonId;
           speechStatusId=statusId;
           const status=currentSpeechStatus();
-          if(status) status.textContent="Checking microphone…";
-          if(!(await ensureMicrophoneReady()))return;
           if(status) status.textContent="";
           speechRecognition.start();
         }

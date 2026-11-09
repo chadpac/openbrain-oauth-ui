@@ -784,7 +784,7 @@
       <div class="modalbody">
         <div class="subtitle">Paste or type one item per line. Open Brain will add them all to the active list.</div>
         <textarea id="bulkListItemsText" required style="min-height:220px" placeholder="Milk&#10;Eggs&#10;Bread&#10;Bananas"></textarea>
-        <div class="helper">Up to 50 items at a time. Blank lines are ignored.</div>
+        <div class="helper">Up to 50 items at a time. Quantities are recognized automatically: “2 cans black beans”, “3 lb chicken”, “1 dozen eggs”, “2x milk”. Blank lines are ignored.</div>
       </div>
       <div class="modalfoot">
         <button id="cancelBulkListItems" class="ghost" type="button">Cancel</button>
@@ -2229,6 +2229,38 @@
       await loadData();renderAll();toast(archivedAt?"List archived.":"List restored.");
     }
 
+    function parseShoppingLine(value){
+      const raw=String(value||"").trim();
+      if(!raw)return{content:"",quantity:null};
+
+      // "2x milk" / "2 x milk"
+      let m=raw.match(/^(\d+(?:\.\d+)?|\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞])\s*[x×]\s+(.+)$/i);
+      if(m)return{quantity:m[1],content:m[2].trim()};
+
+      // Numeric/fraction quantity plus a common grocery unit.
+      const units=[
+        "dozen","doz",
+        "pounds?","lbs?","ounces?","oz",
+        "grams?","g","kilograms?","kg",
+        "gallons?","gal","quarts?","qt","pints?","pt",
+        "liters?","litres?","l","milliliters?","millilitres?","ml",
+        "cups?","c","tablespoons?","tbsp","teaspoons?","tsp",
+        "cans?","jars?","bottles?","boxes?","bags?","packs?","packages?","pkg",
+        "bunches?","heads?","loaves?","slices?","sticks?","cloves?",
+        "pieces?","pcs?","count","ct"
+      ].join("|");
+      const qtyToken="(\\d+(?:\\.\\d+)?|\\d+\\/\\d+|[¼½¾⅓⅔⅛⅜⅝⅞])";
+      const unitRe=new RegExp("^"+qtyToken+"\\s+("+units+")\\.?\\s+(?:of\\s+)?(.+)$","i");
+      m=raw.match(unitRe);
+      if(m)return{quantity:(m[1]+" "+m[2]).trim(),content:m[3].trim()};
+
+      // Plain count, e.g. "2 bananas". Require whitespace so brands such as 7UP are untouched.
+      m=raw.match(/^(\d+(?:\.\d+)?|\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞])\s+([^%].*)$/);
+      if(m)return{quantity:m[1],content:m[2].trim()};
+
+      return{content:raw,quantity:null};
+    }
+
     function openBulkListItems(){
       const list=activeList();if(!list||list.archived_at)return;
       $("bulkListItemsText").value="";
@@ -2251,17 +2283,20 @@
       button.disabled=true;
       button.textContent="Adding…";
       try{
-        const rows=lines.map(content=>({
-          household_id:state.member.household_id,
-          owner_user_id:state.user.id,
-          list_id:list.id,
-          list_name:list.name,
-          content,
-          quantity:null,
-          notes:null,
-          visibility:list.visibility,
-          completed:false
-        }));
+        const rows=lines.map(line=>{
+          const parsed=parseShoppingLine(line);
+          return{
+            household_id:state.member.household_id,
+            owner_user_id:state.user.id,
+            list_id:list.id,
+            list_name:list.name,
+            content:parsed.content,
+            quantity:parsed.quantity,
+            notes:null,
+            visibility:list.visibility,
+            completed:false
+          };
+        });
         const {data,error}=await sb.from("list_items").insert(rows).select("*");
         if(error)throw error;
         state.listItems.push(...(data||[]));
@@ -2329,8 +2364,11 @@
     }
 
     async function quickAddListItem(){
-      const content=$("listQuickItem").value.trim();if(!content)return;
-      const qty=$("listQuickQty").value.trim();
+      const rawContent=$("listQuickItem").value.trim();if(!rawContent)return;
+      const typedQty=$("listQuickQty").value.trim();
+      const parsed=typedQty?{content:rawContent,quantity:typedQty}:parseShoppingLine(rawContent);
+      const content=parsed.content;
+      const qty=parsed.quantity||"";
       $("listQuickItem").value="";$("listQuickQty").value="";
       try{
         const item=await createListItem(content,qty,"");
@@ -2339,7 +2377,7 @@
         renderFamilyActivity();
         $("listQuickItem").focus();
       }catch(err){
-        $("listQuickItem").value=content;$("listQuickQty").value=qty;
+        $("listQuickItem").value=rawContent;$("listQuickQty").value=typedQty;
         toast(err?.message||"Unable to add item.",true);
       }
     }

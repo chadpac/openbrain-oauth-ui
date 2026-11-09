@@ -1,3 +1,20 @@
 # Public OAuth callback; every POST validates its bearer token with auth.getUser.
 [functions.google-calendar-oauth]
 verify_jwt = false
+
+# Scheduler Bearer tokens are validated server-side against Supabase Vault.
+[functions.send-telegram-reminders]
+verify_jwt = false
+[functions.send-event-notifications]
+verify_jwt = false
+[functions.send-habit-reminders]
+verify_jwt = false
+[functions.send-health-checkin-reminders]
+verify_jwt = false
+# Capability tokens / Telegram webhook secret are validated inside each function.
+[functions.push-notification-action]
+verify_jwt = false
+[functions.telegram-reminder-actions]
+verify_jwt = false
+[functions.web-push]
+verify_jwt = true

@@ -49,6 +49,16 @@
     .today-task-title{font-weight:770}.today-task-meta{font-size:12px;color:var(--muted);margin-top:3px}.today-overdue{color:#a95d5d;font-weight:750}
     .today-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.today-mini{background:#f8faf9;border:1px solid var(--line);border-radius:12px;padding:11px}
     .today-mini .n{font-size:22px;font-weight:850}.today-mini .l{font-size:11px;color:var(--muted);margin-top:1px}
+    .habit-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
+    .habit-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    .habit-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center;border:1px solid var(--line);border-radius:13px;padding:12px;background:#fafcfc}
+    .habit-check{width:28px;height:28px;border-radius:50%;border:2px solid var(--navy);background:#fff;color:#fff;font-weight:900;display:grid;place-items:center;padding:0}
+    .habit-check.done{background:var(--navy)}.habit-check:hover{transform:scale(1.03)}
+    .habit-name{font-weight:780}.habit-meta{font-size:12px;color:var(--muted);margin-top:3px}
+    .habit-progress{font-size:12px;font-weight:800;color:#3f7779;margin-top:4px}.habit-paused{font-size:12px;font-weight:750;color:#a66b49}
+    .day-grid{display:flex;gap:6px;flex-wrap:wrap}.day-choice{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:9px;padding:7px 8px;background:#fff;font-size:12px}
+    .day-choice input{width:auto;margin:0}.habit-empty{color:var(--muted);font-size:13px;padding:8px 0}
+    @media(max-width:760px){.habit-list{grid-template-columns:1fr}}
     .week-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
     .week-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:18px}.week-priorities{display:grid;gap:8px;margin-top:10px}
     .week-priority{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fafcfc}
@@ -202,6 +212,18 @@
         </div>
       </section>
 
+      <section id="habitPanel" class="habit-card">
+        <div class="overview-head">
+          <div>
+            <div class="eyebrow">Habits & routines</div>
+            <h3>Today’s habits</h3>
+            <div class="subtitle">Small actions that support your goals. Progress is based on scheduled days, not perfect streaks.</div>
+          </div>
+          <button id="newHabit" class="ghost">+ Habit</button>
+        </div>
+        <div id="todayHabits" class="habit-list"><div class="habit-empty">No habits scheduled for today yet.</div></div>
+      </section>
+
       <section class="week-card">
         <div class="overview-head">
           <div>
@@ -351,6 +373,58 @@
     </form>
   </dialog>
 
+  <dialog id="habitEditor">
+    <form id="habitForm">
+      <div class="modalhead"><h3 id="habitEditorTitle">New habit</h3><button id="closeHabitEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="habitId" type="hidden" />
+        <div><label for="habitTitle">Habit</label><input id="habitTitle" required maxlength="180" placeholder="e.g. Walk 30 minutes" /></div>
+        <div><label for="habitDescription">Why / details (optional)</label><textarea id="habitDescription" placeholder="A short cue or reason can make the habit easier to follow."></textarea></div>
+        <div>
+          <label>Scheduled days</label>
+          <div id="habitDays" class="day-grid">
+            <label class="day-choice"><input type="checkbox" value="1"> Mon</label>
+            <label class="day-choice"><input type="checkbox" value="2"> Tue</label>
+            <label class="day-choice"><input type="checkbox" value="3"> Wed</label>
+            <label class="day-choice"><input type="checkbox" value="4"> Thu</label>
+            <label class="day-choice"><input type="checkbox" value="5"> Fri</label>
+            <label class="day-choice"><input type="checkbox" value="6"> Sat</label>
+            <label class="day-choice"><input type="checkbox" value="0"> Sun</label>
+          </div>
+        </div>
+        <div class="grid2">
+          <div>
+            <label for="habitGoal">Supports goal (optional)</label>
+            <select id="habitGoal"><option value="">No linked goal</option></select>
+          </div>
+          <div>
+            <label for="habitStatus">Status</label>
+            <select id="habitStatus">
+              <option value="active">Active</option>
+              <option value="paused">Paused indefinitely</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="habitPausedUntil">Vacation / pause through (optional)</label>
+          <input id="habitPausedUntil" type="date" />
+          <div class="helper">Leave the status Active and set a date here to automatically resume after that date.</div>
+        </div>
+        <div class="notify-box">
+          <h4>🔔 Habit reminder</h4>
+          <div class="helper">Optional. Sent to your connected Telegram account on scheduled days if you have not already completed the habit.</div>
+          <label class="notify-choice" style="width:max-content"><input id="habitReminderEnabled" type="checkbox"> Send me a reminder</label>
+          <div id="habitReminderTimeWrap" class="notify-section hidden">
+            <label for="habitReminderTime">Reminder time</label>
+            <input id="habitReminderTime" type="time" />
+          </div>
+        </div>
+      </div>
+      <div class="modalfoot"><button id="cancelHabitEdit" class="ghost" type="button">Cancel</button><button class="primary" type="submit">Save habit</button></div>
+    </form>
+  </dialog>
+
   <dialog id="weekEditor">
     <form id="weekForm">
       <div class="modalhead"><h3>Weekly plan & review</h3><button id="closeWeekEditor" class="ghost" type="button">Close</button></div>
@@ -438,7 +512,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -538,13 +612,15 @@
     }
 
     async function loadData(){
-      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, weeksRes, inboxRes]=await Promise.all([
+      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, habitsRes, habitCompletionsRes, weeksRes, inboxRes]=await Promise.all([
         sb.from("household_members").select("user_id,household_id,display_name,role,telegram_enabled").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
         sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
         sb.from("family_events").select("*").eq("household_id",state.member.household_id).gte("starts_at",new Date(Date.now()-86400000).toISOString()).order("starts_at",{ascending:true}).limit(12),
         sb.from("event_notifications").select("id,event_id,recipient_user_id,timing_key,status,notify_at").eq("household_id",state.member.household_id),
         sb.from("family_goals").select("*").eq("household_id",state.member.household_id).eq("status","active").order("updated_at",{ascending:false}),
+        sb.from("habits").select("*").eq("owner_user_id",state.user.id).neq("status","archived").order("created_at",{ascending:true}),
+        sb.from("habit_completions").select("id,habit_id,completed_on,created_at").eq("owner_user_id",state.user.id).gte("completed_on",new Date(Date.now()-21*86400000).toISOString().slice(0,10)),
         sb.from("weekly_plans").select("*").eq("owner_user_id",state.user.id).order("week_start",{ascending:false}).limit(12),
         sb.from("inbox_items").select("*").eq("owner_user_id",state.user.id).eq("status","unprocessed").order("created_at",{ascending:false}).limit(50)
       ]);
@@ -554,9 +630,11 @@
       if(eventsRes.error) throw eventsRes.error;
       if(eventNotificationsRes.error) throw eventNotificationsRes.error;
       if(goalsRes.error) throw goalsRes.error;
+      if(habitsRes.error) throw habitsRes.error;
+      if(habitCompletionsRes.error) throw habitCompletionsRes.error;
       if(weeksRes.error) throw weeksRes.error;
       if(inboxRes.error) throw inboxRes.error;
-      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
       if(!state.memberFilter) state.memberFilter=state.member.user_id;
       populateMembers();
     }
@@ -580,6 +658,7 @@
       $("statPaused").textContent=state.tasks.filter(t=>t.status==="paused").length;
       $("statFamily").textContent=state.members.length;
       renderToday();
+      renderHabits();
       renderWeek();
       renderInbox();
       renderOverview();
@@ -712,6 +791,156 @@
 
     function clearQuick(){
       $("quickCapture").value="";
+    }
+
+    function householdDateKey(date=new Date()){
+      const timezone=state.household?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const parts=new Intl.DateTimeFormat("en-CA",{timeZone:timezone,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(date);
+      const get=t=>parts.find(p=>p.type===t)?.value||"";
+      return get("year")+"-"+get("month")+"-"+get("day");
+    }
+
+    function householdWeekday(date=new Date()){
+      const timezone=state.household?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const name=new Intl.DateTimeFormat("en-US",{timeZone:timezone,weekday:"short"}).format(date).slice(0,3).toLowerCase();
+      return ({sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6})[name];
+    }
+
+    function habitIsPaused(habit,todayKey=householdDateKey()){
+      if(habit.status==="paused") return true;
+      return !!habit.paused_until && todayKey<=habit.paused_until;
+    }
+
+    function habitCompletion(habitId,dateKey){
+      return state.habitCompletions.find(c=>c.habit_id===habitId && c.completed_on===dateKey)||null;
+    }
+
+    function habitWeeklyProgress(habit){
+      const today=new Date();
+      const start=startOfWeek(today);
+      let scheduled=0,completed=0;
+      for(let i=0;i<7;i++){
+        const d=new Date(start); d.setDate(start.getDate()+i); d.setHours(12,0,0,0);
+        if(d>today) break;
+        const key=householdDateKey(d);
+        const weekday=householdWeekday(d);
+        if((habit.weekdays||[]).includes(weekday)){
+          scheduled++;
+          if(habitCompletion(habit.id,key)) completed++;
+        }
+      }
+      return {scheduled,completed};
+    }
+
+    function populateHabitGoals(selected=""){
+      const select=$("habitGoal");
+      select.innerHTML='<option value="">No linked goal</option>';
+      for(const goal of state.goals){
+        const option=document.createElement("option");
+        option.value=goal.id; option.textContent=goal.title; select.appendChild(option);
+      }
+      select.value=selected||"";
+    }
+
+    function renderHabits(){
+      const todayKey=householdDateKey(), weekday=householdWeekday();
+      const scheduled=state.habits.filter(h=>(h.weekdays||[]).includes(weekday));
+      const box=$("todayHabits");
+      if(!scheduled.length){
+        box.innerHTML='<div class="habit-empty">No habits are scheduled for today. Use + Habit to add a routine.</div>';
+        return;
+      }
+
+      box.innerHTML=scheduled.map(h=>{
+        const done=!!habitCompletion(h.id,todayKey);
+        const paused=habitIsPaused(h,todayKey);
+        const progress=habitWeeklyProgress(h);
+        const goal=state.goals.find(g=>g.id===h.goal_id);
+        let meta=progress.completed+" of "+progress.scheduled+" scheduled days completed this week";
+        if(goal) meta+=" · Goal: "+goal.title;
+        if(h.reminder_enabled&&h.reminder_time) meta+=" · 🔔 "+String(h.reminder_time).slice(0,5);
+        const pauseText=h.status==="paused"?"Paused":(h.paused_until&&todayKey<=h.paused_until?"Paused through "+h.paused_until:"");
+        return '<div class="habit-row">'+
+          '<button class="habit-check '+(done?"done":"")+'" data-habit-toggle="'+h.id+'" '+(paused?"disabled":"")+'>'+(done?"✓":"")+'</button>'+
+          '<div><div class="habit-name">'+esc(h.title)+'</div><div class="habit-meta">'+esc(meta)+'</div>'+(pauseText?'<div class="habit-paused">'+esc(pauseText)+'</div>':'')+'</div>'+
+          '<button class="smallbtn" data-habit-edit="'+h.id+'">Edit</button>'+
+        '</div>';
+      }).join("");
+    }
+
+    function openHabitEditor(habit=null){
+      $("habitForm").reset();
+      $("habitId").value=habit?.id||"";
+      $("habitEditorTitle").textContent=habit?"Edit habit":"New habit";
+      $("habitTitle").value=habit?.title||"";
+      $("habitDescription").value=habit?.description||"";
+      $("habitStatus").value=habit?.status||"active";
+      $("habitPausedUntil").value=habit?.paused_until||"";
+      $("habitReminderEnabled").checked=!!habit?.reminder_enabled;
+      $("habitReminderTime").value=habit?.reminder_time?String(habit.reminder_time).slice(0,5):"";
+      $("habitReminderTimeWrap").classList.toggle("hidden",!$("habitReminderEnabled").checked);
+      const days=new Set(habit?.weekdays||[0,1,2,3,4,5,6]);
+      $("habitDays").querySelectorAll('input[type="checkbox"]').forEach(input=>input.checked=days.has(Number(input.value)));
+      populateHabitGoals(habit?.goal_id||"");
+      $("habitEditor").showModal();
+    }
+
+    async function saveHabit(e){
+      e.preventDefault();
+      try{
+        const id=$("habitId").value;
+        const weekdays=[...$("habitDays").querySelectorAll('input[type="checkbox"]:checked')].map(x=>Number(x.value));
+        if(!weekdays.length) throw new Error("Choose at least one scheduled day.");
+        const reminderEnabled=$("habitReminderEnabled").checked;
+        const reminderTime=$("habitReminderTime").value||null;
+        if(reminderEnabled&&!reminderTime) throw new Error("Choose a reminder time.");
+
+        const payload={
+          title:$("habitTitle").value.trim(),
+          description:$("habitDescription").value.trim()||null,
+          weekdays,
+          reminder_enabled:reminderEnabled,
+          reminder_time:reminderEnabled?reminderTime:null,
+          goal_id:$("habitGoal").value||null,
+          status:$("habitStatus").value,
+          paused_until:$("habitPausedUntil").value||null,
+          updated_at:new Date().toISOString()
+        };
+        if(!payload.title) throw new Error("Give the habit a name.");
+
+        if(id){
+          const {error}=await sb.from("habits").update(payload).eq("id",id); if(error) throw error;
+          toast("Habit updated.");
+        }else{
+          Object.assign(payload,{household_id:state.member.household_id,owner_user_id:state.user.id});
+          const {error}=await sb.from("habits").insert(payload); if(error) throw error;
+          toast("Habit added.");
+        }
+        $("habitEditor").close();
+        await loadData(); renderAll();
+      }catch(err){toast(err?.message||"Unable to save habit.",true);}
+    }
+
+    async function toggleHabit(habitId){
+      const todayKey=householdDateKey();
+      const habit=state.habits.find(h=>h.id===habitId); if(!habit)return;
+      if(habitIsPaused(habit,todayKey)){toast("This habit is paused.",true);return;}
+      const existing=habitCompletion(habitId,todayKey);
+      if(existing){
+        const {error}=await sb.from("habit_completions").delete().eq("id",existing.id);
+        if(error){toast(error.message,true);return;}
+        toast("Habit unchecked.");
+      }else{
+        const {error}=await sb.from("habit_completions").insert({
+          habit_id:habitId,
+          household_id:state.member.household_id,
+          owner_user_id:state.user.id,
+          completed_on:todayKey
+        });
+        if(error){toast(error.message,true);return;}
+        toast("Nice — habit completed.");
+      }
+      await loadData(); renderAll();
     }
 
     function startOfWeek(date=new Date()){
@@ -1330,6 +1559,18 @@
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
+    $("newHabit").addEventListener("click",()=>openHabitEditor());
+    $("closeHabitEditor").addEventListener("click",()=>$("habitEditor").close());
+    $("cancelHabitEdit").addEventListener("click",()=>$("habitEditor").close());
+    $("habitForm").addEventListener("submit",saveHabit);
+    $("habitReminderEnabled").addEventListener("change",()=>$("habitReminderTimeWrap").classList.toggle("hidden",!$("habitReminderEnabled").checked));
+    $("todayHabits").addEventListener("click",async(e)=>{
+      const toggle=e.target.closest("[data-habit-toggle]");
+      if(toggle){await toggleHabit(toggle.dataset.habitToggle);return;}
+      const edit=e.target.closest("[data-habit-edit]");
+      if(edit){const habit=state.habits.find(h=>h.id===edit.dataset.habitEdit);if(habit)openHabitEditor(habit);}
+    });
+
     $("planWeek").addEventListener("click",openWeekEditor);
     $("closeWeekEditor").addEventListener("click",()=>$("weekEditor").close());
     $("cancelWeekEdit").addEventListener("click",()=>$("weekEditor").close());

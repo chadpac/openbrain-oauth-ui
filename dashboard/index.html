@@ -128,6 +128,10 @@
     .ai-thinking{display:flex;gap:5px;align-items:center;font-size:12px;color:var(--muted);padding:8px 2px}.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:aiPulse 1.1s infinite alternate}.ai-dot:nth-child(2){animation-delay:.18s}.ai-dot:nth-child(3){animation-delay:.36s}@keyframes aiPulse{to{opacity:.25;transform:translateY(-2px)}}
     .ai-compose{position:relative;z-index:2;border-top:1px solid var(--line);padding:11px;background:#fff;display:grid;gap:8px}.ai-compose-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}.ai-compose textarea{min-height:44px;max-height:130px;resize:vertical;padding:11px 12px}.ai-compose-note{font-size:10px;color:var(--muted);line-height:1.35}
     @media(max-width:700px){.ai-launcher{right:14px;bottom:calc(86px + env(safe-area-inset-bottom));padding:11px 14px}.ai-panel{inset:0;width:100%;height:100dvh;max-height:100dvh;border:0;border-radius:0;padding-bottom:env(safe-area-inset-bottom)}.ai-backdrop{display:none!important}.ai-messages{padding:14px 14px 28px;scroll-padding-bottom:36px}.ai-msg{max-width:92%}}
+    .health-checkin-card{margin:16px 20px 2px;border:1px solid #cfe2e1;border-radius:16px;background:linear-gradient(145deg,#f5fbfa,#fff);padding:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}
+    .health-checkin-kicker{font-size:11px;font-weight:850;letter-spacing:.06em;text-transform:uppercase;color:#3f7779}.health-checkin-title{font-size:18px;font-weight:880;margin-top:3px}.health-checkin-meta{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45}.health-checkin-status{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:6px 9px;border-radius:999px;background:#eaf5f2;color:#356c67;font-size:11px;font-weight:850}.health-checkin-status.pending{background:var(--peach-soft);color:#7a5744}
+    .checkin-question{border:1px solid var(--line);border-radius:13px;padding:13px;background:#fafcfc;display:grid;gap:9px}.checkin-question legend,.checkin-question-title{font-weight:820;font-size:13px}.checkin-question small{color:var(--muted);line-height:1.4}.checkin-choice-row{display:flex;gap:7px;flex-wrap:wrap}.checkin-choice{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:750;cursor:pointer}.checkin-choice input{width:auto;margin:0}.checkin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.checkin-form-body{display:grid;gap:10px}.checkin-number-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center}.checkin-target{font-size:12px;color:var(--muted);white-space:nowrap}
+    @media(max-width:700px){.health-checkin-card{margin:12px 12px 2px;grid-template-columns:1fr}.health-checkin-card .primary{width:100%}.checkin-grid{grid-template-columns:1fr}.checkin-choice{flex:1 1 auto;justify-content:center}}
     .health-panel{margin-bottom:18px}.health-private{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;background:var(--peach-soft);color:#7f5a47;font-size:12px;font-weight:800}
     .health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px 20px}.health-card{border:1px solid var(--line);border-radius:15px;background:#fff;padding:15px;display:grid;gap:10px}
     .health-card.inactive{opacity:.6;background:#fafafa}.health-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.health-title{font-weight:820}.health-cat{font-size:11px;color:var(--muted);text-transform:capitalize;margin-top:3px}
@@ -502,6 +506,15 @@
             <button id="newHealthTracker" class="primary">+ Tracker</button>
           </div>
         </div>
+        <div id="healthCheckinCard" class="health-checkin-card">
+          <div>
+            <div class="health-checkin-kicker">Daily private check-in</div>
+            <div class="health-checkin-title">🌿 Evening Health &amp; Wellbeing Check-in</div>
+            <div id="healthCheckinMeta" class="health-checkin-meta">A quick look at nutrition, hydration, activity, sleep, hunger, energy, mood, and what helped today.</div>
+            <div id="healthCheckinStatus" class="health-checkin-status pending">Not completed today</div>
+          </div>
+          <button id="openHealthCheckin" class="primary" type="button">Start check-in</button>
+        </div>
         <div id="healthGrid" class="health-grid"><div class="list-empty">No health trackers yet.</div></div>
         <div class="panelhead" style="border-top:1px solid var(--line)">
           <div><h3 style="font-size:16px">Recent entries</h3><div class="subtitle">Your latest private logs across all trackers.</div></div>
@@ -716,6 +729,86 @@
         </div>
       </div>
       <div class="modalfoot"><button id="cancelEdit" class="ghost" type="button">Cancel</button><button id="saveTask" class="primary" type="submit">Save reminder</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="healthCheckinDialog">
+    <form id="healthCheckinForm">
+      <div class="modalhead"><h3 id="healthCheckinDialogTitle">Evening Health &amp; Wellbeing Check-in</h3><button id="closeHealthCheckin" class="ghost" type="button">Close</button></div>
+      <div class="modalbody checkin-form-body">
+        <div class="subtitle">This is private to you. Aim for useful information, not a perfect day.</div>
+
+        <fieldset class="checkin-question">
+          <legend>1. Followed planned meals?</legend>
+          <div class="checkin-choice-row">
+            <label class="checkin-choice"><input type="radio" name="checkin_planned_meals" value="yes"> Yes</label>
+            <label class="checkin-choice"><input type="radio" name="checkin_planned_meals" value="mostly"> Mostly</label>
+            <label class="checkin-choice"><input type="radio" name="checkin_planned_meals" value="no"> No</label>
+          </div>
+        </fieldset>
+
+        <fieldset class="checkin-question">
+          <legend>2. Vegetables and fiber?</legend>
+          <div class="checkin-choice-row">
+            <label class="checkin-choice"><input type="radio" name="checkin_vegetables_fiber" value="yes"> Yes</label>
+            <label class="checkin-choice"><input type="radio" name="checkin_vegetables_fiber" value="partly"> Partly</label>
+            <label class="checkin-choice"><input type="radio" name="checkin_vegetables_fiber" value="no"> No</label>
+          </div>
+        </fieldset>
+
+        <fieldset class="checkin-question">
+          <legend>3. Protein adequate for your approved target?</legend>
+          <div class="checkin-choice-row">
+            <label class="checkin-choice"><input type="radio" name="checkin_protein_target" value="yes"> Yes</label>
+            <label class="checkin-choice"><input type="radio" name="checkin_protein_target" value="no"> No</label>
+            <label class="checkin-choice"><input type="radio" name="checkin_protein_target" value="unsure"> Unsure</label>
+          </div>
+        </fieldset>
+
+        <div class="checkin-grid">
+          <div class="checkin-question">
+            <div class="checkin-question-title">4. Water</div>
+            <div class="checkin-number-row"><input id="checkinWater" type="number" inputmode="decimal" min="0" max="300" step="1" placeholder="oz"><span id="checkinWaterTarget" class="checkin-target">of 80 oz</span></div>
+          </div>
+          <div class="checkin-question">
+            <div class="checkin-question-title">5. Walk or workout?</div>
+            <label class="notify-choice" style="width:max-content"><input id="checkinWorkout" type="checkbox"> Yes</label>
+            <input id="checkinWorkoutDetails" maxlength="180" placeholder="Optional: walk 30 min, pickleball, strength…" />
+          </div>
+        </div>
+
+        <div class="checkin-grid">
+          <fieldset class="checkin-question">
+            <legend>6. Hunger</legend>
+            <div class="checkin-choice-row">
+              <label class="checkin-choice"><input type="radio" name="checkin_hunger" value="1">1</label><label class="checkin-choice"><input type="radio" name="checkin_hunger" value="2">2</label><label class="checkin-choice"><input type="radio" name="checkin_hunger" value="3">3</label><label class="checkin-choice"><input type="radio" name="checkin_hunger" value="4">4</label><label class="checkin-choice"><input type="radio" name="checkin_hunger" value="5">5</label>
+            </div><small>1 = very low · 5 = very high</small>
+          </fieldset>
+          <fieldset class="checkin-question">
+            <legend>7. Energy</legend>
+            <div class="checkin-choice-row">
+              <label class="checkin-choice"><input type="radio" name="checkin_energy" value="1">1</label><label class="checkin-choice"><input type="radio" name="checkin_energy" value="2">2</label><label class="checkin-choice"><input type="radio" name="checkin_energy" value="3">3</label><label class="checkin-choice"><input type="radio" name="checkin_energy" value="4">4</label><label class="checkin-choice"><input type="radio" name="checkin_energy" value="5">5</label>
+            </div><small>1 = very low · 5 = very high</small>
+          </fieldset>
+        </div>
+
+        <div class="checkin-grid">
+          <fieldset class="checkin-question">
+            <legend>8. Mood</legend>
+            <div class="checkin-choice-row">
+              <label class="checkin-choice"><input type="radio" name="checkin_mood" value="1">1</label><label class="checkin-choice"><input type="radio" name="checkin_mood" value="2">2</label><label class="checkin-choice"><input type="radio" name="checkin_mood" value="3">3</label><label class="checkin-choice"><input type="radio" name="checkin_mood" value="4">4</label><label class="checkin-choice"><input type="radio" name="checkin_mood" value="5">5</label>
+            </div><small>1 = very low · 5 = very good</small>
+          </fieldset>
+          <div class="checkin-question">
+            <div class="checkin-question-title">9. Sleep last night</div>
+            <div class="checkin-number-row"><input id="checkinSleep" type="number" inputmode="decimal" min="0" max="24" step="0.25" placeholder="hours"><span class="checkin-target">hours</span></div>
+          </div>
+        </div>
+
+        <div class="checkin-question"><div class="checkin-question-title">10. Biggest win today</div><textarea id="checkinWin" maxlength="1000" placeholder="What went well?"></textarea></div>
+        <div class="checkin-question"><div class="checkin-question-title">11. One obstacle</div><textarea id="checkinObstacle" maxlength="1000" placeholder="What made today harder?"></textarea></div>
+      </div>
+      <div class="modalfoot"><button id="cancelHealthCheckin" class="ghost" type="button">Cancel</button><button id="saveHealthCheckin" class="primary" type="submit">Save check-in</button></div>
     </form>
   </dialog>
 
@@ -1154,7 +1247,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], healthCheckins:[], healthCheckinPrefs:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
     let deferredInstallPrompt=null;
     let listRealtimeChannel=null;
     let listRealtimeTimer=null;
@@ -1560,11 +1653,12 @@
       renderAiBriefs();
       startListRealtime();
       openTaskDeepLink();
+      openHealthCheckinDeepLink();
       initializeAiBriefs().catch(err=>console.warn("AI brief initialization failed:",err));
     }
 
     async function loadData(){
-      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, habitsRes, habitCompletionsRes, memoriesRes, listsRes, listItemsRes, healthTrackersRes, healthEntriesRes, weeksRes, inboxRes]=await Promise.all([
+      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, habitsRes, habitCompletionsRes, memoriesRes, listsRes, listItemsRes, healthTrackersRes, healthEntriesRes, healthCheckinsRes, healthCheckinPrefsRes, weeksRes, inboxRes]=await Promise.all([
         sb.from("household_members").select("user_id,household_id,display_name,role,telegram_enabled,joined_at").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
         sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
@@ -1578,6 +1672,8 @@
         sb.from("list_items").select("*").eq("household_id",state.member.household_id).order("created_at",{ascending:true}).limit(750),
         sb.from("health_trackers").select("*").eq("owner_user_id",state.user.id).order("created_at",{ascending:true}),
         sb.from("health_entries").select("*").eq("owner_user_id",state.user.id).order("logged_at",{ascending:false}).limit(1000),
+        sb.from("health_checkins").select("*").eq("owner_user_id",state.user.id).gte("checkin_date",new Date(Date.now()-45*86400000).toISOString().slice(0,10)).order("checkin_date",{ascending:false}),
+        sb.from("health_checkin_preferences").select("*").eq("owner_user_id",state.user.id).maybeSingle(),
         sb.from("weekly_plans").select("*").eq("owner_user_id",state.user.id).order("week_start",{ascending:false}).limit(12),
         sb.from("inbox_items").select("*").eq("owner_user_id",state.user.id).eq("status","unprocessed").order("created_at",{ascending:false}).limit(50)
       ]);
@@ -1594,9 +1690,11 @@
       if(listItemsRes.error) throw listItemsRes.error;
       if(healthTrackersRes.error) throw healthTrackersRes.error;
       if(healthEntriesRes.error) throw healthEntriesRes.error;
+      if(healthCheckinsRes.error) throw healthCheckinsRes.error;
+      if(healthCheckinPrefsRes.error) throw healthCheckinPrefsRes.error;
       if(weeksRes.error) throw weeksRes.error;
       if(inboxRes.error) throw inboxRes.error;
-      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.memories=memoriesRes.data||[]; state.lists=listsRes.data||[]; state.listItems=listItemsRes.data||[]; state.healthTrackers=healthTrackersRes.data||[]; state.healthEntries=healthEntriesRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.memories=memoriesRes.data||[]; state.lists=listsRes.data||[]; state.listItems=listItemsRes.data||[]; state.healthTrackers=healthTrackersRes.data||[]; state.healthEntries=healthEntriesRes.data||[]; state.healthCheckins=healthCheckinsRes.data||[]; state.healthCheckinPrefs=healthCheckinPrefsRes.data||null; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
       state.memberAuth={};
       if(isAdmin()){
         try{
@@ -2402,9 +2500,177 @@
       return (diff>0?"↑ ":"↓ ")+Math.abs(diff).toLocaleString(undefined,{maximumFractionDigits:2})+(tracker.unit?" "+tracker.unit:"")+" from previous";
     }
 
+    function checkinTracker(key){
+      return state.healthTrackers.find(t=>t.checkin_key===key)||null;
+    }
+
+    function todayHealthCheckin(){
+      const key=localDayKey(new Date());
+      return state.healthCheckins.find(c=>c.checkin_date===key)||null;
+    }
+
+    function checkinEntry(checkin,key){
+      if(!checkin)return null;
+      const tracker=checkinTracker(key);
+      if(!tracker)return null;
+      return state.healthEntries.find(e=>e.checkin_id===checkin.id&&e.tracker_id===tracker.id)||null;
+    }
+
+    function healthRadioValue(name){
+      return document.querySelector('input[name="'+name+'"]:checked')?.value||"";
+    }
+
+    function setHealthRadio(name,value){
+      document.querySelectorAll('input[name="'+name+'"]').forEach(input=>{input.checked=String(input.value)===String(value||"");});
+    }
+
+    function formatReminderTime(value){
+      if(!value)return "9:30 PM";
+      const parts=String(value).slice(0,5).split(":").map(Number);
+      const d=new Date();d.setHours(parts[0]||0,parts[1]||0,0,0);
+      return new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(d);
+    }
+
+    function renderHealthCheckinCard(){
+      const checkin=todayHealthCheckin();
+      const status=$("healthCheckinStatus");
+      const button=$("openHealthCheckin");
+      const prefs=state.healthCheckinPrefs;
+      const reminder=prefs?.enabled===false?"Reminder off":"Reminder "+formatReminderTime(prefs?.reminder_time);
+      const waterTarget=Number(prefs?.water_target_oz||80);
+      if(checkin){
+        const when=new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(new Date(checkin.logged_at));
+        status.textContent="✓ Completed today at "+when;
+        status.classList.remove("pending");
+        button.textContent="Edit today's check-in";
+      }else{
+        status.textContent="Not completed today";
+        status.classList.add("pending");
+        button.textContent="Start check-in";
+      }
+      $("healthCheckinMeta").textContent=reminder+" · Water target "+waterTarget+" oz · Private to you";
+    }
+
+    function openHealthCheckin(){
+      const checkin=todayHealthCheckin();
+      $("healthCheckinForm").reset();
+      $("healthCheckinDialogTitle").textContent=checkin?"Edit today's check-in":"Evening Health & Wellbeing Check-in";
+      const target=Number(state.healthCheckinPrefs?.water_target_oz||80);
+      $("checkinWaterTarget").textContent="of "+target+" oz";
+
+      setHealthRadio("checkin_planned_meals",checkinEntry(checkin,"planned_meals")?.value_text);
+      setHealthRadio("checkin_vegetables_fiber",checkinEntry(checkin,"vegetables_fiber")?.value_text);
+      setHealthRadio("checkin_protein_target",checkinEntry(checkin,"protein_target")?.value_text);
+      $("checkinWater").value=checkinEntry(checkin,"water")?.value_number??"";
+      const workout=checkinEntry(checkin,"workout");
+      $("checkinWorkout").checked=workout?.value_text==="yes";
+      $("checkinWorkoutDetails").value=workout?.notes||"";
+      setHealthRadio("checkin_hunger",checkinEntry(checkin,"hunger")?.rating);
+      setHealthRadio("checkin_energy",checkinEntry(checkin,"energy")?.rating);
+      setHealthRadio("checkin_mood",checkinEntry(checkin,"mood")?.rating);
+      $("checkinSleep").value=checkinEntry(checkin,"sleep")?.value_number??"";
+      $("checkinWin").value=checkinEntry(checkin,"biggest_win")?.value_text||"";
+      $("checkinObstacle").value=checkinEntry(checkin,"obstacle")?.value_text||"";
+      $("healthCheckinDialog").showModal();
+    }
+
+    function buildCheckinEntry(checkinId,key,loggedAt,{number=null,text=null,rating=null,notes=null}={}){
+      const tracker=checkinTracker(key);
+      if(!tracker)return null;
+      return {
+        checkin_id:checkinId,
+        tracker_id:tracker.id,
+        household_id:state.member.household_id,
+        owner_user_id:state.user.id,
+        logged_at:loggedAt,
+        value_number:number,
+        value_text:text,
+        rating,
+        notes:notes||null,
+        updated_at:new Date().toISOString()
+      };
+    }
+
+    async function saveHealthCheckinForm(e){
+      e.preventDefault();
+      const button=$("saveHealthCheckin");
+      const original=button.textContent;
+      button.disabled=true;button.textContent="Saving…";
+      try{
+        const planned=healthRadioValue("checkin_planned_meals");
+        const vegetables=healthRadioValue("checkin_vegetables_fiber");
+        const protein=healthRadioValue("checkin_protein_target");
+        const hunger=healthRadioValue("checkin_hunger");
+        const energy=healthRadioValue("checkin_energy");
+        const mood=healthRadioValue("checkin_mood");
+        if(!planned)throw new Error("Choose how planned meals went.");
+        if(!vegetables)throw new Error("Choose an answer for vegetables and fiber.");
+        if(!protein)throw new Error("Choose an answer for protein.");
+        if(!hunger||!energy||!mood)throw new Error("Choose hunger, energy, and mood ratings.");
+
+        const checkinDate=localDayKey(new Date());
+        const loggedAt=new Date().toISOString();
+        const {data:checkin,error:checkinError}=await sb.from("health_checkins").upsert({
+          household_id:state.member.household_id,
+          owner_user_id:state.user.id,
+          checkin_date:checkinDate,
+          logged_at:loggedAt,
+          updated_at:loggedAt
+        },{onConflict:"owner_user_id,checkin_date"}).select("*").single();
+        if(checkinError)throw checkinError;
+
+        const {error:deleteError}=await sb.from("health_entries").delete().eq("checkin_id",checkin.id);
+        if(deleteError)throw deleteError;
+
+        const water=$("checkinWater").value===""?null:Number($("checkinWater").value);
+        const sleep=$("checkinSleep").value===""?null:Number($("checkinSleep").value);
+        const workout=$("checkinWorkout").checked;
+        const workoutDetails=$("checkinWorkoutDetails").value.trim();
+        const win=$("checkinWin").value.trim();
+        const obstacle=$("checkinObstacle").value.trim();
+
+        const rows=[
+          buildCheckinEntry(checkin.id,"planned_meals",loggedAt,{text:planned}),
+          buildCheckinEntry(checkin.id,"vegetables_fiber",loggedAt,{text:vegetables}),
+          buildCheckinEntry(checkin.id,"protein_target",loggedAt,{text:protein}),
+          water===null?null:buildCheckinEntry(checkin.id,"water",loggedAt,{number:water}),
+          buildCheckinEntry(checkin.id,"workout",loggedAt,{text:workout?"yes":"no",notes:workoutDetails}),
+          buildCheckinEntry(checkin.id,"hunger",loggedAt,{rating:Number(hunger)}),
+          buildCheckinEntry(checkin.id,"energy",loggedAt,{rating:Number(energy)}),
+          buildCheckinEntry(checkin.id,"mood",loggedAt,{rating:Number(mood)}),
+          sleep===null?null:buildCheckinEntry(checkin.id,"sleep",loggedAt,{number:sleep}),
+          win?buildCheckinEntry(checkin.id,"biggest_win",loggedAt,{text:win}):null,
+          obstacle?buildCheckinEntry(checkin.id,"obstacle",loggedAt,{text:obstacle}):null
+        ].filter(Boolean);
+        const {error:entryError}=await sb.from("health_entries").insert(rows);
+        if(entryError)throw entryError;
+
+        $("healthCheckinDialog").close();
+        await loadData();renderAll();
+        toast("Evening check-in saved.");
+      }catch(err){
+        toast(err?.message||"Unable to save the check-in.",true);
+      }finally{
+        button.disabled=false;button.textContent=original;
+      }
+    }
+
+    function openHealthCheckinDeepLink(){
+      const params=new URLSearchParams(window.location.search);
+      if(params.get("health_checkin")!=="1")return;
+      params.delete("health_checkin");
+      const clean=window.location.pathname+(params.toString()?"?"+params.toString():"")+window.location.hash;
+      history.replaceState({},document.title,clean);
+      setTimeout(()=>{
+        $("healthPanel")?.scrollIntoView({behavior:"smooth",block:"start"});
+        openHealthCheckin();
+      },180);
+    }
+
     function renderHealth(){
       const showInactive=!!$("showInactiveHealth")?.checked;
-      const trackers=state.healthTrackers.filter(t=>showInactive?!t.active:t.active);
+      renderHealthCheckinCard();
+      const trackers=state.healthTrackers.filter(t=>(t.dashboard_visible!==false)&&(showInactive?!t.active:t.active));
       const grid=$("healthGrid");
       if(!trackers.length){
         grid.innerHTML='<div class="list-empty">'+(showInactive?"No inactive trackers.":"No trackers yet. Add only the health or wellbeing measures that are useful to you.")+'</div>';
@@ -2415,16 +2681,16 @@
           const latestDate=latest?new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(latest.logged_at)):"Not logged yet";
           const value=formatHealthValue(t,latest);
           return '<article class="health-card '+(t.active?"":"inactive")+'">'+
-            '<div class="health-card-head"><div><div class="health-title">'+healthCategoryIcon(t.category)+' '+esc(t.name)+'</div><div class="health-cat">'+esc(t.category)+' · '+esc(t.value_kind==="rating"?"1–5 rating":t.value_kind)+'</div></div><button class="smallbtn" data-health-tracker-edit="'+t.id+'">Edit</button></div>'+
+            '<div class="health-card-head"><div><div class="health-title">'+healthCategoryIcon(t.category)+' '+esc(t.name)+'</div><div class="health-cat">'+esc(t.checkin_key?"Evening check-in metric":(t.category+" · "+(t.value_kind==="rating"?"1–5 rating":t.value_kind)))+'</div></div>'+(t.checkin_key?"":'<button class="smallbtn" data-health-tracker-edit="'+t.id+'">Edit</button>')+'</div>'+
             '<div><div class="health-latest">'+esc(value)+'</div><div class="health-sub">'+esc(latestDate)+'</div></div>'+
             healthSparkline(t)+
             '<div class="health-sub">'+esc(healthTrendSummary(t))+'</div>'+
-            '<div class="health-actions"><button class="primary" data-health-log="'+t.id+'" '+(t.active?"":"disabled")+'>Log entry</button></div>'+
+            (t.checkin_key?'<div class="health-sub">Logged from your daily check-in.</div>':'<div class="health-actions"><button class="primary" data-health-log="'+t.id+'" '+(t.active?"":"disabled")+'>Log entry</button></div>')+
           '</article>';
         }).join("");
       }
 
-      const recent=state.healthEntries.slice(0,12);
+      const recent=state.healthEntries.filter(e=>state.healthTrackers.find(t=>t.id===e.tracker_id)?.dashboard_visible!==false).slice(0,12);
       const recentBox=$("healthRecent");
       if(!recent.length){
         recentBox.innerHTML='<div class="list-empty">Nothing logged yet.</div>';
@@ -4275,6 +4541,10 @@
       const member=state.members.find(m=>m.user_id===btn.dataset.familyManage);
       if(member)openFamilyMemberEditor(member);
     });
+    $("openHealthCheckin").addEventListener("click",openHealthCheckin);
+    $("closeHealthCheckin").addEventListener("click",()=>$("healthCheckinDialog").close());
+    $("cancelHealthCheckin").addEventListener("click",()=>$("healthCheckinDialog").close());
+    $("healthCheckinForm").addEventListener("submit",saveHealthCheckinForm);
     $("newHealthTracker").addEventListener("click",()=>openHealthTrackerEditor());
     $("closeHealthTrackerEditor").addEventListener("click",()=>$("healthTrackerEditor").close());
     $("cancelHealthTrackerEdit").addEventListener("click",()=>$("healthTrackerEditor").close());

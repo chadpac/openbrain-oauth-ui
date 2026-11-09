@@ -1,4 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v3";
+const CACHE_NAME = "open-brain-pwa-v4";
+const SW_VERSION = "v4-actions";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",
@@ -161,4 +162,11 @@ self.addEventListener("notificationclick", event => {
 
     await openOpenBrain(info.url);
   })());
+});
+
+
+self.addEventListener("message", event => {
+  if(event.data?.type === "open-brain-get-sw-version"){
+    event.source?.postMessage({ type:"open-brain-sw-version", version:SW_VERSION });
+  }
 });

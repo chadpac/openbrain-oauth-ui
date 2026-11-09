@@ -1031,6 +1031,7 @@
     let speechHadError=false;
     let speechInputStream=null;
     let speechInputTrack=null;
+    let speechInputLabel="";
 
     function currentSpeechTarget(){ return $(speechTargetId); }
     function currentSpeechButton(){ return $(speechButtonId); }
@@ -1069,7 +1070,7 @@
           activeBtn.textContent="■ Stop";
           activeBtn.setAttribute("aria-pressed","true");
         }
-        if(status) status.textContent="Listening… speak naturally.";
+        if(status) status.textContent=speechInputLabel?("Listening… speak naturally. Microphone: "+speechInputLabel):"Listening… speak naturally.";
       };
 
       speechRecognition.onaudiostart=()=>{ speechHeardAudio=true; };
@@ -1115,7 +1116,7 @@
           activeBtn.textContent="🎤 Speak";
           activeBtn.setAttribute("aria-pressed","false");
         }
-        if(!speechHadError && status?.textContent==="Listening… speak naturally."){
+        if(!speechHadError && status?.textContent?.startsWith("Listening")){
           if(speechGotResult && target?.value.trim()){
             status.textContent="Voice added. Review it, then add it.";
           }else if(!speechHeardAudio){
@@ -1130,6 +1131,7 @@
           speechInputStream.getTracks().forEach(track=>track.stop());
           speechInputStream=null;
           speechInputTrack=null;
+          speechInputLabel="";
         }
         target?.focus();
       };
@@ -1161,8 +1163,8 @@
             speechInputTrack=speechInputStream.getAudioTracks()[0]||null;
             if(speechInputTrack){
               try{ speechInputTrack.contentHint="speech-recognition"; }catch(_){}
-              const label=speechInputTrack.label?.trim();
-              if(status) status.textContent=label?("Listening with "+label+"…"):"Listening… speak naturally.";
+              speechInputLabel=speechInputTrack.label?.trim()||"";
+              if(status) status.textContent=speechInputLabel?("Connecting to "+speechInputLabel+"…"):"Connecting to microphone…";
               try{
                 speechRecognition.start(speechInputTrack);
                 return;
@@ -1170,6 +1172,7 @@
                 speechInputStream.getTracks().forEach(track=>track.stop());
                 speechInputStream=null;
                 speechInputTrack=null;
+                speechInputLabel="";
                 if(trackErr?.name!=="TypeError" && trackErr?.name!=="NotSupportedError") throw trackErr;
               }
             }
@@ -1178,6 +1181,7 @@
               speechInputStream.getTracks().forEach(track=>track.stop());
               speechInputStream=null;
               speechInputTrack=null;
+              speechInputLabel="";
             }
             const messages={
               "NotAllowedError":"Microphone permission was blocked. Allow microphone access for this site and try again.",
@@ -1196,6 +1200,7 @@
           speechInputStream.getTracks().forEach(track=>track.stop());
           speechInputStream=null;
           speechInputTrack=null;
+          speechInputLabel="";
         }
         const status=currentSpeechStatus();
         if(status) status.textContent="Voice capture could not start. Try again in a moment.";

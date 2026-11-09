@@ -2442,7 +2442,8 @@
     async function invokeGoogleCalendar(action,payload={}){
       const {data,error}=await sb.functions.invoke("google-calendar-oauth",{body:{action,...payload}});
       if(error){
-        const message=data?.error||error?.message||"Google Calendar request failed.";
+        const details=await error.context?.json?.().catch(()=>null);
+        const message=data?.error||details?.error||error?.message||"Google Calendar request failed.";
         throw new Error(message);
       }
       if(data?.ok===false)throw new Error(data.error||"Google Calendar request failed.");
@@ -2467,14 +2468,15 @@
           invalid_state:"The Google Calendar connection expired. Please try again.",
           expired_state:"The Google Calendar connection took too long. Please try again.",
           calendar_list:"Google connected, but Open Brain could not read your calendars.",
-          save_failed:"Open Brain could not save the Google Calendar connection."
+          save_failed:"Open Brain could not save the Google Calendar connection.",
+          missing_scopes:"Approve both read-only Calendar permissions, then reconnect."
         };
         toast(messages[reason]||"Google Calendar was not connected.",true);
       }
     }
 
     async function loadGoogleCalendarIntegration(){
-      if(state.googleCalendarBusy)return;
+      if(state.googleCalendarBusy)throw new Error("Google Calendar is already refreshing. Please wait.");
       state.googleCalendarBusy=true;
       try{
         const status=await invokeGoogleCalendar("status");
@@ -2485,7 +2487,7 @@
           const [calendarData,eventData]=await Promise.all([
             invokeGoogleCalendar("calendars"),
             invokeGoogleCalendar("events",{
-              time_min:new Date(Date.now()-3*86400000).toISOString(),
+              time_min:startOfWeek().toISOString(),
               time_max:new Date(Date.now()+45*86400000).toISOString()
             })
           ]);
@@ -2493,9 +2495,10 @@
           state.googleEvents=eventData.events||[];
         }
       }catch(err){
-        state.googleCalendarStatus={configured:true,connected:false,error:err?.message||String(err)};
+        state.googleCalendarStatus={...state.googleCalendarStatus,error:err?.message||String(err)};
         state.googleCalendars=[];
         state.googleEvents=[];
+        throw err;
       }finally{
         state.googleCalendarBusy=false;
         renderGoogleCalendarSettings();
@@ -2536,9 +2539,9 @@
 
       setup.classList.add("hidden");
       if(status.connected){
-        statusEl.textContent="Connected";statusEl.classList.remove("offline");
-        note.textContent=(status.google_email?status.google_email+" · ":"")+(status.selected_count||0)+" calendar"+((status.selected_count||0)===1?"":"s")+" shown in Open Brain";
-        connect.classList.add("hidden");choose.classList.remove("hidden");refresh.classList.remove("hidden");disconnect.classList.remove("hidden");
+        statusEl.textContent=status.error?"Needs attention":"Connected";statusEl.classList.toggle("offline",!!status.error);
+        note.textContent=status.error||(status.google_email?status.google_email+" · ":"")+(status.selected_count||0)+" calendar"+((status.selected_count||0)===1?"":"s")+" shown in Open Brain";
+        connect.classList.toggle("hidden",!status.error);choose.classList.remove("hidden");refresh.classList.remove("hidden");disconnect.classList.remove("hidden");
       }else{
         statusEl.textContent=status.error?"Needs attention":"Not connected";statusEl.classList.add("offline");
         note.textContent=status.error||"Connect read-only Calendar access to bring your schedule into Today and This Week.";
@@ -2589,12 +2592,12 @@
 
     async function saveGoogleCalendarSelection(){
       const selected=[...$("googleCalendarPicker").querySelectorAll("[data-google-calendar-id]:checked")].map(x=>x.dataset.googleCalendarId);
-      if(!selected.length){toast("Choose at least one calendar.",true);return;}
+      if(selected.length>25){toast("Choose up to 25 calendars.",true);return;}
       try{
         await invokeGoogleCalendar("select_calendars",{calendar_ids:selected});
         $("googleCalendarPicker").classList.add("hidden");
-        toast("Google calendars updated.");
         await loadGoogleCalendarIntegration();
+        toast("Google calendars updated.");
       }catch(err){toast(err?.message||"Unable to save calendar choices.",true);}
     }
 
@@ -2621,7 +2624,7 @@
         const gt=normalizedEventTitle(g.title);
         const gd=localDayKey(g.starts_at);
         const gms=new Date(g.starts_at).getTime();
-        const duplicate=result.some(e=>{
+        const duplicate=local.some(e=>{
           if(normalizedEventTitle(e.title)!==gt||localDayKey(e.starts_at)!==gd)return false;
           const ems=new Date(e.starts_at).getTime();
           return e.all_day&&g.all_day || (Number.isFinite(ems)&&Number.isFinite(gms)&&Math.abs(ems-gms)<=5*60*1000);
@@ -2629,6 +2632,21 @@
         if(!duplicate)result.push(g);
       }
       return result.sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at));
+    }
+
+    // Google end dates are exclusive, including all-day events. Missing local
+    // end times represent a point event rather than an indefinitely ongoing one.
+    function eventOverlaps(e,start,end){
+      const from=new Date(e.starts_at).getTime();
+      const to=e.ends_at?new Date(e.ends_at).getTime():from;
+      return Number.isFinite(from)&&from<end.getTime()&&Math.max(from,to)>start.getTime()
+        || (from>=start.getTime()&&from<end.getTime());
+    }
+
+    function eventOnDay(e,day){
+      const start=new Date(day);start.setHours(0,0,0,0);
+      const end=new Date(start);end.setDate(end.getDate()+1);
+      return eventOverlaps(e,start,end);
     }
 
     function renderToday(){
@@ -2645,7 +2663,7 @@
         return date && localDayKey(date)===todayKey;
       });
       const display=[...overdue,...today.filter(t=>!overdue.includes(t))].slice(0,6);
-      const todayEvents=combinedEvents().filter(e=>localDayKey(e.starts_at)===todayKey);
+      const todayEvents=combinedEvents().filter(e=>eventOnDay(e,now));
 
       $("todayTaskCount").textContent=today.length;
       $("todayEventCount").textContent=todayEvents.length;
@@ -3875,7 +3893,8 @@
         const x=new Date(d); return x>=start && x<=end;
       });
       const overdue=mine.filter(t=>t.remind_at && new Date(t.remind_at)<start);
-      const weekEvents=combinedEvents().filter(e=>{const x=new Date(e.starts_at); return x>=start && x<=end;});
+      const weekEnd=new Date(end.getTime()+1);
+      const weekEvents=combinedEvents().filter(e=>eventOverlaps(e,start,weekEnd));
       $("weekTaskCount").textContent=weekTasks.length;
       $("weekEventCount").textContent=weekEvents.length;
       $("weekOverdueCount").textContent=overdue.length;
@@ -4175,8 +4194,8 @@
       const todayKey=localDayKey(now);
       const events=combinedEvents();
       const upcoming=state.eventScope==="today"
-        ? events.filter(e=>localDayKey(e.starts_at)===todayKey)
-        : events.filter(e=>new Date(e.starts_at)>=new Date(Date.now()-6*60*60*1000)).slice(0,6);
+        ? events.filter(e=>eventOnDay(e,now))
+        : events.filter(e=>eventOnDay(e,now)||new Date(e.starts_at)>=now).slice(0,6);
       $("eventsHeading").textContent=state.eventScope==="today"?"Today’s events":"Upcoming events";
       $("clearEventScope").classList.toggle("hidden",state.eventScope!=="today");
       if(!upcoming.length){
@@ -4954,7 +4973,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=15-google-calendar",
+          "/openbrain-oauth-ui/sw.js?v=16-google-calendar-fixes",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

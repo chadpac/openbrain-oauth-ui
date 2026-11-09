@@ -2577,12 +2577,20 @@
       return String(value||"").trim().toLowerCase().replace(/[.,;:!?]+$/g,"").replace(/\s+/g," ");
     }
 
-    function openListDuplicates(listId,contents){
+    async function openListDuplicates(listId,contents){
       const wanted=new Set((contents||[]).map(normalizedListItemName).filter(Boolean));
-      if(!wanted.size)return[];
-      return state.listItems.filter(item=>
-        item.list_id===listId &&
-        !item.completed &&
+      if(!listId||!wanted.size)return[];
+
+      // Always ask the database for current unchecked items so duplicate
+      // detection does not depend on a possibly stale Realtime/local cache.
+      const {data,error}=await sb.from("list_items")
+        .select("id,list_id,content,quantity,completed,owner_user_id,created_at")
+        .eq("list_id",listId)
+        .eq("completed",false)
+        .limit(500);
+      if(error)throw error;
+
+      return (data||[]).filter(item=>
         wanted.has(normalizedListItemName(item.content))
       );
     }
@@ -2844,7 +2852,7 @@
           };
         });
 
-        const duplicates=openListDuplicates(list.id,rows.map(r=>r.content));
+        const duplicates=await openListDuplicates(list.id,rows.map(r=>r.content));
         if(duplicates.length){
           const choice=await askAboutListDuplicates(list,duplicates);
           if(choice==="cancel")return;
@@ -2919,7 +2927,7 @@
           if(error)throw error;toast("Item updated.");
         }else{
           const list=activeList();
-          const duplicates=openListDuplicates(list?.id,[content]);
+          const duplicates=await openListDuplicates(list?.id,[content]);
           if(duplicates.length){
             const choice=await askAboutListDuplicates(list,duplicates);
             if(choice==="cancel"||choice==="skip")return;
@@ -2940,7 +2948,7 @@
       $("listQuickItem").value="";$("listQuickQty").value="";
       try{
         const list=activeList();
-        const duplicates=openListDuplicates(list?.id,[content]);
+        const duplicates=await openListDuplicates(list?.id,[content]);
         if(duplicates.length){
           const choice=await askAboutListDuplicates(list,duplicates);
           if(choice==="cancel"||choice==="skip"){
@@ -4376,7 +4384,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=11-list-duplicate-check",
+          "/openbrain-oauth-ui/sw.js?v=12-live-duplicate-check",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

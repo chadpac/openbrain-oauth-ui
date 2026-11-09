@@ -3511,7 +3511,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=5-action-confirmations",
+          "/openbrain-oauth-ui/sw.js?v=6-visible-confirmations",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

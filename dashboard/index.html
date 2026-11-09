@@ -75,6 +75,18 @@
     .memory-date{font-size:11px;color:var(--muted)}.memory-actions{display:flex;gap:6px;flex-wrap:wrap}.memory-empty{padding:28px 20px;color:var(--muted);text-align:center}
     .memory-search-note{font-size:12px;color:var(--muted)}.topic-row{display:flex;gap:6px;flex-wrap:wrap}.topic-tag{font-size:11px;background:#f6f7f7;border:1px solid var(--line);padding:4px 7px;border-radius:8px}
     @media(max-width:900px){.memory-grid{grid-template-columns:1fr}}
+    .lists-panel{margin-bottom:18px}.lists-layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:320px}
+    .list-sidebar{border-right:1px solid var(--line);padding:14px;display:grid;align-content:start;gap:8px;background:#fbfcfc}
+    .list-selector{border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 12px;text-align:left;display:grid;gap:4px}
+    .list-selector.active{border-color:#8db8b4;background:#eef7f6;box-shadow:0 0 0 2px rgba(91,161,153,.10)}
+    .list-selector.archived{opacity:.6}.list-selector-title{font-weight:800}.list-selector-meta{font-size:11px;color:var(--muted)}
+    .list-workspace{min-width:0}.list-workspace-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .list-quickadd{padding:12px 20px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(180px,1fr) 100px auto;gap:8px;align-items:center}
+    .list-items{display:grid}.list-item-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)}
+    .list-item-row.done{opacity:.58}.list-item-row.done .list-item-name{text-decoration:line-through}.list-check{width:27px;height:27px;border-radius:8px;border:2px solid var(--navy);background:#fff;display:grid;place-items:center;padding:0;color:#fff;font-weight:900}
+    .list-check.done{background:var(--navy)}.list-item-name{font-weight:760}.list-item-meta{font-size:12px;color:var(--muted);margin-top:3px}.list-type-icon{font-size:17px;margin-right:5px}
+    .list-empty{padding:28px 20px;text-align:center;color:var(--muted)}.list-header-meta{font-size:12px;color:var(--muted);margin-top:4px}.list-actions{display:flex;gap:6px;flex-wrap:wrap}
+    @media(max-width:850px){.lists-layout{grid-template-columns:1fr}.list-sidebar{border-right:0;border-bottom:1px solid var(--line);grid-template-columns:repeat(2,minmax(0,1fr))}.list-quickadd{grid-template-columns:1fr 90px}.list-quickadd button{grid-column:1/-1}}
     .inbox-list{display:grid}.inbox-item{display:grid;grid-template-columns:minmax(260px,1.4fr) minmax(170px,.65fr) minmax(320px,1fr);gap:16px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
     .inbox-item:last-child{border-bottom:0}.inbox-content{font-weight:720;line-height:1.4}.inbox-time{font-size:11px;color:var(--muted);margin-top:5px}
     .suggestion{font-size:13px;color:var(--muted)}.suggestion strong{display:block;color:var(--ink);margin-bottom:4px}.type-chip{display:inline-flex;padding:5px 9px;border-radius:999px;background:var(--blue-soft);color:#3f7779;font-size:11px;font-weight:850;text-transform:capitalize}
@@ -158,6 +170,7 @@
         <button class="navitem" data-scroll="inboxPanel">Inbox <span id="navInboxCount"></span></button>
         <button class="navitem" data-scroll="habitPanel">Habits & Routines</button>
         <button class="navitem" data-scroll="memoriesPanel">Memories</button>
+        <button class="navitem" data-scroll="listsPanel">Lists & Shopping</button>
         <button class="navitem" data-scroll="remindersPanel">Reminders & Tasks</button>
         <button class="navitem disabled" title="Coming next">Family · soon</button>
         <button class="navitem disabled" title="Coming next">Settings · soon</button>
@@ -302,6 +315,43 @@
         <div id="memoryGrid" class="memory-grid"><div class="memory-empty">Loading memories…</div></div>
       </section>
 
+      <section id="listsPanel" class="panel lists-panel">
+        <div class="panelhead">
+          <div>
+            <h3>Lists & Shopping</h3>
+            <div class="subtitle">Shared groceries, shopping, packing, wish lists, meal lists, and anything else you want out of your head.</div>
+          </div>
+          <div class="controls">
+            <label class="notify-choice"><input id="showArchivedLists" type="checkbox"> Archived lists</label>
+            <button id="newList" class="primary">+ List</button>
+          </div>
+        </div>
+        <div class="lists-layout">
+          <aside id="listChooser" class="list-sidebar"><div class="list-empty">No lists yet.</div></aside>
+          <div class="list-workspace">
+            <div class="list-workspace-head">
+              <div>
+                <h3 id="activeListName" style="margin:0">Choose a list</h3>
+                <div id="activeListMeta" class="list-header-meta"></div>
+              </div>
+              <div class="list-actions">
+                <button id="editList" class="ghost hidden">Edit list</button>
+                <button id="newListItem" class="ghost hidden">+ Item</button>
+              </div>
+            </div>
+            <div id="listQuickAdd" class="list-quickadd hidden">
+              <input id="listQuickItem" maxlength="240" placeholder="Quick add item…" />
+              <input id="listQuickQty" maxlength="30" placeholder="Qty" />
+              <button id="addQuickListItem" class="primary">Add</button>
+            </div>
+            <div style="padding:9px 20px;border-bottom:1px solid var(--line)">
+              <label class="notify-choice" style="width:max-content"><input id="showCompletedListItems" type="checkbox"> Show completed</label>
+            </div>
+            <div id="listItems" class="list-items"><div class="list-empty">Choose or create a list.</div></div>
+          </div>
+        </div>
+      </section>
+
       <section class="overview">
         <div class="overview-card">
           <div class="overview-head">
@@ -413,6 +463,52 @@
         </div>
       </div>
       <div class="modalfoot"><button id="cancelEdit" class="ghost" type="button">Cancel</button><button id="saveTask" class="primary" type="submit">Save reminder</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="listEditor">
+    <form id="listForm">
+      <div class="modalhead"><h3 id="listEditorTitle">New list</h3><button id="closeListEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="listId" type="hidden" />
+        <div><label for="listName">List name</label><input id="listName" required maxlength="100" placeholder="e.g. Groceries, Costco, Vacation packing" /></div>
+        <div class="grid2">
+          <div><label for="listType">Type</label><select id="listType">
+            <option value="general">General</option>
+            <option value="grocery">Grocery</option>
+            <option value="shopping">Shopping</option>
+            <option value="packing">Packing</option>
+            <option value="meal">Meal / food</option>
+            <option value="wish">Wish list</option>
+          </select></div>
+          <div><label for="listVisibility">Visibility</label><select id="listVisibility">
+            <option value="private">Private to me</option>
+            <option value="household">Share with household</option>
+          </select></div>
+        </div>
+      </div>
+      <div class="modalfoot">
+        <button id="archiveList" class="ghost hidden" type="button" style="margin-right:auto">Archive list</button>
+        <button id="cancelListEdit" class="ghost" type="button">Cancel</button>
+        <button class="primary" type="submit">Save list</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="listItemEditor">
+    <form id="listItemForm">
+      <div class="modalhead"><h3 id="listItemEditorTitle">Add list item</h3><button id="closeListItemEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="listItemId" type="hidden" />
+        <div><label for="listItemContent">Item</label><input id="listItemContent" required maxlength="240" /></div>
+        <div><label for="listItemQuantity">Quantity (optional)</label><input id="listItemQuantity" maxlength="40" placeholder="2, 1 box, 3 lbs…" /></div>
+        <div><label for="listItemNotes">Notes (optional)</label><textarea id="listItemNotes" placeholder="Brand, size, store, details…"></textarea></div>
+      </div>
+      <div class="modalfoot">
+        <button id="deleteListItem" class="ghost hidden" type="button" style="margin-right:auto;color:var(--red)">Delete</button>
+        <button id="cancelListItemEdit" class="ghost" type="button">Cancel</button>
+        <button class="primary" type="submit">Save item</button>
+      </div>
     </form>
   </dialog>
 
@@ -592,7 +688,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -692,7 +788,7 @@
     }
 
     async function loadData(){
-      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, habitsRes, habitCompletionsRes, memoriesRes, weeksRes, inboxRes]=await Promise.all([
+      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, habitsRes, habitCompletionsRes, memoriesRes, listsRes, listItemsRes, weeksRes, inboxRes]=await Promise.all([
         sb.from("household_members").select("user_id,household_id,display_name,role,telegram_enabled").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
         sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
@@ -702,6 +798,8 @@
         sb.from("habits").select("*").eq("owner_user_id",state.user.id).neq("status","archived").order("created_at",{ascending:true}),
         sb.from("habit_completions").select("id,habit_id,completed_on,created_at").eq("owner_user_id",state.user.id).gte("completed_on",new Date(Date.now()-21*86400000).toISOString().slice(0,10)),
         sb.from("thoughts").select("id,content,metadata,created_at,updated_at,visibility,created_by,household_id,archived_at").eq("household_id",state.member.household_id).order("updated_at",{ascending:false}).limit(250),
+        sb.from("lists").select("*").eq("household_id",state.member.household_id).order("updated_at",{ascending:false}),
+        sb.from("list_items").select("*").eq("household_id",state.member.household_id).order("created_at",{ascending:true}).limit(750),
         sb.from("weekly_plans").select("*").eq("owner_user_id",state.user.id).order("week_start",{ascending:false}).limit(12),
         sb.from("inbox_items").select("*").eq("owner_user_id",state.user.id).eq("status","unprocessed").order("created_at",{ascending:false}).limit(50)
       ]);
@@ -714,9 +812,12 @@
       if(habitsRes.error) throw habitsRes.error;
       if(habitCompletionsRes.error) throw habitCompletionsRes.error;
       if(memoriesRes.error) throw memoriesRes.error;
+      if(listsRes.error) throw listsRes.error;
+      if(listItemsRes.error) throw listItemsRes.error;
       if(weeksRes.error) throw weeksRes.error;
       if(inboxRes.error) throw inboxRes.error;
-      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.memories=memoriesRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.memories=memoriesRes.data||[]; state.lists=listsRes.data||[]; state.listItems=listItemsRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
+      if(state.activeListId && !state.lists.some(l=>l.id===state.activeListId)) state.activeListId=null;
       if(!state.memberFilter) state.memberFilter=state.member.user_id;
       populateMembers();
     }
@@ -751,6 +852,7 @@
       renderToday();
       renderHabits();
       renderMemories();
+      renderLists();
       renderWeek();
       renderInbox();
       renderOverview();
@@ -883,6 +985,221 @@
 
     function clearQuick(){
       $("quickCapture").value="";
+    }
+
+    function listTypeIcon(type){
+      return ({grocery:"🛒",shopping:"🛍️",packing:"🧳",meal:"🍽️",wish:"⭐",general:"📝"})[type]||"📝";
+    }
+
+    function activeList(){
+      return state.lists.find(l=>l.id===state.activeListId)||null;
+    }
+
+    function renderLists(){
+      const showArchived=!!$("showArchivedLists")?.checked;
+      const visibleLists=state.lists.filter(l=>showArchived?!!l.archived_at:!l.archived_at);
+      if(!state.activeListId || !visibleLists.some(l=>l.id===state.activeListId)){
+        state.activeListId=visibleLists[0]?.id||null;
+      }
+
+      const chooser=$("listChooser");
+      if(!visibleLists.length){
+        chooser.innerHTML='<div class="list-empty">'+(showArchived?"No archived lists.":"No lists yet. Create a Grocery, Costco, Packing, Wish, or general list.")+'</div>';
+      }else{
+        chooser.innerHTML=visibleLists.map(l=>{
+          const openCount=state.listItems.filter(i=>i.list_id===l.id&&!i.completed).length;
+          return '<button class="list-selector '+(l.id===state.activeListId?"active ":"")+(l.archived_at?"archived":"")+'" data-list-select="'+l.id+'">'+
+            '<div class="list-selector-title"><span class="list-type-icon">'+listTypeIcon(l.list_type)+'</span>'+esc(l.name)+'</div>'+
+            '<div class="list-selector-meta">'+esc(l.visibility==="household"?"Household":"Private")+' · '+openCount+' open</div>'+
+          '</button>';
+        }).join("");
+      }
+
+      const list=activeList();
+      $("editList").classList.toggle("hidden",!list);
+      $("newListItem").classList.toggle("hidden",!list||!!list.archived_at);
+      $("listQuickAdd").classList.toggle("hidden",!list||!!list.archived_at);
+      if(!list){
+        $("activeListName").textContent="Choose a list";
+        $("activeListMeta").textContent="";
+        $("listItems").innerHTML='<div class="list-empty">Choose or create a list.</div>';
+        return;
+      }
+
+      $("activeListName").textContent=listTypeIcon(list.list_type)+" "+list.name;
+      const owner=memoryOwnerName(list.owner_user_id);
+      $("activeListMeta").textContent=(list.visibility==="household"?"Shared with household":"Private")+" · Created by "+owner+(list.archived_at?" · Archived":"");
+
+      const showCompleted=$("showCompletedListItems").checked;
+      const items=state.listItems.filter(i=>i.list_id===list.id && (showCompleted||!i.completed))
+        .sort((a,b)=>Number(a.completed)-Number(b.completed)||new Date(a.created_at)-new Date(b.created_at));
+
+      if(!items.length){
+        $("listItems").innerHTML='<div class="list-empty">'+(showCompleted?"This list is empty.":"Nothing left on this list. 🎉")+'</div>';
+        return;
+      }
+
+      $("listItems").innerHTML=items.map(item=>{
+        const addedBy=memoryOwnerName(item.owner_user_id);
+        const meta=[
+          item.quantity?("Qty: "+item.quantity):"",
+          item.notes||"",
+          "Added by "+addedBy
+        ].filter(Boolean).join(" · ");
+        return '<div class="list-item-row '+(item.completed?"done":"")+'">'+
+          '<button class="list-check '+(item.completed?"done":"")+'" data-list-item-toggle="'+item.id+'">'+(item.completed?"✓":"")+'</button>'+
+          '<div><div class="list-item-name">'+esc(item.content)+'</div><div class="list-item-meta">'+esc(meta)+'</div></div>'+
+          '<button class="smallbtn" data-list-item-edit="'+item.id+'">Edit</button>'+
+        '</div>';
+      }).join("");
+    }
+
+    function openListEditor(list=null){
+      $("listForm").reset();
+      $("listId").value=list?.id||"";
+      $("listEditorTitle").textContent=list?"Edit list":"New list";
+      $("listName").value=list?.name||"";
+      $("listType").value=list?.list_type||"general";
+      $("listVisibility").value=list?.visibility||"private";
+      $("archiveList").classList.toggle("hidden",!list);
+      $("archiveList").textContent=list?.archived_at?"Restore list":"Archive list";
+      $("listEditor").showModal();
+    }
+
+    async function saveList(e){
+      e.preventDefault();
+      try{
+        const id=$("listId").value;
+        const payload={
+          name:$("listName").value.trim(),
+          list_type:$("listType").value,
+          visibility:$("listVisibility").value,
+          updated_at:new Date().toISOString()
+        };
+        if(!payload.name) throw new Error("Give the list a name.");
+        if(id){
+          const {error}=await sb.from("lists").update(payload).eq("id",id);if(error)throw error;
+          toast("List updated.");
+        }else{
+          const {data,error}=await sb.from("lists").insert({
+            ...payload,
+            household_id:state.member.household_id,
+            owner_user_id:state.user.id
+          }).select("id").single();
+          if(error)throw error;
+          state.activeListId=data.id;
+          toast("List created.");
+        }
+        $("listEditor").close();await loadData();renderAll();
+      }catch(err){toast(err?.message||"Unable to save list.",true);}
+    }
+
+    async function toggleListArchive(){
+      const id=$("listId").value;if(!id)return;
+      const list=state.lists.find(l=>l.id===id);if(!list)return;
+      const archivedAt=list.archived_at?null:new Date().toISOString();
+      const {error}=await sb.from("lists").update({archived_at:archivedAt,updated_at:new Date().toISOString()}).eq("id",id);
+      if(error){toast(error.message,true);return;}
+      $("listEditor").close();
+      if(!archivedAt) state.activeListId=id; else state.activeListId=null;
+      await loadData();renderAll();toast(archivedAt?"List archived.":"List restored.");
+    }
+
+    function openListItemEditor(item=null){
+      const list=activeList();if(!list)return;
+      $("listItemForm").reset();
+      $("listItemId").value=item?.id||"";
+      $("listItemEditorTitle").textContent=item?"Edit item":"Add to "+list.name;
+      $("listItemContent").value=item?.content||"";
+      $("listItemQuantity").value=item?.quantity||"";
+      $("listItemNotes").value=item?.notes||"";
+      $("deleteListItem").classList.toggle("hidden",!item);
+      $("listItemEditor").showModal();
+    }
+
+    async function createListItem(content,quantity="",notes=""){
+      const list=activeList();if(!list) throw new Error("Choose a list first.");
+      const {data,error}=await sb.from("list_items").insert({
+        household_id:state.member.household_id,
+        owner_user_id:state.user.id,
+        list_id:list.id,
+        list_name:list.name,
+        content,
+        quantity:quantity||null,
+        notes:notes||null,
+        visibility:list.visibility,
+        completed:false
+      }).select("id").single();
+      if(error)throw error;
+      return data;
+    }
+
+    async function saveListItem(e){
+      e.preventDefault();
+      try{
+        const id=$("listItemId").value;
+        const content=$("listItemContent").value.trim();
+        if(!content)throw new Error("Enter an item.");
+        if(id){
+          const {error}=await sb.from("list_items").update({
+            content,
+            quantity:$("listItemQuantity").value.trim()||null,
+            notes:$("listItemNotes").value.trim()||null,
+            updated_at:new Date().toISOString()
+          }).eq("id",id);
+          if(error)throw error;toast("Item updated.");
+        }else{
+          await createListItem(content,$("listItemQuantity").value.trim(),$("listItemNotes").value.trim());
+          toast("Item added.");
+        }
+        $("listItemEditor").close();await loadData();renderAll();
+      }catch(err){toast(err?.message||"Unable to save item.",true);}
+    }
+
+    async function quickAddListItem(){
+      const content=$("listQuickItem").value.trim();if(!content)return;
+      try{
+        await createListItem(content,$("listQuickQty").value.trim(),"");
+        $("listQuickItem").value="";$("listQuickQty").value="";
+        await loadData();renderAll();$("listQuickItem").focus();
+      }catch(err){toast(err?.message||"Unable to add item.",true);}
+    }
+
+    async function toggleListItem(id){
+      const item=state.listItems.find(i=>i.id===id);if(!item)return;
+      const done=!item.completed;
+      const {error}=await sb.from("list_items").update({
+        completed:done,
+        completed_at:done?new Date().toISOString():null,
+        completed_by:done?state.user.id:null,
+        updated_at:new Date().toISOString()
+      }).eq("id",id);
+      if(error){toast(error.message,true);return;}
+      await loadData();renderAll();
+    }
+
+    async function deleteCurrentListItem(){
+      const id=$("listItemId").value;if(!id)return;
+      if(!confirm("Delete this list item?"))return;
+      const {error}=await sb.from("list_items").delete().eq("id",id);
+      if(error){toast(error.message,true);return;}
+      $("listItemEditor").close();await loadData();renderAll();toast("Item deleted.");
+    }
+
+    async function ensureInboxList(listName){
+      let list=state.lists.find(l=>!l.archived_at && l.owner_user_id===state.user.id && l.name.toLowerCase()===listName.toLowerCase());
+      if(list)return list;
+      const lower=listName.toLowerCase();
+      const type=lower.includes("grocery")?"grocery":lower.includes("pack")?"packing":lower.includes("wish")?"wish":lower.includes("meal")?"meal":lower==="general"?"general":"shopping";
+      const {data,error}=await sb.from("lists").insert({
+        household_id:state.member.household_id,
+        owner_user_id:state.user.id,
+        name:listName,
+        list_type:type,
+        visibility:"private"
+      }).select("*").single();
+      if(error)throw error;
+      return data;
     }
 
     function memoryOwnerName(userId){
@@ -1379,17 +1696,21 @@
     async function saveInboxListItem(item){
       try{
         const details=item.suggested_details||{};
-        const listName=(details.list_name||"General").toString().slice(0,80);
+        const listName=(details.list_name||"General").toString().trim().slice(0,80)||"General";
+        const list=await ensureInboxList(listName);
         const {data,error}=await sb.from("list_items").insert({
           household_id:state.member.household_id,
           owner_user_id:state.user.id,
-          list_name:listName,
+          list_id:list.id,
+          list_name:list.name,
           content:item.suggested_title||item.content,
-          visibility:"private"
+          visibility:list.visibility,
+          completed:false
         }).select("id").single();
         if(error) throw error;
+        state.activeListId=list.id;
         await finishInbox(item,"list_item",data.id);
-        toast('Added to "'+listName+'" list.');
+        toast('Added to "'+list.name+'" list.');
       }catch(err){toast(err?.message||"Unable to add list item.",true);}
     }
 
@@ -1780,6 +2101,33 @@
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
+    $("newList").addEventListener("click",()=>openListEditor());
+    $("editList").addEventListener("click",()=>{const l=activeList();if(l)openListEditor(l);});
+    $("newListItem").addEventListener("click",()=>openListItemEditor());
+    $("closeListEditor").addEventListener("click",()=>$("listEditor").close());
+    $("cancelListEdit").addEventListener("click",()=>$("listEditor").close());
+    $("listForm").addEventListener("submit",saveList);
+    $("archiveList").addEventListener("click",toggleListArchive);
+    $("closeListItemEditor").addEventListener("click",()=>$("listItemEditor").close());
+    $("cancelListItemEdit").addEventListener("click",()=>$("listItemEditor").close());
+    $("listItemForm").addEventListener("submit",saveListItem);
+    $("deleteListItem").addEventListener("click",deleteCurrentListItem);
+    $("showArchivedLists").addEventListener("change",()=>{state.activeListId=null;renderLists();});
+    $("showCompletedListItems").addEventListener("change",renderLists);
+    $("addQuickListItem").addEventListener("click",quickAddListItem);
+    $("listQuickItem").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();quickAddListItem();}});
+    $("listQuickQty").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();quickAddListItem();}});
+    $("listChooser").addEventListener("click",e=>{
+      const btn=e.target.closest("[data-list-select]");if(!btn)return;
+      state.activeListId=btn.dataset.listSelect;renderLists();
+    });
+    $("listItems").addEventListener("click",async e=>{
+      const toggle=e.target.closest("[data-list-item-toggle]");
+      if(toggle){await toggleListItem(toggle.dataset.listItemToggle);return;}
+      const edit=e.target.closest("[data-list-item-edit]");
+      if(edit){const item=state.listItems.find(i=>i.id===edit.dataset.listItemEdit);if(item)openListItemEditor(item);}
+    });
+
     $("newMemory").addEventListener("click",()=>openMemoryEditor());
     $("closeMemoryEditor").addEventListener("click",()=>$("memoryEditor").close());
     $("cancelMemoryEdit").addEventListener("click",()=>$("memoryEditor").close());

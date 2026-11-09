@@ -2122,7 +2122,7 @@
     }
 
     function selectedEventNotificationRecipients(){
-      return [...$("eventNotifyMembers").querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);
+      return [...$("eventNotifyMembers").querySelectorAll('input[type="checkbox"]:checked:not(:disabled)')].map(x=>x.value);
     }
 
     function selectedEventNotificationTimings(){

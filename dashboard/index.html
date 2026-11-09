@@ -983,7 +983,7 @@
     }
 
     function eventNotificationSummary(eventId){
-      const rows=state.eventNotifications.filter(n=>n.event_id===eventId && !["cancelled","failed"].includes(n.status));
+      const rows=state.eventNotifications.filter(n=>n.event_id===eventId && ["pending","processing"].includes(n.status));
       if(!rows.length)return "";
       const people=new Set(rows.map(n=>n.recipient_user_id)).size;
       const timings=new Set(rows.map(n=>n.timing_key)).size;

@@ -600,6 +600,7 @@
                   <label><input id="pushTasksEnabled" type="checkbox" checked /> Task reminders</label>
                   <label><input id="pushEventsEnabled" type="checkbox" checked /> Event alerts</label>
                   <label><input id="pushHabitsEnabled" type="checkbox" checked /> Habit reminders</label>
+                  <label><input id="pushHealthEnabled" type="checkbox" checked /> Health check-ins</label>
                 </div>
                 <div class="push-test-row">
                   <div class="setting-note">These choices apply only to this device.</div>
@@ -1331,7 +1332,7 @@
       const prefs=$("pushDevicePreferences");
       if(!subscription){prefs.classList.add("hidden");return;}
       const {data,error}=await sb.from("push_subscriptions")
-        .select("sound_mode,vibrate_enabled,task_notifications,event_notifications,habit_notifications")
+        .select("sound_mode,vibrate_enabled,task_notifications,event_notifications,habit_notifications,health_notifications")
         .eq("endpoint",subscription.endpoint)
         .maybeSingle();
       if(error)throw error;
@@ -1340,6 +1341,7 @@
       $("pushTasksEnabled").checked=data?.task_notifications!==false;
       $("pushEventsEnabled").checked=data?.event_notifications!==false;
       $("pushHabitsEnabled").checked=data?.habit_notifications!==false;
+      $("pushHealthEnabled").checked=data?.health_notifications!==false;
       prefs.classList.remove("hidden");
     }
 
@@ -1352,12 +1354,14 @@
         const task_notifications=$("pushTasksEnabled").checked;
         const event_notifications=$("pushEventsEnabled").checked;
         const habit_notifications=$("pushHabitsEnabled").checked;
+        const health_notifications=$("pushHealthEnabled").checked;
         const {error}=await sb.from("push_subscriptions").update({
           sound_mode,
           vibrate_enabled,
           task_notifications,
           event_notifications,
           habit_notifications,
+          health_notifications,
           updated_at:new Date().toISOString()
         }).eq("endpoint",subscription.endpoint);
         if(error)throw error;
@@ -4498,6 +4502,7 @@
     $("pushTasksEnabled").addEventListener("change",savePushDevicePreferences);
     $("pushEventsEnabled").addEventListener("change",savePushDevicePreferences);
     $("pushHabitsEnabled").addEventListener("change",savePushDevicePreferences);
+    $("pushHealthEnabled").addEventListener("change",savePushDevicePreferences);
     $("testPushNotification").addEventListener("click",testPushNotification);
     $("closeInstallApp").addEventListener("click",()=>$("installAppDialog").close());
     $("dismissInstallApp").addEventListener("click",()=>$("installAppDialog").close());
@@ -4719,7 +4724,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=13-family-shopping-default",
+          "/openbrain-oauth-ui/sw.js?v=14-health-checkinshopping-default",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

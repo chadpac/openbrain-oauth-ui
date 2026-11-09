@@ -1019,191 +1019,210 @@
       }).join("");
     }
 
-    let speechRecognition=null;
-    let speechListening=false;
-    let speechBaseText="";
-    let speechTargetId="quickCapture";
-    let speechButtonId="voiceCapture";
-    let speechStatusId="voiceStatus";
-    let speechGotResult=false;
-    let speechHeardAudio=false;
-    let speechHeardSpeech=false;
-    let speechHadError=false;
-    let speechInputStream=null;
-    let speechInputTrack=null;
-    let speechInputLabel="";
+    let voiceRecorder=null;
+    let voiceStream=null;
+    let voiceChunks=[];
+    let voiceRecording=false;
+    let voiceBaseText="";
+    let voiceTargetId="quickCapture";
+    let voiceButtonId="voiceCapture";
+    let voiceStatusId="voiceStatus";
+    let voiceStopTimer=null;
 
-    function currentSpeechTarget(){ return $(speechTargetId); }
-    function currentSpeechButton(){ return $(speechButtonId); }
-    function currentSpeechStatus(){ return speechStatusId ? $(speechStatusId) : null; }
+    function currentSpeechTarget(){ return $(voiceTargetId); }
+    function currentSpeechButton(){ return $(voiceButtonId); }
+    function currentSpeechStatus(){ return voiceStatusId ? $(voiceStatusId) : null; }
+
+    function stopVoiceStream(){
+      if(voiceStream){
+        voiceStream.getTracks().forEach(track=>track.stop());
+        voiceStream=null;
+      }
+    }
+
+    function resetVoiceButton(){
+      const btn=currentSpeechButton();
+      voiceRecording=false;
+      if(voiceStopTimer){
+        clearTimeout(voiceStopTimer);
+        voiceStopTimer=null;
+      }
+      if(btn){
+        btn.classList.remove("listening");
+        btn.disabled=false;
+        btn.textContent="🎤 Speak";
+        btn.setAttribute("aria-pressed","false");
+      }
+    }
 
     function setupSpeechRecognition(){
-      const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+      const supported=!!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
       const btn=$("voiceCapture");
       const listBtn=$("listVoiceCapture");
-      if(!SpeechRecognition){
+      if(!supported){
         btn?.classList.add("hidden");
         listBtn?.classList.add("hidden");
         if($("voiceStatus")) $("voiceStatus").textContent="Voice capture is not supported by this browser.";
         if($("listVoiceStatus")) $("listVoiceStatus").textContent="Voice capture is not supported by this browser.";
+      }
+    }
+
+    function preferredVoiceMimeType(){
+      const choices=[
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/ogg"
+      ];
+      return choices.find(type=>MediaRecorder.isTypeSupported?.(type))||"";
+    }
+
+    function voiceFormatFromMime(mime){
+      const lower=(mime||"").toLowerCase();
+      if(lower.includes("ogg"))return "ogg";
+      if(lower.includes("wav"))return "wav";
+      if(lower.includes("mp3")||lower.includes("mpeg"))return "mp3";
+      if(lower.includes("m4a")||lower.includes("mp4"))return "m4a";
+      return "webm";
+    }
+
+    function blobToBase64(blob){
+      return new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onerror=()=>reject(reader.error||new Error("Unable to read recording."));
+        reader.onload=()=>{
+          const value=String(reader.result||"");
+          const comma=value.indexOf(",");
+          resolve(comma>=0?value.slice(comma+1):value);
+        };
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function transcribeVoiceBlob(blob,mimeType){
+      const audio_base64=await blobToBase64(blob);
+      const {data,error}=await sb.functions.invoke("transcribe-voice",{body:{
+        audio_base64,
+        format:voiceFormatFromMime(mimeType)
+      }});
+      if(error)throw error;
+      if(data?.error)throw new Error(data.error);
+      const text=typeof data?.text==="string"?data.text.trim():"";
+      if(!text)throw new Error("No speech was recognized.");
+      return text;
+    }
+
+    async function finishVoiceRecording(mimeType){
+      const status=currentSpeechStatus();
+      const target=currentSpeechTarget();
+      const btn=currentSpeechButton();
+      const blob=new Blob(voiceChunks,{type:mimeType||"audio/webm"});
+      voiceChunks=[];
+      stopVoiceStream();
+      voiceRecorder=null;
+      voiceRecording=false;
+      if(voiceStopTimer){
+        clearTimeout(voiceStopTimer);
+        voiceStopTimer=null;
+      }
+
+      if(btn){
+        btn.classList.remove("listening");
+        btn.disabled=true;
+        btn.textContent="Transcribing…";
+        btn.setAttribute("aria-pressed","false");
+      }
+
+      if(blob.size<500){
+        if(status)status.textContent="I didn't receive enough audio to transcribe. Try again.";
+        resetVoiceButton();
+        target?.focus();
         return;
       }
 
-      speechRecognition=new SpeechRecognition();
-      speechRecognition.lang=navigator.language||"en-US";
-      speechRecognition.continuous=false;
-      speechRecognition.interimResults=true;
-      speechRecognition.maxAlternatives=1;
-
-      speechRecognition.onstart=()=>{
-        speechListening=true;
-        speechGotResult=false;
-        speechHeardAudio=false;
-        speechHeardSpeech=false;
-        speechHadError=false;
-        const target=currentSpeechTarget();
-        const activeBtn=currentSpeechButton();
-        const status=currentSpeechStatus();
-        speechBaseText=target?.value.trim()||"";
-        activeBtn?.classList.add("listening");
-        if(activeBtn){
-          activeBtn.textContent="■ Stop";
-          activeBtn.setAttribute("aria-pressed","true");
-        }
-        if(status) status.textContent=speechInputLabel?("Listening… speak naturally. Microphone: "+speechInputLabel):"Listening… speak naturally.";
-      };
-
-      speechRecognition.onaudiostart=()=>{ speechHeardAudio=true; };
-      speechRecognition.onspeechstart=()=>{ speechHeardSpeech=true; };
-
-      speechRecognition.onresult=(event)=>{
-        speechGotResult=true;
-        let transcript="";
-        for(let i=0;i<event.results.length;i++){
-          transcript+=event.results[i][0].transcript;
-        }
-        const prefix=speechBaseText?speechBaseText+" ":"";
-        const target=currentSpeechTarget();
-        if(target) target.value=(prefix+transcript).trimStart();
-      };
-
-      speechRecognition.onnomatch=()=>{
-        const status=currentSpeechStatus();
-        if(status) status.textContent="I heard you, but couldn't recognize the words. Try again.";
-      };
-
-      speechRecognition.onerror=(event)=>{
-        speechHadError=true;
-        const messages={
-          "not-allowed":"Microphone permission was blocked. Allow microphone access for this site and try again.",
-          "service-not-allowed":"Speech recognition is blocked by this browser or device.",
-          "no-speech":"I didn't hear speech. Try again and speak a little closer to the microphone.",
-          "audio-capture":"I couldn't access a microphone on this device.",
-          "network":"Speech recognition had a network problem. Please try again.",
-          "language-not-supported":"This browser does not support speech recognition for your current language."
-        };
-        const status=currentSpeechStatus();
-        if(status) status.textContent=messages[event.error]||("Voice capture stopped: "+(event.error||"unknown error")+".");
-      };
-
-      speechRecognition.onend=()=>{
-        speechListening=false;
-        const target=currentSpeechTarget();
-        const activeBtn=currentSpeechButton();
-        const status=currentSpeechStatus();
-        activeBtn?.classList.remove("listening");
-        if(activeBtn){
-          activeBtn.textContent="🎤 Speak";
-          activeBtn.setAttribute("aria-pressed","false");
-        }
-        if(!speechHadError && status?.textContent?.startsWith("Listening")){
-          if(speechGotResult && target?.value.trim()){
-            status.textContent="Voice added. Review it, then add it.";
-          }else if(!speechHeardAudio){
-            status.textContent="No microphone audio was detected. Check the microphone selected for this browser and try again.";
-          }else if(!speechHeardSpeech){
-            status.textContent="The microphone worked, but I didn't detect speech. Try again and speak a little closer.";
-          }else{
-            status.textContent="I heard speech, but the browser did not return a transcript. Try again; if it repeats, the browser speech service is failing.";
-          }
-        }
-        if(speechInputStream){
-          speechInputStream.getTracks().forEach(track=>track.stop());
-          speechInputStream=null;
-          speechInputTrack=null;
-          speechInputLabel="";
-        }
+      try{
+        if(status)status.textContent="Transcribing your voice…";
+        const transcript=await transcribeVoiceBlob(blob,mimeType);
+        const prefix=voiceBaseText?voiceBaseText+" ":"";
+        if(target)target.value=(prefix+transcript).trim();
+        if(status)status.textContent="Voice added. Review it, then add it.";
+      }catch(err){
+        console.error("Voice transcription failed:",err);
+        if(status)status.textContent=err?.message||"I couldn't transcribe that recording. Please try again.";
+      }finally{
+        resetVoiceButton();
         target?.focus();
-      };
+      }
     }
 
     async function toggleSpeechRecognition(targetId="quickCapture",buttonId="voiceCapture",statusId="voiceStatus"){
-      if(!speechRecognition)return;
+      voiceTargetId=targetId;
+      voiceButtonId=buttonId;
+      voiceStatusId=statusId;
+
+      if(voiceRecording && voiceRecorder){
+        const status=currentSpeechStatus();
+        if(status)status.textContent="Finishing recording…";
+        try{voiceRecorder.stop();}catch(_){}
+        return;
+      }
+
+      const target=currentSpeechTarget();
+      const btn=currentSpeechButton();
+      const status=currentSpeechStatus();
+
       try{
-        if(speechListening){
-          speechRecognition.stop();
-          return;
-        }
-
-        speechTargetId=targetId;
-        speechButtonId=buttonId;
-        speechStatusId=statusId;
-        const status=currentSpeechStatus();
-        if(status) status.textContent="Connecting to microphone…";
-
-        if(navigator.mediaDevices?.getUserMedia){
-          try{
-            speechInputStream=await navigator.mediaDevices.getUserMedia({
-              audio:{
-                echoCancellation:true,
-                noiseSuppression:true,
-                autoGainControl:true
-              }
-            });
-            speechInputTrack=speechInputStream.getAudioTracks()[0]||null;
-            if(speechInputTrack){
-              try{ speechInputTrack.contentHint="speech-recognition"; }catch(_){}
-              speechInputLabel=speechInputTrack.label?.trim()||"";
-              if(status) status.textContent=speechInputLabel?("Connecting to "+speechInputLabel+"…"):"Connecting to microphone…";
-              try{
-                speechRecognition.start(speechInputTrack);
-                return;
-              }catch(trackErr){
-                speechInputStream.getTracks().forEach(track=>track.stop());
-                speechInputStream=null;
-                speechInputTrack=null;
-                speechInputLabel="";
-                if(trackErr?.name!=="TypeError" && trackErr?.name!=="NotSupportedError") throw trackErr;
-              }
-            }
-          }catch(micErr){
-            if(speechInputStream){
-              speechInputStream.getTracks().forEach(track=>track.stop());
-              speechInputStream=null;
-              speechInputTrack=null;
-              speechInputLabel="";
-            }
-            const messages={
-              "NotAllowedError":"Microphone permission was blocked. Allow microphone access for this site and try again.",
-              "NotFoundError":"No microphone was found for this site.",
-              "NotReadableError":"The selected microphone could not be opened. Another app or device setting may be blocking it."
-            };
-            if(status && messages[micErr?.name]) status.textContent=messages[micErr.name];
-            if(messages[micErr?.name]) return;
+        if(status)status.textContent="Connecting to microphone…";
+        voiceStream=await navigator.mediaDevices.getUserMedia({
+          audio:{
+            echoCancellation:true,
+            noiseSuppression:true,
+            autoGainControl:true
           }
-        }
+        });
 
-        if(status) status.textContent="Listening… speak naturally.";
-        speechRecognition.start();
-      }catch(err){
-        if(speechInputStream){
-          speechInputStream.getTracks().forEach(track=>track.stop());
-          speechInputStream=null;
-          speechInputTrack=null;
-          speechInputLabel="";
+        const track=voiceStream.getAudioTracks()[0];
+        const microphoneName=track?.label?.trim()||"microphone";
+        const mimeType=preferredVoiceMimeType();
+        voiceChunks=[];
+        voiceBaseText=target?.value.trim()||"";
+        voiceRecorder=mimeType?new MediaRecorder(voiceStream,{mimeType}):new MediaRecorder(voiceStream);
+
+        voiceRecorder.ondataavailable=e=>{
+          if(e.data?.size)voiceChunks.push(e.data);
+        };
+        voiceRecorder.onerror=e=>{
+          console.error("Voice recorder error:",e);
+          if(status)status.textContent="The microphone recording failed. Please try again.";
+          stopVoiceStream();
+          resetVoiceButton();
+        };
+        voiceRecorder.onstop=()=>finishVoiceRecording(voiceRecorder?.mimeType||mimeType);
+
+        voiceRecorder.start(250);
+        voiceRecording=true;
+        if(btn){
+          btn.classList.add("listening");
+          btn.textContent="■ Stop";
+          btn.setAttribute("aria-pressed","true");
         }
-        const status=currentSpeechStatus();
-        if(status) status.textContent="Voice capture could not start. Try again in a moment.";
+        if(status)status.textContent="Listening with "+microphoneName+"… speak, then press Stop.";
+
+        voiceStopTimer=setTimeout(()=>{
+          if(voiceRecording && voiceRecorder?.state==="recording"){
+            if(status)status.textContent="20-second voice limit reached. Transcribing…";
+            try{voiceRecorder.stop();}catch(_){}
+          }
+        },20000);
+      }catch(err){
+        console.error("Unable to start voice recording:",err);
+        stopVoiceStream();
+        resetVoiceButton();
+        if(status){
+          status.textContent=err?.name==="NotAllowedError"
+            ?"Microphone permission was blocked. Allow microphone access for this site and try again."
+            :"I couldn't open the microphone. Check the selected microphone and try again.";
+        }
       }
     }
 

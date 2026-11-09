@@ -112,6 +112,18 @@
     .list-empty{padding:28px 20px;text-align:center;color:var(--muted)}.list-header-meta{font-size:12px;color:var(--muted);margin-top:4px}.list-actions{display:flex;gap:6px;flex-wrap:wrap}
     .lists-panel.shopping-mode .list-sidebar{display:none}.lists-panel.shopping-mode .lists-layout{grid-template-columns:1fr}.lists-panel.shopping-mode .list-item-row{grid-template-columns:auto minmax(0,1fr);padding:15px 18px}.lists-panel.shopping-mode .list-check{width:42px;height:42px;border-radius:12px;font-size:18px}.lists-panel.shopping-mode .list-item-name{font-size:17px}.lists-panel.shopping-mode [data-list-item-edit]{display:none}.lists-panel.shopping-mode .list-workspace-head{position:sticky;top:0;z-index:5;background:#fff}.lists-panel.shopping-mode .list-quickadd{position:sticky;top:70px;z-index:4;background:#fff;box-shadow:0 5px 12px rgba(30,55,58,.06)}
     @media(max-width:850px){.lists-layout{grid-template-columns:1fr}.list-sidebar{border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:8px;padding:10px 12px}.list-selector{min-width:170px;flex:0 0 auto}.list-quickadd{grid-template-columns:minmax(0,1fr) 76px auto;padding:10px 12px}.list-toolbar,.list-suggestions{padding-left:12px;padding-right:12px}.list-workspace-head{padding:14px 12px}.list-item-row{padding:13px 12px}.list-check{width:36px;height:36px}.lists-panel.shopping-mode .list-quickadd{top:62px}}
+    .ai-launcher{position:fixed;right:22px;bottom:22px;z-index:850;border:0;border-radius:999px;background:var(--navy);color:#fff;padding:12px 16px;box-shadow:0 12px 28px rgba(47,82,84,.28);display:flex;align-items:center;gap:8px;font-weight:850;cursor:pointer}
+    .ai-launcher .ai-star{font-size:17px}.ai-backdrop{position:fixed;inset:0;background:rgba(28,42,43,.28);z-index:899}.ai-panel{position:fixed;top:14px;right:14px;bottom:14px;width:min(430px,calc(100vw - 28px));z-index:900;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 22px 60px rgba(28,42,43,.24);display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+    .ai-panel.hidden,.ai-backdrop.hidden{display:none}.ai-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 16px 13px;border-bottom:1px solid var(--line);background:linear-gradient(145deg,#fff,#f2f8f7)}
+    .ai-head-title{font-weight:900;font-size:17px}.ai-head-note{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.35}.ai-head-actions{display:flex;gap:6px}
+    .ai-messages{overflow:auto;padding:16px;display:grid;align-content:start;gap:11px;background:#fbfcfc}.ai-empty{display:grid;gap:12px;padding:4px 0}.ai-empty-title{font-weight:860;font-size:16px}.ai-empty-text{font-size:13px;color:var(--muted);line-height:1.5}
+    .ai-suggestions{display:flex;gap:7px;flex-wrap:wrap}.ai-suggestion{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 10px;font-size:12px;font-weight:740;text-align:left}
+    .ai-msg{display:grid;gap:5px;max-width:88%}.ai-msg.user{justify-self:end}.ai-msg.assistant{justify-self:start}.ai-bubble{padding:10px 12px;border-radius:15px;font-size:13px;line-height:1.48;white-space:pre-wrap}
+    .ai-msg.user .ai-bubble{background:var(--navy);color:#fff;border-bottom-right-radius:5px}.ai-msg.assistant .ai-bubble{background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}
+    .ai-action-card{border:1px solid #c9dddd;background:#f0f7f6;border-radius:13px;padding:10px;display:grid;gap:8px}.ai-action-card strong{font-size:12px}.ai-action-card button{justify-self:start}
+    .ai-thinking{display:flex;gap:5px;align-items:center;font-size:12px;color:var(--muted);padding:8px 2px}.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:aiPulse 1.1s infinite alternate}.ai-dot:nth-child(2){animation-delay:.18s}.ai-dot:nth-child(3){animation-delay:.36s}@keyframes aiPulse{to{opacity:.25;transform:translateY(-2px)}}
+    .ai-compose{border-top:1px solid var(--line);padding:11px;background:#fff;display:grid;gap:8px}.ai-compose-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}.ai-compose textarea{min-height:44px;max-height:130px;resize:vertical;padding:11px 12px}.ai-compose-note{font-size:10px;color:var(--muted);line-height:1.35}
+    @media(max-width:700px){.ai-launcher{right:14px;bottom:calc(86px + env(safe-area-inset-bottom));padding:11px 14px}.ai-panel{inset:0;width:100%;border:0;border-radius:0;padding-bottom:env(safe-area-inset-bottom)}.ai-backdrop{display:none!important}.ai-messages{padding:14px}.ai-msg{max-width:92%}}
     .health-panel{margin-bottom:18px}.health-private{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;background:var(--peach-soft);color:#7f5a47;font-size:12px;font-weight:800}
     .health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px 20px}.health-card{border:1px solid var(--line);border-radius:15px;background:#fff;padding:15px;display:grid;gap:10px}
     .health-card.inactive{opacity:.6;background:#fafafa}.health-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.health-title{font-weight:820}.health-cat{font-size:11px;color:var(--muted);text-transform:capitalize;margin-top:3px}
@@ -1070,6 +1082,29 @@
     <div class="modalfoot"><button id="dismissInstallApp" class="primary" type="button">Got it</button></div>
   </dialog>
 
+  <button id="aiLauncher" class="ai-launcher" type="button" aria-label="Ask Open Brain AI"><span class="ai-star">✦</span><span>Ask Open Brain</span></button>
+  <div id="aiBackdrop" class="ai-backdrop hidden"></div>
+  <section id="aiPanel" class="ai-panel hidden" role="dialog" aria-modal="true" aria-label="Open Brain AI">
+    <div class="ai-head">
+      <div>
+        <div class="ai-head-title">✦ Open Brain AI</div>
+        <div class="ai-head-note">Uses only Open Brain information this signed-in account can access. Changes always require review.</div>
+      </div>
+      <div class="ai-head-actions">
+        <button id="clearAiChat" class="ghost smallbtn" type="button">Clear</button>
+        <button id="closeAiPanel" class="ghost smallbtn" type="button">Close</button>
+      </div>
+    </div>
+    <div id="aiMessages" class="ai-messages"></div>
+    <form id="aiForm" class="ai-compose">
+      <div class="ai-compose-row">
+        <textarea id="aiInput" maxlength="4000" placeholder="Ask about tasks, events, lists, memories, or what to focus on…"></textarea>
+        <button id="sendAiMessage" class="primary" type="submit">Send</button>
+      </div>
+      <div class="ai-compose-note">Open Brain AI can prepare reminders, events, list items, and memories. You review before saving.</div>
+    </form>
+  </section>
+
   <div id="toast" class="toast hidden"></div>
 
   <script type="module">
@@ -1080,7 +1115,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"" };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false };
     let deferredInstallPrompt=null;
     let listRealtimeChannel=null;
     let listRealtimeTimer=null;
@@ -1759,6 +1794,198 @@
       $("familyAdminCount").textContent=admins;
       $("familyPendingCount").textContent=active;
       refreshPushStatus().catch(err=>console.warn("Push status check failed:",err));
+    }
+
+    function aiPageContext(){
+      const sections=[
+        ["todayHome","Home / Today"],["inboxPanel","Inbox"],["habitPanel","Habits & Routines"],
+        ["memoriesPanel","Memories"],["listsPanel","Lists & Shopping"],["healthPanel","Health & Wellbeing"],
+        ["remindersPanel","Reminders & Tasks"],["familyPanel","Family"],["familySettings","Settings"]
+      ];
+      let best={id:"todayHome",label:"Home / Today",score:Infinity};
+      for(const [id,label] of sections){
+        const el=$(id);if(!el)continue;
+        const rect=el.getBoundingClientRect();
+        if(rect.bottom<0||rect.top>window.innerHeight)continue;
+        const score=Math.abs(rect.top-90);
+        if(score<best.score)best={id,label,score};
+      }
+      const list=activeList();
+      const listItems=list?state.listItems.filter(i=>i.list_id===list.id):[];
+      return{
+        section_id:best.id,
+        section_label:best.label,
+        local_time:new Date().toISOString(),
+        task_scope:state.taskScope||null,
+        event_scope:state.eventScope||null,
+        active_list:list?{
+          id:list.id,name:list.name,type:list.list_type,visibility:list.visibility,
+          open_items:listItems.filter(i=>!i.completed).length,
+          completed_items:listItems.filter(i=>i.completed).length,
+          shopping_mode:state.listShoppingMode
+        }:null
+      };
+    }
+
+    function renderAiMessages(){
+      const box=$("aiMessages");
+      if(!box)return;
+      if(!state.aiMessages.length&&!state.aiBusy){
+        box.innerHTML='<div class="ai-empty">'+
+          '<div class="ai-empty-title">What can I help with?</div>'+
+          '<div class="ai-empty-text">Ask about your day, family calendar, shopping lists, goals, habits, or memories. I can also prepare something for you to review and save.</div>'+
+          '<div class="ai-suggestions">'+
+            '<button class="ai-suggestion" type="button" data-ai-prompt="What do I have today?">What do I have today?</button>'+
+            '<button class="ai-suggestion" type="button" data-ai-prompt="What is on our shopping lists right now?">What’s on our shopping lists?</button>'+
+            '<button class="ai-suggestion" type="button" data-ai-prompt="What should I focus on this week?">What should I focus on?</button>'+
+            '<button class="ai-suggestion" type="button" data-ai-prompt="What are my overdue tasks?">What’s overdue?</button>'+
+          '</div>'+
+        '</div>';
+        return;
+      }
+      let html=state.aiMessages.map((m,index)=>{
+        const action=m.action
+          ? '<div class="ai-action-card"><strong>Proposed '+esc(String(m.action.type).replace("_"," "))+'</strong><button class="primary smallbtn" type="button" data-ai-action-index="'+index+'">'+esc(m.action.label||"Review")+'</button></div>'
+          : "";
+        return '<div class="ai-msg '+(m.role==="user"?"user":"assistant")+'"><div class="ai-bubble">'+esc(m.content)+'</div>'+action+'</div>';
+      }).join("");
+      if(state.aiBusy){
+        html+='<div class="ai-thinking"><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span><span>Open Brain is thinking…</span></div>';
+      }
+      box.innerHTML=html;
+      requestAnimationFrame(()=>{box.scrollTop=box.scrollHeight;});
+    }
+
+    function openAiPanel(){
+      $("aiPanel").classList.remove("hidden");
+      $("aiBackdrop").classList.remove("hidden");
+      renderAiMessages();
+      setTimeout(()=>$("aiInput")?.focus(),50);
+    }
+
+    function closeAiPanel(){
+      $("aiPanel").classList.add("hidden");
+      $("aiBackdrop").classList.add("hidden");
+    }
+
+    async function sendAiMessage(textOverride=null){
+      if(state.aiBusy)return;
+      const input=$("aiInput");
+      const message=String(textOverride??input.value).trim();
+      if(!message)return;
+
+      const history=state.aiMessages.slice(-8).map(m=>({role:m.role,content:m.content}));
+      state.aiMessages.push({role:"user",content:message,action:null});
+      input.value="";
+      state.aiBusy=true;
+      renderAiMessages();
+
+      try{
+        const {data,error}=await sb.functions.invoke("open-brain-assistant",{body:{
+          message,
+          history,
+          page_context:aiPageContext()
+        }});
+        if(error)throw error;
+        if(data?.error)throw new Error(data.error);
+        state.aiMessages.push({
+          role:"assistant",
+          content:data?.answer||"I couldn't form an answer.",
+          action:data?.action||null
+        });
+      }catch(err){
+        state.aiMessages.push({
+          role:"assistant",
+          content:"I couldn't reach Open Brain AI just now. Your Open Brain data was not changed.",
+          action:null
+        });
+        console.warn("Open Brain AI request failed:",err);
+      }finally{
+        state.aiBusy=false;
+        renderAiMessages();
+      }
+    }
+
+    function aiSetTaskProposal(payload){
+      closeAiPanel();
+      state.pendingInboxProcess=null;
+      openEditor();
+      $("taskTitle").value=payload?.title||"";
+      $("taskDescription").value=payload?.description||"";
+      $("taskPriority").value=["low","normal","high","urgent"].includes(payload?.priority)?payload.priority:"normal";
+      if(isAdmin()&&payload?.assigned_to_user_id&&state.members.some(m=>m.user_id===payload.assigned_to_user_id)){
+        $("taskMember").value=payload.assigned_to_user_id;
+      }else{
+        $("taskMember").value=state.user.id;
+      }
+      if(payload?.remind_at)$("taskReminder").value=toLocalInput(payload.remind_at);
+      if(payload?.due_at)$("taskDue").value=toLocalInput(payload.due_at);
+      if(payload?.recurrence_rule){
+        const values=[...$("taskRepeat").options].map(o=>o.value);
+        if(values.includes(payload.recurrence_rule)){
+          $("taskRepeat").value=payload.recurrence_rule;
+        }else{
+          $("taskRepeat").value="__custom";
+          $("taskRepeatCustom").value=payload.recurrence_rule;
+          $("customRepeatWrap").classList.remove("hidden");
+        }
+      }
+    }
+
+    function aiSetEventProposal(payload){
+      closeAiPanel();
+      state.pendingInboxProcess=null;
+      openEventEditor();
+      $("eventTitle").value=payload?.title||"";
+      $("eventDescription").value=payload?.description||"";
+      $("eventLocation").value=payload?.location||"";
+      if(payload?.starts_at)$("eventStart").value=toLocalInput(payload.starts_at);
+      if(payload?.ends_at)$("eventEnd").value=toLocalInput(payload.ends_at);
+    }
+
+    function aiSetListProposal(payload){
+      let list=null;
+      if(payload?.list_id)list=state.lists.find(l=>l.id===payload.list_id&&!l.archived_at)||null;
+      if(!list&&payload?.list_name){
+        const wanted=String(payload.list_name).toLowerCase();
+        list=state.lists.find(l=>!l.archived_at&&l.name.toLowerCase()===wanted)||null;
+      }
+      if(!list)list=activeList();
+      if(!list){
+        closeAiPanel();
+        $("listsPanel").scrollIntoView({behavior:"smooth",block:"start"});
+        toast("Choose or create a list first, then ask Open Brain again.",true);
+        return;
+      }
+      state.activeListId=list.id;
+      if(state.listShoppingMode)setShoppingMode(false);
+      renderLists();
+      closeAiPanel();
+      openListItemEditor();
+      $("listItemContent").value=payload?.content||"";
+      $("listItemQuantity").value=payload?.quantity||"";
+      $("listItemNotes").value=payload?.notes||"";
+    }
+
+    function aiSetMemoryProposal(payload){
+      closeAiPanel();
+      openMemoryEditor();
+      $("memoryContent").value=payload?.content||"";
+      const visibility=["private","household","parents"].includes(payload?.visibility)?payload.visibility:"private";
+      $("memoryVisibility").value=visibility==="parents"&&!isAdmin()?"private":visibility;
+      const type=["observation","task","idea","reference","person_note"].includes(payload?.type)?payload.type:"reference";
+      $("memoryType").value=type;
+      $("memoryTopics").value=Array.isArray(payload?.topics)?payload.topics.slice(0,12).join(", "):"";
+    }
+
+    function reviewAiAction(index){
+      const message=state.aiMessages[Number(index)];
+      const action=message?.action;
+      if(!action)return;
+      if(action.type==="task")aiSetTaskProposal(action.payload);
+      else if(action.type==="event")aiSetEventProposal(action.payload);
+      else if(action.type==="list_item")aiSetListProposal(action.payload);
+      else if(action.type==="memory")aiSetMemoryProposal(action.payload);
     }
 
     function renderAll(){
@@ -3540,6 +3767,22 @@
       const btn=e.target.closest("[data-today-done]"); if(!btn)return;
       await setStatus(btn.dataset.todayDone,"completed");
     });
+
+    $("aiLauncher").addEventListener("click",openAiPanel);
+    $("closeAiPanel").addEventListener("click",closeAiPanel);
+    $("aiBackdrop").addEventListener("click",closeAiPanel);
+    $("clearAiChat").addEventListener("click",()=>{state.aiMessages=[];renderAiMessages();$("aiInput").focus();});
+    $("aiForm").addEventListener("submit",e=>{e.preventDefault();sendAiMessage();});
+    $("aiInput").addEventListener("keydown",e=>{
+      if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAiMessage();}
+    });
+    $("aiMessages").addEventListener("click",e=>{
+      const prompt=e.target.closest("[data-ai-prompt]");
+      if(prompt){sendAiMessage(prompt.dataset.aiPrompt);return;}
+      const action=e.target.closest("[data-ai-action-index]");
+      if(action)reviewAiAction(action.dataset.aiActionIndex);
+    });
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("aiPanel").classList.contains("hidden"))closeAiPanel();});
 
     $("signOut").addEventListener("click",async()=>{stopListRealtime();await sb.auth.signOut();location.reload();});
     $("installOpenBrain").addEventListener("click",installOpenBrain);

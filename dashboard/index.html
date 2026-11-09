@@ -2207,12 +2207,34 @@
 
     function aiResolveList(payload){
       let list=null;
-      if(payload?.list_id)list=state.lists.find(l=>l.id===payload.list_id&&!l.archived_at)||null;
-      if(!list&&payload?.list_name){
-        const wanted=String(payload.list_name).trim().toLowerCase();
-        list=state.lists.find(l=>!l.archived_at&&l.name.toLowerCase()===wanted)||null;
+      const requestedName=String(payload?.list_name||"").trim();
+      const genericShopping=/^(shopping|shopping list|groceries|grocery|grocery list)$/i.test(requestedName);
+
+      if(payload?.list_id){
+        const exact=state.lists.find(l=>l.id===payload.list_id&&!l.archived_at)||null;
+        if(exact && !(genericShopping && exact.visibility==="private"))list=exact;
       }
-      if(!list)list=activeList();
+
+      if(!list&&requestedName){
+        const wanted=requestedName.toLowerCase();
+        if(genericShopping){
+          list=state.lists.find(l=>
+            !l.archived_at &&
+            l.visibility==="household" &&
+            ["grocery","shopping"].includes(l.list_type) &&
+            /^(shopping|shopping list|groceries|grocery)$/i.test(String(l.name||"").trim())
+          ) || state.lists.find(l=>
+            !l.archived_at && l.visibility==="household" && ["grocery","shopping"].includes(l.list_type)
+          ) || null;
+        }else{
+          list=state.lists.find(l=>!l.archived_at&&l.name.toLowerCase()===wanted)||null;
+        }
+      }
+
+      if(!list){
+        const current=activeList();
+        list=current||preferredDefaultList(state.lists);
+      }
       return list;
     }
 
@@ -2573,6 +2595,19 @@
       return state.lists.find(l=>l.id===state.activeListId)||null;
     }
 
+    function preferredDefaultList(lists){
+      const source=(lists||[]).filter(l=>!l.archived_at);
+      return source.find(l=>
+        l.visibility==="household" &&
+        ["grocery","shopping"].includes(l.list_type) &&
+        /^(shopping|shopping list|groceries|grocery)$/i.test(String(l.name||"").trim())
+      ) || source.find(l=>
+        l.visibility==="household" && ["grocery","shopping"].includes(l.list_type)
+      ) || source.find(l=>l.visibility==="household")
+        || source[0]
+        || null;
+    }
+
     function normalizedListItemName(value){
       return String(value||"").trim().toLowerCase().replace(/[.,;:!?]+$/g,"").replace(/\s+/g," ");
     }
@@ -2655,7 +2690,7 @@
       const showArchived=!!$("showArchivedLists")?.checked;
       const visibleLists=state.lists.filter(l=>showArchived?!!l.archived_at:!l.archived_at);
       if(!state.activeListId || !visibleLists.some(l=>l.id===state.activeListId)){
-        state.activeListId=visibleLists[0]?.id||null;
+        state.activeListId=preferredDefaultList(visibleLists)?.id||null;
       }
 
       const chooser=$("listChooser");
@@ -2666,7 +2701,7 @@
           const openCount=state.listItems.filter(i=>i.list_id===l.id&&!i.completed).length;
           return '<button class="list-selector '+(l.id===state.activeListId?"active ":"")+(l.archived_at?"archived":"")+'" data-list-select="'+l.id+'">'+
             '<div class="list-selector-title"><span class="list-type-icon">'+listTypeIcon(l.list_type)+'</span>'+esc(l.name)+'</div>'+
-            '<div class="list-selector-meta">'+esc(l.visibility==="household"?"Household":"Private")+' · '+openCount+' open</div>'+
+            '<div class="list-selector-meta">'+esc(l.visibility==="household"?"FAMILY · shared":"PRIVATE · only me")+' · '+openCount+' open</div>'+
           '</button>';
         }).join("");
       }
@@ -2688,10 +2723,12 @@
         return;
       }
 
-      $("activeListName").textContent=listTypeIcon(list.list_type)+" "+list.name;
+      $("activeListName").textContent=listTypeIcon(list.list_type)+" "+list.name+" "+(list.visibility==="household"?"· FAMILY":"· PRIVATE");
       const owner=memoryOwnerName(list.owner_user_id);
-      $("activeListMeta").textContent=(list.visibility==="household"?"Shared with household":"Private")+" · Created by "+owner+(list.archived_at?" · Archived":"");
+      $("activeListMeta").textContent=(list.visibility==="household"?"Shared family list":"Private — only visible to you")+" · Created by "+owner+(list.archived_at?" · Archived":"");
+      $("listQuickItem").placeholder="Add to "+(list.visibility==="household"?"FAMILY ":"PRIVATE ")+list.name+"…";
       $("listLiveBadge").classList.toggle("hidden",list.visibility!=="household");
+      $("listLiveBadge").textContent=list.visibility==="household"?"Live family list":"Private list";
 
       const allItems=state.listItems.filter(i=>i.list_id===list.id);
       const openCount=allItems.filter(i=>!i.completed).length;
@@ -4384,7 +4421,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=12-live-duplicate-check",
+          "/openbrain-oauth-ui/sw.js?v=13-family-shopping-default",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

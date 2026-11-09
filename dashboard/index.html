@@ -67,6 +67,14 @@
     .week-anchor{margin-top:12px;padding:11px 12px;border-radius:12px;background:var(--peach-soft);font-size:13px}.week-anchor strong{display:block;margin-bottom:3px;color:#76513f}
     .review-note{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.45}
     .inbox-panel{margin-bottom:18px}.inbox-count{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:var(--peach-soft);color:#7a5744;font-size:12px;font-weight:850}
+    .memory-panel{margin-bottom:18px}.memory-toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.memory-toolbar input{min-width:260px;flex:1}
+    .memory-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px 20px 20px}.memory-card{border:1px solid var(--line);border-radius:15px;padding:15px;background:#fff;display:grid;gap:10px}
+    .memory-card.archived{opacity:.65;background:#fafafa}.memory-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.memory-content{white-space:pre-wrap;line-height:1.5;font-size:14px}
+    .memory-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.memory-chip{display:inline-flex;padding:5px 8px;border-radius:999px;background:var(--blue-soft);color:#3f7779;font-size:11px;font-weight:800}
+    .memory-chip.private{background:var(--peach-soft);color:#8b624b}.memory-chip.parents{background:var(--purple-soft);color:#66767a}.memory-chip.archived{background:#f1f1f1;color:#777}
+    .memory-date{font-size:11px;color:var(--muted)}.memory-actions{display:flex;gap:6px;flex-wrap:wrap}.memory-empty{padding:28px 20px;color:var(--muted);text-align:center}
+    .memory-search-note{font-size:12px;color:var(--muted)}.topic-row{display:flex;gap:6px;flex-wrap:wrap}.topic-tag{font-size:11px;background:#f6f7f7;border:1px solid var(--line);padding:4px 7px;border-radius:8px}
+    @media(max-width:900px){.memory-grid{grid-template-columns:1fr}}
     .inbox-list{display:grid}.inbox-item{display:grid;grid-template-columns:minmax(260px,1.4fr) minmax(170px,.65fr) minmax(320px,1fr);gap:16px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
     .inbox-item:last-child{border-bottom:0}.inbox-content{font-weight:720;line-height:1.4}.inbox-time{font-size:11px;color:var(--muted);margin-top:5px}
     .suggestion{font-size:13px;color:var(--muted)}.suggestion strong{display:block;color:var(--ink);margin-bottom:4px}.type-chip{display:inline-flex;padding:5px 9px;border-radius:999px;background:var(--blue-soft);color:#3f7779;font-size:11px;font-weight:850;text-transform:capitalize}
@@ -149,8 +157,8 @@
         <button class="navitem active" data-scroll="todayHome">Home / Today</button>
         <button class="navitem" data-scroll="inboxPanel">Inbox <span id="navInboxCount"></span></button>
         <button class="navitem" data-scroll="habitPanel">Habits & Routines</button>
+        <button class="navitem" data-scroll="memoriesPanel">Memories</button>
         <button class="navitem" data-scroll="remindersPanel">Reminders & Tasks</button>
-        <button class="navitem disabled" title="Coming next">Memories · soon</button>
         <button class="navitem disabled" title="Coming next">Family · soon</button>
         <button class="navitem disabled" title="Coming next">Settings · soon</button>
       </nav>
@@ -258,6 +266,40 @@
           <div class="controls"><button id="refreshInbox" class="ghost">Refresh</button></div>
         </div>
         <div id="inboxList" class="inbox-list"><div class="empty">Your inbox is clear.</div></div>
+      </section>
+
+      <section id="memoriesPanel" class="panel memory-panel">
+        <div class="panelhead">
+          <div>
+            <h3>Memories</h3>
+            <div class="subtitle">Browse what Open Brain remembers. Private memories stay private to their owner.</div>
+          </div>
+          <button id="newMemory" class="primary">+ Memory</button>
+        </div>
+        <div class="panelhead" style="border-top:0">
+          <div class="memory-toolbar" style="width:100%">
+            <input id="memorySearch" placeholder="Search memories…" />
+            <button id="semanticMemorySearch" class="ghost">Search by meaning</button>
+            <select id="memoryVisibilityFilter">
+              <option value="">All visibility</option>
+              <option value="private">Private</option>
+              <option value="household">Household</option>
+              <option value="parents">Parents</option>
+            </select>
+            <select id="memoryOwnerFilter"><option value="">All owners</option></select>
+            <select id="memoryTypeFilter">
+              <option value="">All types</option>
+              <option value="observation">Observation</option>
+              <option value="reference">Reference</option>
+              <option value="idea">Idea</option>
+              <option value="person_note">Person note</option>
+              <option value="task">Task</option>
+            </select>
+            <label class="notify-choice"><input id="showArchivedMemories" type="checkbox"> Archived</label>
+          </div>
+        </div>
+        <div id="memorySearchNote" class="memory-search-note" style="padding:10px 20px 0"></div>
+        <div id="memoryGrid" class="memory-grid"><div class="memory-empty">Loading memories…</div></div>
       </section>
 
       <section class="overview">
@@ -371,6 +413,43 @@
         </div>
       </div>
       <div class="modalfoot"><button id="cancelEdit" class="ghost" type="button">Cancel</button><button id="saveTask" class="primary" type="submit">Save reminder</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="memoryEditor">
+    <form id="memoryForm">
+      <div class="modalhead"><h3 id="memoryEditorTitle">New memory</h3><button id="closeMemoryEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="memoryId" type="hidden" />
+        <div><label for="memoryContent">Memory</label><textarea id="memoryContent" required style="min-height:150px" placeholder="Write a clear standalone memory that will make sense later."></textarea></div>
+        <div class="grid2">
+          <div>
+            <label for="memoryVisibility">Who can see it?</label>
+            <select id="memoryVisibility">
+              <option value="private">Private — only me</option>
+              <option value="household">Household — everyone</option>
+              <option value="parents">Parents — household admins</option>
+            </select>
+          </div>
+          <div>
+            <label for="memoryType">Type</label>
+            <select id="memoryType">
+              <option value="observation">Observation</option>
+              <option value="reference">Reference</option>
+              <option value="idea">Idea</option>
+              <option value="person_note">Person note</option>
+              <option value="task">Task</option>
+            </select>
+          </div>
+        </div>
+        <div><label for="memoryTopics">Topics / tags</label><input id="memoryTopics" placeholder="home, vehicles, recipes" /><div class="helper">Comma separated. Open Brain will suggest tags automatically if you leave this blank.</div></div>
+        <div id="memoryOwnershipNote" class="helper"></div>
+      </div>
+      <div class="modalfoot">
+        <button id="deleteMemory" class="ghost hidden" type="button" style="margin-right:auto;color:var(--red)">Delete permanently</button>
+        <button id="cancelMemoryEdit" class="ghost" type="button">Cancel</button>
+        <button class="primary" type="submit">Save memory</button>
+      </div>
     </form>
   </dialog>
 
@@ -513,7 +592,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -613,7 +692,7 @@
     }
 
     async function loadData(){
-      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, habitsRes, habitCompletionsRes, weeksRes, inboxRes]=await Promise.all([
+      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, habitsRes, habitCompletionsRes, memoriesRes, weeksRes, inboxRes]=await Promise.all([
         sb.from("household_members").select("user_id,household_id,display_name,role,telegram_enabled").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
         sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
@@ -622,6 +701,7 @@
         sb.from("family_goals").select("*").eq("household_id",state.member.household_id).eq("status","active").order("updated_at",{ascending:false}),
         sb.from("habits").select("*").eq("owner_user_id",state.user.id).neq("status","archived").order("created_at",{ascending:true}),
         sb.from("habit_completions").select("id,habit_id,completed_on,created_at").eq("owner_user_id",state.user.id).gte("completed_on",new Date(Date.now()-21*86400000).toISOString().slice(0,10)),
+        sb.from("thoughts").select("id,content,metadata,created_at,updated_at,visibility,created_by,household_id,archived_at").eq("household_id",state.member.household_id).order("updated_at",{ascending:false}).limit(250),
         sb.from("weekly_plans").select("*").eq("owner_user_id",state.user.id).order("week_start",{ascending:false}).limit(12),
         sb.from("inbox_items").select("*").eq("owner_user_id",state.user.id).eq("status","unprocessed").order("created_at",{ascending:false}).limit(50)
       ]);
@@ -633,9 +713,10 @@
       if(goalsRes.error) throw goalsRes.error;
       if(habitsRes.error) throw habitsRes.error;
       if(habitCompletionsRes.error) throw habitCompletionsRes.error;
+      if(memoriesRes.error) throw memoriesRes.error;
       if(weeksRes.error) throw weeksRes.error;
       if(inboxRes.error) throw inboxRes.error;
-      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.memories=memoriesRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
       if(!state.memberFilter) state.memberFilter=state.member.user_id;
       populateMembers();
     }
@@ -650,6 +731,15 @@
         const o2=document.createElement("option"); o2.value=m.user_id; o2.textContent=m.display_name; editor.appendChild(o2);
       }
       filter.value=state.memberFilter||currentFilter; if(currentEditor) editor.value=currentEditor;
+      const owner=$("memoryOwnerFilter");
+      if(owner){
+        const currentOwner=owner.value;
+        owner.innerHTML='<option value="">All owners</option>';
+        for(const m of state.members){
+          const o=document.createElement("option");o.value=m.user_id;o.textContent=m.display_name;owner.appendChild(o);
+        }
+        owner.value=currentOwner;
+      }
     }
 
     function renderAll(){
@@ -660,6 +750,7 @@
       $("statFamily").textContent=state.members.length;
       renderToday();
       renderHabits();
+      renderMemories();
       renderWeek();
       renderInbox();
       renderOverview();
@@ -792,6 +883,135 @@
 
     function clearQuick(){
       $("quickCapture").value="";
+    }
+
+    function memoryOwnerName(userId){
+      return state.members.find(m=>m.user_id===userId)?.display_name||"Unknown";
+    }
+
+    function memoryTopics(memory){
+      return Array.isArray(memory?.metadata?.topics)?memory.metadata.topics:[];
+    }
+
+    function filteredMemories(){
+      const visibility=$("memoryVisibilityFilter")?.value||"";
+      const owner=$("memoryOwnerFilter")?.value||"";
+      const type=$("memoryTypeFilter")?.value||"";
+      const showArchived=!!$("showArchivedMemories")?.checked;
+      const q=(state.memorySearch||"").toLowerCase();
+      const source=state.semanticMemories!==null?state.semanticMemories:state.memories;
+      return source.filter(m=>{
+        if(showArchived ? !m.archived_at : !!m.archived_at) return false;
+        if(visibility&&m.visibility!==visibility)return false;
+        if(owner&&m.created_by!==owner)return false;
+        if(type&&(m.metadata?.type||"observation")!==type)return false;
+        if(q&&state.semanticMemories===null){
+          const hay=[m.content,m.metadata?.type,...memoryTopics(m),memoryOwnerName(m.created_by)].join(" ").toLowerCase();
+          if(!hay.includes(q))return false;
+        }
+        return true;
+      });
+    }
+
+    function renderMemories(){
+      const memories=filteredMemories();
+      const grid=$("memoryGrid");
+      if(!memories.length){
+        grid.innerHTML='<div class="memory-empty">No memories match these filters.</div>';
+        return;
+      }
+      grid.innerHTML=memories.map(m=>{
+        const mine=m.created_by===state.user.id;
+        const topics=memoryTopics(m);
+        const type=m.metadata?.type||"observation";
+        const date=new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",year:"numeric"}).format(new Date(m.updated_at||m.created_at));
+        const similarity=m.similarity!=null?Math.round(Number(m.similarity)*100):null;
+        return '<article class="memory-card '+(m.archived_at?"archived":"")+'">'+
+          '<div class="memory-top"><div class="memory-meta">'+
+            '<span class="memory-chip '+esc(m.visibility)+'">'+esc(m.visibility)+'</span>'+
+            '<span class="memory-chip">'+esc(String(type).replace("_"," "))+'</span>'+
+            (m.archived_at?'<span class="memory-chip archived">archived</span>':'')+
+          '</div><div class="memory-date">'+esc(memoryOwnerName(m.created_by))+' · '+esc(date)+(similarity!==null?' · '+similarity+'% match':'')+'</div></div>'+
+          '<div class="memory-content">'+esc(m.content)+'</div>'+
+          (topics.length?'<div class="topic-row">'+topics.map(t=>'<span class="topic-tag">'+esc(t)+'</span>').join("")+'</div>':'')+
+          '<div class="memory-actions">'+
+            (mine?'<button class="smallbtn" data-memory-edit="'+m.id+'">Edit</button>':'<span class="memory-date">Read only</span>')+
+            (mine&&!m.archived_at?'<button class="smallbtn" data-memory-archive="'+m.id+'">Archive</button>':'')+
+            (mine&&m.archived_at?'<button class="smallbtn" data-memory-restore="'+m.id+'">Restore</button>':'')+
+          '</div>'+
+        '</article>';
+      }).join("");
+    }
+
+    function openMemoryEditor(memory=null){
+      $("memoryForm").reset();
+      $("memoryId").value=memory?.id||"";
+      $("memoryEditorTitle").textContent=memory?"Edit memory":"New memory";
+      $("memoryContent").value=memory?.content||"";
+      $("memoryVisibility").value=memory?.visibility||"private";
+      $("memoryType").value=memory?.metadata?.type||"observation";
+      $("memoryTopics").value=memoryTopics(memory).join(", ");
+      const mine=!memory||memory.created_by===state.user.id;
+      $("memoryOwnershipNote").textContent=memory?("Created by "+memoryOwnerName(memory.created_by)+(mine?" · You can edit this memory.":" · Read only.")):"New memories are owned by your account.";
+      $("deleteMemory").classList.toggle("hidden",!memory||!mine);
+      $("memoryEditor").showModal();
+    }
+
+    async function saveMemory(e){
+      e.preventDefault();
+      try{
+        const id=$("memoryId").value||null;
+        const content=$("memoryContent").value.trim();
+        const topics=$("memoryTopics").value.split(",").map(x=>x.trim()).filter(Boolean);
+        const {data,error}=await sb.functions.invoke("save-memory",{body:{
+          id,content,visibility:$("memoryVisibility").value,type:$("memoryType").value,topics
+        }});
+        if(error) throw error;
+        if(data?.error) throw new Error(data.error);
+        $("memoryEditor").close();
+        state.semanticMemories=null;
+        state.memorySearch="";
+        $("memorySearch").value="";
+        await loadData();renderAll();toast(id?"Memory updated.":"Memory saved.");
+      }catch(err){toast(err?.message||"Unable to save memory.",true);}
+    }
+
+    async function semanticMemorySearch(){
+      const query=$("memorySearch").value.trim();
+      if(!query){toast("Type something to search for first.",true);return;}
+      const btn=$("semanticMemorySearch");btn.disabled=true;
+      try{
+        $("memorySearchNote").textContent="Searching by meaning…";
+        const {data,error}=await sb.functions.invoke("search-memories",{body:{query,limit:30}});
+        if(error) throw error;
+        if(data?.error) throw new Error(data.error);
+        state.semanticMemories=data?.results||[];
+        state.memorySearch="";
+        $("memorySearchNote").textContent='Semantic results for “'+query+'” — clear the search box to return to browsing.';
+        renderMemories();
+      }catch(err){
+        $("memorySearchNote").textContent="";
+        toast(err?.message||"Unable to search memories.",true);
+      }finally{btn.disabled=false;}
+    }
+
+    async function setMemoryArchived(id,archived){
+      const {error}=await sb.from("thoughts").update({archived_at:archived?new Date().toISOString():null,updated_at:new Date().toISOString()}).eq("id",id);
+      if(error){toast(error.message,true);return;}
+      state.semanticMemories=null;
+      await loadData();renderAll();toast(archived?"Memory archived.":"Memory restored.");
+    }
+
+    async function deleteCurrentMemory(){
+      const id=$("memoryId").value;if(!id)return;
+      const memory=state.memories.find(m=>m.id===id);
+      if(!memory||memory.created_by!==state.user.id)return;
+      if(!confirm("Permanently delete this memory? This cannot be undone."))return;
+      const {error}=await sb.from("thoughts").delete().eq("id",id);
+      if(error){toast(error.message,true);return;}
+      $("memoryEditor").close();
+      state.semanticMemories=null;
+      await loadData();renderAll();toast("Memory deleted.");
     }
 
     function householdDateKey(date=new Date()){
@@ -1560,6 +1780,27 @@
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
+    $("newMemory").addEventListener("click",()=>openMemoryEditor());
+    $("closeMemoryEditor").addEventListener("click",()=>$("memoryEditor").close());
+    $("cancelMemoryEdit").addEventListener("click",()=>$("memoryEditor").close());
+    $("memoryForm").addEventListener("submit",saveMemory);
+    $("deleteMemory").addEventListener("click",deleteCurrentMemory);
+    $("semanticMemorySearch").addEventListener("click",semanticMemorySearch);
+    $("memorySearch").addEventListener("input",e=>{
+      state.memorySearch=e.target.value.trim();
+      if(!state.memorySearch){state.semanticMemories=null;$("memorySearchNote").textContent="";}
+      renderMemories();
+    });
+    ["memoryVisibilityFilter","memoryOwnerFilter","memoryTypeFilter","showArchivedMemories"].forEach(id=>$(id).addEventListener("change",renderMemories));
+    $("memoryGrid").addEventListener("click",async(e)=>{
+      const edit=e.target.closest("[data-memory-edit]");
+      if(edit){const m=state.memories.find(x=>x.id===edit.dataset.memoryEdit)||(state.semanticMemories||[]).find(x=>x.id===edit.dataset.memoryEdit);if(m)openMemoryEditor(m);return;}
+      const archive=e.target.closest("[data-memory-archive]");
+      if(archive){await setMemoryArchived(archive.dataset.memoryArchive,true);return;}
+      const restore=e.target.closest("[data-memory-restore]");
+      if(restore){await setMemoryArchived(restore.dataset.memoryRestore,false);}
+    });
+
     $("newHabit").addEventListener("click",()=>openHabitEditor());
     $("closeHabitEditor").addEventListener("click",()=>$("habitEditor").close());
     $("cancelHabitEdit").addEventListener("click",()=>$("habitEditor").close());

@@ -161,6 +161,8 @@
     .family-badge.admin{background:var(--blue-soft);color:var(--navy2)}
     .family-badge.connected{background:var(--green-soft);color:#356d67}
     .family-badge.offline{background:var(--amber-soft);color:#8a5d3f}
+    .family-badge.pending{background:#fff7df;color:#8b6a19}
+    .family-email{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
     .family-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
     .family-metric{border-radius:12px;background:var(--bg);padding:10px}
     .family-metric strong{display:block;font-size:18px}
@@ -437,6 +439,9 @@
           <div>
             <h3>Family Hub</h3>
             <div class="subtitle">Household members, reminder connections, and a quick view of who has what on their plate.</div>
+          </div>
+          <div class="controls">
+            <button id="inviteFamilyMember" class="primary hidden" type="button">+ Invite family member</button>
           </div>
         </div>
         <div class="family-shell">
@@ -843,6 +848,35 @@
     </form>
   </dialog>
 
+  <dialog id="familyInviteEditor">
+    <form id="familyInviteForm">
+      <div class="modalhead"><h3>Invite family member</h3><button id="closeFamilyInviteEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <div>
+          <label for="familyInviteName">Name</label>
+          <input id="familyInviteName" maxlength="80" required placeholder="e.g. Jordan" />
+        </div>
+        <div>
+          <label for="familyInviteEmail">Email address</label>
+          <input id="familyInviteEmail" type="email" maxlength="320" autocomplete="email" required />
+          <div class="helper">Open Brain will email this person a secure invitation or sign-in link.</div>
+        </div>
+        <div>
+          <label for="familyInviteRole">Access level</label>
+          <select id="familyInviteRole">
+            <option value="member" selected>Family member</option>
+            <option value="admin">Household admin</option>
+          </select>
+          <div class="helper">Most people should be Family members. Admins can manage household settings and other members.</div>
+        </div>
+      </div>
+      <div class="modalfoot">
+        <button id="cancelFamilyInvite" class="ghost" type="button">Cancel</button>
+        <button id="sendFamilyInvite" class="primary" type="submit">Send invitation</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="householdEditor">
     <form id="householdForm">
       <div class="modalhead"><h3>Household settings</h3><button id="closeHouseholdEditor" class="ghost" type="button">Close</button></div>
@@ -904,7 +938,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -1045,6 +1079,15 @@
       if(weeksRes.error) throw weeksRes.error;
       if(inboxRes.error) throw inboxRes.error;
       state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.habits=habitsRes.data||[]; state.habitCompletions=habitCompletionsRes.data||[]; state.memories=memoriesRes.data||[]; state.lists=listsRes.data||[]; state.listItems=listItemsRes.data||[]; state.healthTrackers=healthTrackersRes.data||[]; state.healthEntries=healthEntriesRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
+      state.memberAuth={};
+      if(isAdmin()){
+        try{
+          const statusData=await invokeHouseholdAdmin({action:"member_statuses"});
+          for(const info of (statusData.members||[])) state.memberAuth[info.user_id]=info;
+        }catch(err){
+          console.warn("Unable to load family invite status:",err);
+        }
+      }
       if(state.activeListId && !state.lists.some(l=>l.id===state.activeListId)) state.activeListId=null;
       if(!state.memberFilter) state.memberFilter=state.member.user_id;
       populateMembers();
@@ -1080,6 +1123,51 @@
       if(error) throw error;
       if(data?.error) throw new Error(data.error);
       return data;
+    }
+
+    function openFamilyInviteEditor(){
+      if(!isAdmin())return;
+      $("familyInviteForm").reset();
+      $("familyInviteRole").value="member";
+      $("familyInviteEditor").showModal();
+      $("familyInviteName").focus();
+    }
+
+    async function sendFamilyInvite(e){
+      e.preventDefault();
+      if(!isAdmin())return;
+      const button=$("sendFamilyInvite");
+      const original=button.textContent;
+      button.disabled=true;
+      button.textContent="Sending…";
+      try{
+        const result=await invokeHouseholdAdmin({
+          action:"invite_member",
+          display_name:$("familyInviteName").value.trim(),
+          email:$("familyInviteEmail").value.trim(),
+          role:$("familyInviteRole").value
+        });
+        $("familyInviteEditor").close();
+        await loadData();
+        renderAll();
+        if(result.warning) toast(result.warning,true);
+        else toast(result.existing_user?"Existing account added and sign-in link sent.":"Invitation sent.");
+      }catch(err){
+        toast(err?.message||"Unable to send family invitation.",true);
+      }finally{
+        button.disabled=false;
+        button.textContent=original;
+      }
+    }
+
+    async function resendFamilyInvite(userId){
+      if(!isAdmin())return;
+      try{
+        await invokeHouseholdAdmin({action:"resend_invite",user_id:userId});
+        toast("Sign-in link sent.");
+      }catch(err){
+        toast(err?.message||"Unable to resend the sign-in link.",true);
+      }
     }
 
     function openHouseholdEditor(){
@@ -1142,6 +1230,8 @@
         const assigned=state.tasks.filter(t=>t.assigned_to_user_id===m.user_id && activeStatuses.has(t.status));
         const overdue=assigned.filter(t=>t.remind_at && new Date(t.remind_at)<now).length;
         const telegram=!!m.telegram_enabled;
+        const authInfo=state.memberAuth[m.user_id]||{};
+        const invitePending=!!authInfo.pending;
         const joined=m.joined_at?new Intl.DateTimeFormat(undefined,{month:"short",year:"numeric"}).format(new Date(m.joined_at)):"";
         return '<div class="family-member">'+
           '<div class="family-member-top">'+
@@ -1149,15 +1239,21 @@
             '<div><div class="family-member-name">'+esc(m.display_name)+(m.user_id===state.user.id?' <span class="subtitle">(you)</span>':'')+'</div>'+
             '<div class="family-badges">'+
               '<span class="family-badge '+(m.role==="admin"?"admin":"")+'">'+esc(roleLabel(m.role))+'</span>'+
+              (invitePending?'<span class="family-badge pending">Invitation pending</span>':'')+
               '<span class="family-badge '+(telegram?"connected":"offline")+'">'+(telegram?"Telegram connected":"Telegram not connected")+'</span>'+
-            '</div></div>'+
+            '</div>'+
+            (isAdmin()&&authInfo.email?'<div class="family-email">'+esc(authInfo.email)+'</div>':'')+
+            '</div>'+
           '</div>'+
           '<div class="family-metrics">'+
             '<div class="family-metric"><strong>'+assigned.length+'</strong><span>Active reminders</span></div>'+
             '<div class="family-metric"><strong>'+overdue+'</strong><span>Overdue</span></div>'+
           '</div>'+
-          (joined?'<div class="subtitle">Open Brain member since '+esc(joined)+'</div>':'')+
-          (isAdmin()?'<div class="family-member-actions"><button class="ghost smallbtn" type="button" data-family-manage="'+m.user_id+'">Manage</button></div>':'')+
+          (joined?'<div class="subtitle">'+(invitePending?'Invited ':'Open Brain member since ')+esc(joined)+'</div>':'')+
+          (isAdmin()?'<div class="family-member-actions">'+
+            (invitePending?'<button class="ghost smallbtn" type="button" data-family-resend="'+m.user_id+'">Resend link</button>':'')+
+            '<button class="ghost smallbtn" type="button" data-family-manage="'+m.user_id+'">Manage</button>'+
+          '</div>':'')+
         '</div>';
       }).join("");
 
@@ -1168,6 +1264,7 @@
       $("familyHouseholdTimezone").textContent=state.household?.timezone||"Not set";
       $("familyMyRole").textContent=roleLabel(state.member?.role);
       $("editHouseholdSettings").classList.toggle("hidden",!isAdmin());
+      $("inviteFamilyMember").classList.toggle("hidden",!isAdmin());
       $("familyAccessNote").textContent=isAdmin()
         ?"You can manage household settings and family-member access from this Family Hub."
         :"You can use your personal Open Brain areas and household features shared with you.";
@@ -2595,6 +2692,10 @@
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
+    $("inviteFamilyMember").addEventListener("click",openFamilyInviteEditor);
+    $("closeFamilyInviteEditor").addEventListener("click",()=>$("familyInviteEditor").close());
+    $("cancelFamilyInvite").addEventListener("click",()=>$("familyInviteEditor").close());
+    $("familyInviteForm").addEventListener("submit",sendFamilyInvite);
     $("editHouseholdSettings").addEventListener("click",openHouseholdEditor);
     $("closeHouseholdEditor").addEventListener("click",()=>$("householdEditor").close());
     $("cancelHouseholdEdit").addEventListener("click",()=>$("householdEditor").close());
@@ -2603,6 +2704,8 @@
     $("cancelFamilyMemberEdit").addEventListener("click",()=>$("familyMemberEditor").close());
     $("familyMemberForm").addEventListener("submit",saveFamilyMember);
     $("familyRoster").addEventListener("click",e=>{
+      const resend=e.target.closest("[data-family-resend]");
+      if(resend){resendFamilyInvite(resend.dataset.familyResend);return;}
       const btn=e.target.closest("[data-family-manage]");
       if(!btn)return;
       const member=state.members.find(m=>m.user_id===btn.dataset.familyManage);

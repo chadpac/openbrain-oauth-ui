@@ -189,9 +189,18 @@
     .family-summary>div{background:var(--bg);border-radius:12px;padding:12px;text-align:center}
     .family-summary strong{display:block;font-size:20px}
     .family-summary span{font-size:11px;color:var(--muted)}
+    .push-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .mobile-nav{display:none}
+    .mobile-more{display:none}
+    .mobile-nav-btn{border:0;background:transparent;color:var(--muted);display:grid;place-items:center;gap:3px;font-size:11px;font-weight:750;padding:8px 5px}
+    .mobile-nav-btn .ico{font-size:20px;line-height:1}
+    .mobile-nav-btn.active{color:var(--navy)}
+    .mobile-more-card{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:55;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(20,50,52,.22);padding:10px}
+    .mobile-more-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    .mobile-more-grid button{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;text-align:left;color:var(--ink);font-weight:700}
     @media(max-width:1100px){.family-shell{grid-template-columns:1fr}.family-roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:1100px){.today-grid,.overview,.week-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
-    @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:14px 14px 10px}.brand{padding-bottom:10px}nav{display:flex;overflow:auto}.navitem{white-space:nowrap}.aside-foot{display:none}main{padding:18px 14px 30px}.topbar{align-items:flex-start}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:10px 14px 4px}.brand{padding:2px 4px 8px}aside nav{display:none}.aside-foot{display:none}main{padding:14px 14px calc(96px + env(safe-area-inset-bottom))}.topbar{align-items:flex-start;margin-bottom:18px}.topbar>div:first-child{display:none}.userbox{width:100%;justify-content:flex-end}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}.mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:5px 6px calc(5px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.mobile-more{display:block}}
   </style>
 </head>
 <body>
@@ -480,6 +489,15 @@
               <div id="familyAccessNote" class="setting-note"></div>
             </div>
             <div class="setting-row">
+              <div class="setting-label">Phone notifications</div>
+              <div id="pushNotificationStatus" class="setting-value">Checking this device…</div>
+              <div id="pushNotificationNote" class="setting-note">Open Brain can send reminders directly to this installed web app. Telegram can stay enabled too.</div>
+              <div class="push-controls">
+                <button id="enablePushNotifications" class="primary" type="button">Enable notifications</button>
+                <button id="disablePushNotifications" class="ghost hidden" type="button">Turn off on this device</button>
+              </div>
+            </div>
+            <div class="setting-row">
               <div class="setting-label">Connections</div>
               <div class="family-summary">
                 <div><strong id="familyConnectedCount">—</strong><span>Telegram ready</span></div>
@@ -509,6 +527,27 @@
         <div id="taskList" class="tasklist"><div class="empty">Loading Open Brain…</div></div>
       </section>
     </main>
+
+    <div id="mobileMoreMenu" class="mobile-more hidden">
+      <div class="mobile-more-card">
+        <div class="mobile-more-grid">
+          <button type="button" data-scroll="habitPanel">🌿 Habits</button>
+          <button type="button" data-scroll="memoriesPanel">🧠 Memories</button>
+          <button type="button" data-scroll="healthPanel">❤️ Health</button>
+          <button type="button" data-scroll="familyPanel">👨‍👩‍👧‍👦 Family</button>
+          <button type="button" data-scroll="familySettings">⚙️ Settings</button>
+          <button id="mobileInstallApp" type="button">📲 Install app</button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="mobile-nav" aria-label="Primary mobile navigation">
+      <button class="mobile-nav-btn active" type="button" data-scroll="todayHome" data-mobile-tab="home"><span class="ico">⌂</span><span>Home</span></button>
+      <button class="mobile-nav-btn" type="button" data-scroll="inboxPanel" data-mobile-tab="inbox"><span class="ico">▣</span><span>Inbox</span></button>
+      <button class="mobile-nav-btn" type="button" data-scroll="listsPanel" data-mobile-tab="lists"><span class="ico">☑</span><span>Lists</span></button>
+      <button class="mobile-nav-btn" type="button" data-scroll="remindersPanel" data-mobile-tab="tasks"><span class="ico">⏰</span><span>Tasks</span></button>
+      <button id="mobileMoreButton" class="mobile-nav-btn" type="button" data-mobile-tab="more"><span class="ico">•••</span><span>More</span></button>
+    </nav>
   </div>
 
   <dialog id="editor">
@@ -999,6 +1038,154 @@
       $("installAppDialog").showModal();
     }
 
+    function base64UrlToUint8Array(value){
+      const padding="=".repeat((4-value.length%4)%4);
+      const base64=(value+padding).replace(/-/g,"+").replace(/_/g,"/");
+      const raw=atob(base64);
+      return Uint8Array.from([...raw].map(ch=>ch.charCodeAt(0)));
+    }
+
+    function pushSupported(){
+      return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    }
+
+    async function currentPushSubscription(){
+      if(!pushSupported())return null;
+      const registration=await navigator.serviceWorker.ready;
+      return registration.pushManager.getSubscription();
+    }
+
+    async function refreshPushStatus(){
+      const status=$("pushNotificationStatus");
+      const note=$("pushNotificationNote");
+      const enable=$("enablePushNotifications");
+      const disable=$("disablePushNotifications");
+      if(!status)return;
+
+      if(!pushSupported()){
+        status.textContent="Not supported on this browser";
+        note.textContent="Try the installed Open Brain app on a current iPhone, iPad, Android device, Chrome, Edge, or Safari.";
+        enable.classList.add("hidden");
+        disable.classList.add("hidden");
+        return;
+      }
+
+      const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||"");
+      if(ios && !isInstalledApp()){
+        status.textContent="Install Open Brain first";
+        note.textContent="On iPhone/iPad, push notifications are available after Open Brain is added to the Home Screen.";
+        enable.textContent="Install app";
+        enable.classList.remove("hidden");
+        disable.classList.add("hidden");
+        return;
+      }
+
+      if(Notification.permission==="denied"){
+        status.textContent="Notifications are blocked";
+        note.textContent="Enable notifications for Open Brain in your browser or phone settings, then return here.";
+        enable.classList.add("hidden");
+        disable.classList.add("hidden");
+        return;
+      }
+
+      const sub=await currentPushSubscription();
+      if(sub){
+        status.textContent="Enabled on this device";
+        note.textContent="Open Brain reminders can appear as phone notifications. Telegram can remain enabled as a second channel.";
+        enable.classList.add("hidden");
+        disable.classList.remove("hidden");
+      }else{
+        status.textContent="Off on this device";
+        note.textContent="Turn this on to receive Open Brain reminders even when the app is closed.";
+        enable.textContent="Enable notifications";
+        enable.classList.remove("hidden");
+        disable.classList.add("hidden");
+      }
+    }
+
+    async function enablePushNotifications(){
+      const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||"");
+      if(ios&&!isInstalledApp()){
+        await installOpenBrain();
+        return;
+      }
+      if(!pushSupported()){
+        toast("Push notifications are not supported on this browser.",true);
+        return;
+      }
+
+      const button=$("enablePushNotifications");
+      const original=button.textContent;
+      button.disabled=true;
+      button.textContent="Enabling…";
+      try{
+        const permission=await Notification.requestPermission();
+        if(permission!=="granted")throw new Error("Notification permission was not granted.");
+
+        const {data:keyData,error:keyError}=await sb.functions.invoke("web-push",{body:{action:"public_key"}});
+        if(keyError)throw keyError;
+        if(!keyData?.public_key)throw new Error(keyData?.error||"Unable to get the Open Brain push key.");
+
+        const registration=await navigator.serviceWorker.ready;
+        let subscription=await registration.pushManager.getSubscription();
+        if(!subscription){
+          subscription=await registration.pushManager.subscribe({
+            userVisibleOnly:true,
+            applicationServerKey:base64UrlToUint8Array(keyData.public_key)
+          });
+        }
+
+        const json=subscription.toJSON();
+        if(!json.endpoint||!json.keys?.p256dh||!json.keys?.auth)throw new Error("The browser returned an incomplete push subscription.");
+
+        const {error:saveError}=await sb.from("push_subscriptions").upsert({
+          household_id:state.member.household_id,
+          user_id:state.user.id,
+          endpoint:json.endpoint,
+          p256dh:json.keys.p256dh,
+          auth:json.keys.auth,
+          user_agent:navigator.userAgent,
+          enabled:true,
+          updated_at:new Date().toISOString()
+        },{onConflict:"endpoint"});
+        if(saveError)throw saveError;
+
+        const {data:testData,error:testError}=await sb.functions.invoke("web-push",{body:{action:"test_self"}});
+        if(testError)throw testError;
+        if(!testData?.ok)throw new Error(testData?.error||"The subscription was saved, but the test notification could not be delivered.");
+
+        await refreshPushStatus();
+        toast("Phone notifications enabled.");
+      }catch(err){
+        console.error("Unable to enable push notifications:",err);
+        toast(err?.message||"Unable to enable phone notifications.",true);
+        await refreshPushStatus();
+      }finally{
+        button.disabled=false;
+        button.textContent=original;
+      }
+    }
+
+    async function disablePushNotifications(){
+      const button=$("disablePushNotifications");
+      button.disabled=true;
+      try{
+        const subscription=await currentPushSubscription();
+        if(subscription){
+          const endpoint=subscription.endpoint;
+          await subscription.unsubscribe();
+          const {error}=await sb.from("push_subscriptions").delete().eq("endpoint",endpoint);
+          if(error)throw error;
+        }
+        await refreshPushStatus();
+        toast("Phone notifications turned off on this device.");
+      }catch(err){
+        toast(err?.message||"Unable to turn off phone notifications.",true);
+      }finally{
+        button.disabled=false;
+      }
+    }
+
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -1379,6 +1566,7 @@
       $("familyConnectedCount").textContent=connected;
       $("familyAdminCount").textContent=admins;
       $("familyPendingCount").textContent=active;
+      refreshPushStatus().catch(err=>console.warn("Push status check failed:",err));
     }
 
     function renderAll(){
@@ -2766,6 +2954,11 @@
         document.querySelectorAll(".navitem:not(.disabled)").forEach(x=>x.classList.remove("active"));
         btn.classList.add("active");
       }
+      if(btn.classList.contains("mobile-nav-btn")){
+        document.querySelectorAll(".mobile-nav-btn").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+      }
+      $("mobileMoreMenu")?.classList.add("hidden");
     }));
 
     $("quickInbox").addEventListener("click",saveToInbox);
@@ -2800,6 +2993,17 @@
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
     $("installOpenBrain").addEventListener("click",installOpenBrain);
+    $("mobileInstallApp").addEventListener("click",()=>{ $("mobileMoreMenu").classList.add("hidden"); installOpenBrain(); });
+    $("mobileMoreButton").addEventListener("click",()=>{
+      const menu=$("mobileMoreMenu");
+      const opening=menu.classList.contains("hidden");
+      menu.classList.toggle("hidden");
+      document.querySelectorAll(".mobile-nav-btn").forEach(x=>x.classList.remove("active"));
+      if(opening)$("mobileMoreButton").classList.add("active");
+    });
+    $("mobileMoreMenu").addEventListener("click",e=>{if(e.target===$("mobileMoreMenu"))$("mobileMoreMenu").classList.add("hidden");});
+    $("enablePushNotifications").addEventListener("click",enablePushNotifications);
+    $("disablePushNotifications").addEventListener("click",disablePushNotifications);
     $("closeInstallApp").addEventListener("click",()=>$("installAppDialog").close());
     $("dismissInstallApp").addEventListener("click",()=>$("installAppDialog").close());
     window.addEventListener("beforeinstallprompt",event=>{
@@ -2982,6 +3186,7 @@
     if("serviceWorker" in navigator){
       window.addEventListener("load",()=>{
         navigator.serviceWorker.register("/openbrain-oauth-ui/sw.js",{scope:"/openbrain-oauth-ui/"})
+          .then(registration=>registration.update().catch(()=>{}))
           .catch(err=>console.warn("Open Brain service worker registration failed:",err));
       });
     }

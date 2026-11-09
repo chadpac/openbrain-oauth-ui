@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="How Open Brain handles family dashboard information and optional read-only Google Calendar access, with privacy controls and support contact.">
+  <meta name="theme-color" content="#469597">
+  <title>Privacy policy · Open Brain</title>
+  <style>*{box-sizing:border-box}body{margin:0;background:#f6f7f7;color:#2f3e40;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.65}header{background:#469597;color:white;padding:20px 24px}header a{color:inherit;text-decoration:none;font-weight:800;font-size:23px}main{max-width:820px;margin:32px auto;padding:0 20px 40px}.card{background:white;border:1px solid #dce5e5;border-radius:18px;padding:clamp(20px,5vw,40px)}h1{font-size:clamp(28px,5vw,38px);line-height:1.2;margin:0 0 18px}h2{font-size:21px;line-height:1.35;margin:30px 0 10px}p{margin:12px 0}a{color:#28686a;text-underline-offset:3px;overflow-wrap:anywhere}.button{display:inline-block;border-radius:10px;padding:11px 18px;background:#397f81;color:#fff;font-weight:700;text-decoration:none;margin:10px 0}nav{display:flex;gap:20px;flex-wrap:wrap;margin-top:28px;border-top:1px solid #dce5e5;padding-top:20px}.muted{color:#617375;font-size:14px}li{margin:8px 0}:focus-visible{outline:3px solid #12686c;outline-offset:4px}</style>
+</head>
+<body>
+  <header><a href="/openbrain-oauth-ui/about/">Open Brain</a></header>
+  <main><article class="card">
+    <h1>Privacy policy</h1>
+    <p class="muted">Effective November 9, 2026</p>
+    <p>This notice explains how Open Brain handles information when you use the family dashboard and its optional Google Calendar connection. Open Brain is operated for personal and household use. For support or privacy questions, contact <a href="mailto:kayla.packer@gmail.com">kayla.packer@gmail.com</a>.</p>
+    <h2>Information used by Open Brain</h2>
+    <p>Open Brain processes your account and household membership details and information you enter, such as tasks, reminders, habits, lists, memories, events, weekly plans, and private Health &amp; Wellbeing entries. The app uses this information to provide the features you choose.</p>
+    <p>Household information is available according to the app's sharing and membership controls. Health &amp; Wellbeing entries are private to their owner and are not included in the general AI assistant context.</p>
+    <h2>Google Calendar information</h2>
+    <p>Connecting Google Calendar is optional. With your permission, Open Brain reads your calendar list, calendar names and display settings, and events from calendars you select. Event information may include titles, start and end times, all-day status, locations, descriptions, and Google event links. The primary calendar address is used as the connection label.</p>
+    <p>Open Brain requests only these read-only permissions:</p>
+    <ul><li><code>calendar.calendarlist.readonly</code>: list calendars so you can choose what to display.</li><li><code>calendar.events.readonly</code>: read events for your dashboard.</li></ul>
+    <p>This access does not let Open Brain create, edit, or delete Google events. Google Calendar events are fetched for the connected user and displayed in that user's dashboard; they are not automatically copied into shared household events.</p>
+    <h2>Google data use and sharing</h2>
+    <p>Google Calendar information is used to display your schedule and maintain the connection you requested. It is not sold, used for advertising, sent to the general AI assistant, or used to train AI models.</p>
+    <p>Open Brain uses Google to authorize and read Calendar information and Supabase to run the connection service and store its encrypted refresh token and settings. Calendar information is sent to your signed-in browser for display. Service providers process information as needed to operate these features.</p>
+    <p>Open Brain's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including its Limited Use requirements.</p>
+    <h2>Storage and security</h2>
+    <p>Account and app records are stored in Supabase. Google refresh tokens are encrypted before storage in a server-side table that normal browser clients cannot read. The browser does not receive the refresh token. Google event responses are marked not to be cached and are held in dashboard memory for display rather than saved as household event records.</p>
+    <p>Your browser stores sign-in information, preferences, and cached app files to support the installed app experience. If you enable notifications, reminder content can appear on your device. Use device notification settings to control lock-screen visibility.</p>
+    <h2>AI features</h2>
+    <p>If you use the in-app assistant, your messages and relevant accessible Open Brain context are processed by the app's configured AI service providers to generate responses. Google Calendar information and private Health &amp; Wellbeing entries are excluded from the general assistant context. Information you type directly into a message becomes part of that message.</p>
+    <h2>Your controls and retention</h2>
+    <p>You can change calendar selections or disconnect in Open Brain Settings. Disconnect attempts to revoke Google access and removes the saved connection after revocation succeeds or the token is already invalid. If revocation fails temporarily, the app shows an error and keeps the connection so you can retry.</p>
+    <p>You can also revoke Open Brain's access through your <a href="https://myaccount.google.com/connections">Google Account connections</a>. Revoking at Google prevents further access; use Disconnect in Open Brain to remove its saved connection record.</p>
+    <p>Connection credentials and settings are retained while the connection remains active. Other app records remain until removed through available app controls or by the administrator. For help deleting your account or stored information, contact <a href="mailto:kayla.packer@gmail.com">kayla.packer@gmail.com</a>.</p>
+    <h2>Changes to this notice</h2>
+    <p>If Open Brain's data practices change, this page will be updated with a new effective date.</p>
+    <nav aria-label="Site links"><a href="/openbrain-oauth-ui/about/">About Open Brain</a><a href="/openbrain-oauth-ui/privacy/">Privacy policy</a><a href="/openbrain-oauth-ui/dashboard/">Open dashboard</a></nav>
+  </article></main>
+</body>
+</html>

@@ -191,6 +191,10 @@
     .family-summary strong{display:block;font-size:20px}
     .family-summary span{font-size:11px;color:var(--muted)}
     .push-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .push-device-prefs{display:grid;grid-template-columns:minmax(160px,1fr) auto;gap:10px;align-items:end;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+    .push-device-prefs label{margin:0}
+    .push-pref-check{display:flex;align-items:center;gap:8px;padding-bottom:8px;font-size:13px;font-weight:700;color:#374151}
+    .push-pref-check input{width:auto;margin:0}
     .mobile-nav{display:none}
     .mobile-more{display:none}
     .mobile-nav-btn{border:0;background:transparent;color:var(--muted);display:grid;place-items:center;gap:3px;font-size:11px;font-weight:750;padding:8px 5px}
@@ -201,7 +205,7 @@
     .mobile-more-grid button{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;text-align:left;color:var(--ink);font-weight:700}
     @media(max-width:1100px){.family-shell{grid-template-columns:1fr}.family-roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:1100px){.today-grid,.overview,.week-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
-    @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:10px 14px 4px}.brand{padding:2px 4px 8px}aside nav{display:none}.aside-foot{display:none}main{padding:14px 14px calc(116px + env(safe-area-inset-bottom))}.topbar{align-items:flex-start;margin-bottom:18px}.topbar>div:first-child{display:none}.userbox{width:100%;justify-content:flex-end}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}.mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:5px 6px calc(5px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.mobile-more{display:block}.toast{left:12px;right:12px;bottom:calc(88px + env(safe-area-inset-bottom));max-width:none}}
+    @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:10px 14px 4px}.brand{padding:2px 4px 8px}aside nav{display:none}.aside-foot{display:none}main{padding:14px 14px calc(116px + env(safe-area-inset-bottom))}.topbar{align-items:flex-start;margin-bottom:18px}.topbar>div:first-child{display:none}.userbox{width:100%;justify-content:flex-end}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}.mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:5px 6px calc(5px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.mobile-more{display:block}.push-device-prefs{grid-template-columns:1fr}.toast{left:12px;right:12px;bottom:calc(88px + env(safe-area-inset-bottom));max-width:none}}
   </style>
 </head>
 <body>
@@ -497,6 +501,16 @@
               <div class="push-controls">
                 <button id="enablePushNotifications" class="primary" type="button">Enable notifications</button>
                 <button id="disablePushNotifications" class="ghost hidden" type="button">Turn off on this device</button>
+              </div>
+              <div id="pushDevicePreferences" class="push-device-prefs hidden">
+                <label>Notification sound
+                  <select id="pushSoundMode">
+                    <option value="default">Default phone sound</option>
+                    <option value="silent">Silent</option>
+                  </select>
+                </label>
+                <label class="push-pref-check"><input id="pushVibrateEnabled" type="checkbox" checked /> Vibration</label>
+                <div class="setting-note" style="grid-column:1/-1">Web apps cannot select a specific ringtone. Choose the actual notification tone in your phone's notification settings.</div>
               </div>
             </div>
             <div class="setting-row">
@@ -1083,6 +1097,37 @@
       return registration.pushManager.getSubscription();
     }
 
+    async function loadPushDevicePreferences(subscription){
+      const prefs=$("pushDevicePreferences");
+      if(!subscription){prefs.classList.add("hidden");return;}
+      const {data,error}=await sb.from("push_subscriptions")
+        .select("sound_mode,vibrate_enabled")
+        .eq("endpoint",subscription.endpoint)
+        .maybeSingle();
+      if(error)throw error;
+      $("pushSoundMode").value=data?.sound_mode||"default";
+      $("pushVibrateEnabled").checked=data?.vibrate_enabled!==false;
+      prefs.classList.remove("hidden");
+    }
+
+    async function savePushDevicePreferences(){
+      try{
+        const subscription=await currentPushSubscription();
+        if(!subscription)throw new Error("This device is not registered for Open Brain notifications.");
+        const sound_mode=$("pushSoundMode").value==="silent"?"silent":"default";
+        const vibrate_enabled=$("pushVibrateEnabled").checked;
+        const {error}=await sb.from("push_subscriptions").update({
+          sound_mode,
+          vibrate_enabled,
+          updated_at:new Date().toISOString()
+        }).eq("endpoint",subscription.endpoint);
+        if(error)throw error;
+        toast(sound_mode==="silent"?"Notifications will be silent on this device.":"Notification preferences saved.");
+      }catch(err){
+        toast(err?.message||"Unable to save notification preferences.",true);
+      }
+    }
+
     async function refreshPushStatus(){
       const status=$("pushNotificationStatus");
       const note=$("pushNotificationNote");
@@ -1096,6 +1141,7 @@
         note.textContent="Try the installed Open Brain app on a current iPhone, iPad, Android device, Chrome, Edge, or Safari.";
         enable.classList.add("hidden");
         disable.classList.add("hidden");
+        $("pushDevicePreferences").classList.add("hidden");
         return;
       }
 
@@ -1106,6 +1152,7 @@
         enable.textContent="Install app";
         enable.classList.remove("hidden");
         disable.classList.add("hidden");
+        $("pushDevicePreferences").classList.add("hidden");
         return;
       }
 
@@ -1123,12 +1170,14 @@
         note.textContent="Open Brain reminders can appear as phone notifications. Telegram can remain enabled as a second channel.";
         enable.classList.add("hidden");
         disable.classList.remove("hidden");
+        await loadPushDevicePreferences(sub);
       }else{
         status.textContent="Off on this device";
         note.textContent="Turn this on to receive Open Brain reminders even when the app is closed.";
         enable.textContent="Enable notifications";
         enable.classList.remove("hidden");
         disable.classList.add("hidden");
+        $("pushDevicePreferences").classList.add("hidden");
       }
     }
 
@@ -3051,6 +3100,8 @@
     $("mobileMoreMenu").addEventListener("click",e=>{if(e.target===$("mobileMoreMenu"))$("mobileMoreMenu").classList.add("hidden");});
     $("enablePushNotifications").addEventListener("click",enablePushNotifications);
     $("disablePushNotifications").addEventListener("click",disablePushNotifications);
+    $("pushSoundMode").addEventListener("change",savePushDevicePreferences);
+    $("pushVibrateEnabled").addEventListener("change",savePushDevicePreferences);
     $("closeInstallApp").addEventListener("click",()=>$("installAppDialog").close());
     $("dismissInstallApp").addEventListener("click",()=>$("installAppDialog").close());
     window.addEventListener("beforeinstallprompt",event=>{
@@ -3064,6 +3115,13 @@
       toast("Open Brain installed.");
     });
     window.matchMedia("(display-mode: standalone)").addEventListener?.("change",refreshInstallButton);
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.addEventListener("message",async event=>{
+        if(event.data?.type!=="open-brain-push-action")return;
+        try{await loadData();renderAll();}catch(_){}
+        toast(event.data?.message||"Open Brain updated.");
+      });
+    }
     refreshInstallButton();
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
     $("inviteFamilyMember").addEventListener("click",openFamilyInviteEditor);

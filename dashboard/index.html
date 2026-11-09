@@ -198,6 +198,10 @@
     .push-device-prefs label{margin:0}
     .push-pref-check{display:flex;align-items:center;gap:8px;padding-bottom:8px;font-size:13px;font-weight:700;color:#374151}
     .push-pref-check input{width:auto;margin:0}
+    .push-type-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .push-type-grid label{display:flex;align-items:center;gap:8px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:12px;font-weight:750}
+    .push-type-grid input{width:auto;margin:0}
+    .push-test-row{grid-column:1/-1;display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
     .mobile-nav{display:none}
     .mobile-more{display:none}
     .mobile-nav-btn{border:0;background:transparent;color:var(--muted);display:grid;place-items:center;gap:3px;font-size:11px;font-weight:750;padding:8px 5px}
@@ -208,7 +212,7 @@
     .mobile-more-grid button{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;text-align:left;color:var(--ink);font-weight:700}
     @media(max-width:1100px){.family-shell{grid-template-columns:1fr}.family-roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:1100px){.today-grid,.overview,.week-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
-    @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:10px 14px 4px}.brand{padding:2px 4px 8px}aside nav{display:none}.aside-foot{display:none}main{padding:14px 14px calc(116px + env(safe-area-inset-bottom))}.topbar{align-items:flex-start;margin-bottom:18px}.topbar>div:first-child{display:none}.userbox{width:100%;justify-content:flex-end}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}.mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:5px 6px calc(5px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.mobile-more{display:block}.push-device-prefs{grid-template-columns:1fr}.toast{left:12px;right:12px;bottom:calc(88px + env(safe-area-inset-bottom));max-width:none}}
+    @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:10px 14px 4px}.brand{padding:2px 4px 8px}aside nav{display:none}.aside-foot{display:none}main{padding:14px 14px calc(116px + env(safe-area-inset-bottom))}.topbar{align-items:flex-start;margin-bottom:18px}.topbar>div:first-child{display:none}.userbox{width:100%;justify-content:flex-end}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}.mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:5px 6px calc(5px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.mobile-more{display:block}.push-device-prefs{grid-template-columns:1fr}.push-type-grid{grid-template-columns:1fr}.toast{left:12px;right:12px;bottom:calc(88px + env(safe-area-inset-bottom));max-width:none}}
   </style>
 </head>
 <body>
@@ -513,6 +517,15 @@
                   </select>
                 </label>
                 <label class="push-pref-check"><input id="pushVibrateEnabled" type="checkbox" checked /> Vibration</label>
+                <div class="push-type-grid">
+                  <label><input id="pushTasksEnabled" type="checkbox" checked /> Task reminders</label>
+                  <label><input id="pushEventsEnabled" type="checkbox" checked /> Event alerts</label>
+                  <label><input id="pushHabitsEnabled" type="checkbox" checked /> Habit reminders</label>
+                </div>
+                <div class="push-test-row">
+                  <div class="setting-note">These choices apply only to this device.</div>
+                  <button id="testPushNotification" class="ghost" type="button">Send test notification</button>
+                </div>
                 <div class="setting-note" style="grid-column:1/-1">Web apps cannot select a specific ringtone. Choose the actual notification tone in your phone's notification settings.</div>
               </div>
             </div>
@@ -1105,12 +1118,15 @@
       const prefs=$("pushDevicePreferences");
       if(!subscription){prefs.classList.add("hidden");return;}
       const {data,error}=await sb.from("push_subscriptions")
-        .select("sound_mode,vibrate_enabled")
+        .select("sound_mode,vibrate_enabled,task_notifications,event_notifications,habit_notifications")
         .eq("endpoint",subscription.endpoint)
         .maybeSingle();
       if(error)throw error;
       $("pushSoundMode").value=data?.sound_mode||"default";
       $("pushVibrateEnabled").checked=data?.vibrate_enabled!==false;
+      $("pushTasksEnabled").checked=data?.task_notifications!==false;
+      $("pushEventsEnabled").checked=data?.event_notifications!==false;
+      $("pushHabitsEnabled").checked=data?.habit_notifications!==false;
       prefs.classList.remove("hidden");
     }
 
@@ -1120,15 +1136,44 @@
         if(!subscription)throw new Error("This device is not registered for Open Brain notifications.");
         const sound_mode=$("pushSoundMode").value==="silent"?"silent":"default";
         const vibrate_enabled=$("pushVibrateEnabled").checked;
+        const task_notifications=$("pushTasksEnabled").checked;
+        const event_notifications=$("pushEventsEnabled").checked;
+        const habit_notifications=$("pushHabitsEnabled").checked;
         const {error}=await sb.from("push_subscriptions").update({
           sound_mode,
           vibrate_enabled,
+          task_notifications,
+          event_notifications,
+          habit_notifications,
           updated_at:new Date().toISOString()
         }).eq("endpoint",subscription.endpoint);
         if(error)throw error;
         toast(sound_mode==="silent"?"Notifications will be silent on this device.":"Notification preferences saved.");
       }catch(err){
         toast(err?.message||"Unable to save notification preferences.",true);
+      }
+    }
+
+    async function testPushNotification(){
+      const button=$("testPushNotification");
+      const original=button.textContent;
+      button.disabled=true;
+      button.textContent="Sending…";
+      try{
+        const subscription=await currentPushSubscription();
+        if(!subscription)throw new Error("This device is not registered for notifications.");
+        const {data,error}=await sb.functions.invoke("web-push",{body:{
+          action:"test_device",
+          endpoint:subscription.endpoint
+        }});
+        if(error)throw error;
+        if(!data?.ok)throw new Error(data?.error||"The test notification could not be delivered.");
+        toast("Test notification sent.");
+      }catch(err){
+        toast(err?.message||"Unable to send test notification.",true);
+      }finally{
+        button.disabled=false;
+        button.textContent=original;
       }
     }
 
@@ -3168,6 +3213,10 @@
     $("disablePushNotifications").addEventListener("click",disablePushNotifications);
     $("pushSoundMode").addEventListener("change",savePushDevicePreferences);
     $("pushVibrateEnabled").addEventListener("change",savePushDevicePreferences);
+    $("pushTasksEnabled").addEventListener("change",savePushDevicePreferences);
+    $("pushEventsEnabled").addEventListener("change",savePushDevicePreferences);
+    $("pushHabitsEnabled").addEventListener("change",savePushDevicePreferences);
+    $("testPushNotification").addEventListener("click",testPushNotification);
     $("closeInstallApp").addEventListener("click",()=>$("installAppDialog").close());
     $("dismissInstallApp").addEventListener("click",()=>$("installAppDialog").close());
     window.addEventListener("beforeinstallprompt",event=>{

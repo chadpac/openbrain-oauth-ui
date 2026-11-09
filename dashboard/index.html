@@ -220,6 +220,10 @@
     .setting-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
     .setting-value{font-weight:750;margin-top:4px}
     .setting-note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45}
+    .google-connection{margin-top:10px;border:1px solid var(--line);border-radius:13px;padding:12px;background:var(--bg)}
+    .google-connection-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.google-connection-title{font-weight:820}.google-connection-status{font-size:12px;font-weight:800;color:#3f7779}.google-connection-status.offline{color:#8a5d3f}
+    .google-connection-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.google-setup{margin-top:10px;padding:10px;border:1px dashed #d8c8bd;border-radius:10px;background:#fff9f5;font-size:12px;line-height:1.5;color:#725746}.google-setup code{display:block;margin-top:6px;padding:7px;background:#fff;border:1px solid var(--line);border-radius:8px;overflow-wrap:anywhere;color:var(--ink)}
+    .google-calendar-picker{display:grid;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}.google-calendar-choice{display:flex;align-items:flex-start;gap:8px;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff}.google-calendar-choice input{width:auto;margin-top:2px}.google-calendar-choice strong{display:block;font-size:13px}.google-calendar-choice span{display:block;font-size:11px;color:var(--muted);margin-top:2px}.google-dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:0 0 9px;background:#469597}
     .family-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
     .family-summary>div{background:var(--bg);border-radius:12px;padding:12px;text-align:center}
     .family-summary strong{display:block;font-size:20px}
@@ -331,7 +335,7 @@
           <div id="todayLoadText" class="subtitle">Loading your day…</div>
           <div class="today-summary">
             <button class="today-mini" type="button" data-glance="tasks" aria-label="Show my tasks for today"><div id="todayTaskCount" class="n">—</div><div class="l">My tasks</div></button>
-            <button class="today-mini" type="button" data-glance="events" aria-label="Show today's family events"><div id="todayEventCount" class="n">—</div><div class="l">Family events</div></button>
+            <button class="today-mini" type="button" data-glance="events" aria-label="Show today's family events"><div id="todayEventCount" class="n">—</div><div class="l">Events</div></button>
             <button class="today-mini" type="button" data-glance="overdue" aria-label="Show my overdue tasks"><div id="todayOverdueCount" class="n">—</div><div class="l">Overdue</div></button>
           </div>
         </div>
@@ -377,7 +381,7 @@
           <div class="week-side">
             <h4>Capacity snapshot</h4>
             <div class="week-metric"><span>My active reminders</span><strong id="weekTaskCount">—</strong></div>
-            <div class="week-metric"><span>Family events</span><strong id="weekEventCount">—</strong></div>
+            <div class="week-metric"><span>Events</span><strong id="weekEventCount">—</strong></div>
             <div class="week-metric"><span>Overdue items</span><strong id="weekOverdueCount">—</strong></div>
             <div id="weekGoalAnchor" class="week-anchor hidden"></div>
           </div>
@@ -607,6 +611,23 @@
                   <button id="testPushNotification" class="ghost" type="button">Send test notification</button>
                 </div>
                 <div class="setting-note" style="grid-column:1/-1">Web apps cannot select a specific ringtone. Choose the actual notification tone in your phone's notification settings.</div>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label">Google Calendar</div>
+              <div id="googleCalendarConnection" class="google-connection">
+                <div class="google-connection-head">
+                  <div><div class="google-connection-title">📅 Google Calendar</div><div id="googleCalendarConnectionNote" class="setting-note">Checking connection…</div></div>
+                  <div id="googleCalendarConnectionStatus" class="google-connection-status offline">Checking…</div>
+                </div>
+                <div class="google-connection-actions">
+                  <button id="connectGoogleCalendar" class="primary" type="button">Connect Google Calendar</button>
+                  <button id="chooseGoogleCalendars" class="ghost hidden" type="button">Choose calendars</button>
+                  <button id="refreshGoogleCalendar" class="ghost hidden" type="button">Refresh events</button>
+                  <button id="disconnectGoogleCalendar" class="ghost hidden" type="button">Disconnect</button>
+                </div>
+                <div id="googleCalendarSetup" class="google-setup hidden"></div>
+                <div id="googleCalendarPicker" class="google-calendar-picker hidden"></div>
               </div>
             </div>
             <div class="setting-row">
@@ -1248,7 +1269,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], healthCheckins:[], healthCheckinPrefs:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], googleCalendarStatus:null, googleCalendars:[], googleEvents:[], googleCalendarBusy:false, goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], healthCheckins:[], healthCheckinPrefs:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
     let deferredInstallPrompt=null;
     let listRealtimeChannel=null;
     let listRealtimeTimer=null;
@@ -1658,6 +1679,8 @@
       startListRealtime();
       openTaskDeepLink();
       openHealthCheckinDeepLink();
+      handleGoogleCalendarReturn();
+      loadGoogleCalendarIntegration().catch(err=>console.warn("Google Calendar initialization failed:",err));
       initializeAiBriefs().catch(err=>console.warn("AI brief initialization failed:",err));
     }
 
@@ -2402,6 +2425,7 @@
       renderLists();
       renderHealth();
       renderFamily();
+      renderGoogleCalendarSettings();
       renderWeek();
       renderFamilyActivity();
       renderInbox();
@@ -2413,6 +2437,198 @@
       const d=value instanceof Date?value:new Date(value);
       if(Number.isNaN(d.getTime())) return "";
       return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+    }
+
+    async function invokeGoogleCalendar(action,payload={}){
+      const {data,error}=await sb.functions.invoke("google-calendar-oauth",{body:{action,...payload}});
+      if(error){
+        const message=data?.error||error?.message||"Google Calendar request failed.";
+        throw new Error(message);
+      }
+      if(data?.ok===false)throw new Error(data.error||"Google Calendar request failed.");
+      return data||{};
+    }
+
+    function handleGoogleCalendarReturn(){
+      const params=new URLSearchParams(window.location.search);
+      const result=params.get("google_calendar");
+      if(!result)return;
+      const reason=params.get("reason")||"";
+      params.delete("google_calendar");params.delete("reason");
+      const clean=window.location.pathname+(params.toString()?"?"+params.toString():"")+window.location.hash;
+      history.replaceState({},document.title,clean);
+      if(result==="connected")toast("Google Calendar connected.");
+      else{
+        const messages={
+          access_denied:"Google Calendar connection was cancelled.",
+          oauth_not_configured:"Google Calendar OAuth still needs setup.",
+          token_exchange:"Google could not complete the Calendar connection.",
+          no_refresh_token:"Google did not return long-term Calendar access. Reconnect and approve access.",
+          invalid_state:"The Google Calendar connection expired. Please try again.",
+          expired_state:"The Google Calendar connection took too long. Please try again.",
+          calendar_list:"Google connected, but Open Brain could not read your calendars.",
+          save_failed:"Open Brain could not save the Google Calendar connection."
+        };
+        toast(messages[reason]||"Google Calendar was not connected.",true);
+      }
+    }
+
+    async function loadGoogleCalendarIntegration(){
+      if(state.googleCalendarBusy)return;
+      state.googleCalendarBusy=true;
+      try{
+        const status=await invokeGoogleCalendar("status");
+        state.googleCalendarStatus=status;
+        state.googleCalendars=[];
+        state.googleEvents=[];
+        if(status.connected){
+          const [calendarData,eventData]=await Promise.all([
+            invokeGoogleCalendar("calendars"),
+            invokeGoogleCalendar("events",{
+              time_min:new Date(Date.now()-3*86400000).toISOString(),
+              time_max:new Date(Date.now()+45*86400000).toISOString()
+            })
+          ]);
+          state.googleCalendars=calendarData.calendars||[];
+          state.googleEvents=eventData.events||[];
+        }
+      }catch(err){
+        state.googleCalendarStatus={configured:true,connected:false,error:err?.message||String(err)};
+        state.googleCalendars=[];
+        state.googleEvents=[];
+      }finally{
+        state.googleCalendarBusy=false;
+        renderGoogleCalendarSettings();
+        renderToday();renderWeek();renderOverview();
+      }
+    }
+
+    function renderGoogleCalendarSettings(){
+      const status=state.googleCalendarStatus;
+      const statusEl=$("googleCalendarConnectionStatus");
+      const note=$("googleCalendarConnectionNote");
+      const connect=$("connectGoogleCalendar");
+      const choose=$("chooseGoogleCalendars");
+      const refresh=$("refreshGoogleCalendar");
+      const disconnect=$("disconnectGoogleCalendar");
+      const setup=$("googleCalendarSetup");
+      const picker=$("googleCalendarPicker");
+      if(!statusEl)return;
+
+      if(!status){
+        statusEl.textContent="Checking…";statusEl.classList.add("offline");
+        note.textContent="Checking connection…";
+        connect.disabled=true;choose.classList.add("hidden");refresh.classList.add("hidden");disconnect.classList.add("hidden");setup.classList.add("hidden");
+        return;
+      }
+
+      connect.disabled=false;
+      if(status.configured===false){
+        statusEl.textContent="Setup required";statusEl.classList.add("offline");
+        note.textContent="Open Brain is ready, but the Google OAuth client has not been configured yet.";
+        connect.classList.remove("hidden");connect.disabled=true;
+        choose.classList.add("hidden");refresh.classList.add("hidden");disconnect.classList.add("hidden");
+        setup.classList.remove("hidden");
+        setup.innerHTML='Google Cloud needs one OAuth Web application. Authorized redirect URI:<code>'+esc(status.redirect_uri||"")+'</code>';
+        picker.classList.add("hidden");
+        return;
+      }
+
+      setup.classList.add("hidden");
+      if(status.connected){
+        statusEl.textContent="Connected";statusEl.classList.remove("offline");
+        note.textContent=(status.google_email?status.google_email+" · ":"")+(status.selected_count||0)+" calendar"+((status.selected_count||0)===1?"":"s")+" shown in Open Brain";
+        connect.classList.add("hidden");choose.classList.remove("hidden");refresh.classList.remove("hidden");disconnect.classList.remove("hidden");
+      }else{
+        statusEl.textContent=status.error?"Needs attention":"Not connected";statusEl.classList.add("offline");
+        note.textContent=status.error||"Connect read-only Calendar access to bring your schedule into Today and This Week.";
+        connect.classList.remove("hidden");choose.classList.add("hidden");refresh.classList.add("hidden");disconnect.classList.add("hidden");picker.classList.add("hidden");
+      }
+    }
+
+    async function connectGoogleCalendar(){
+      const button=$("connectGoogleCalendar");
+      const original=button.textContent;button.disabled=true;button.textContent="Opening Google…";
+      try{
+        const data=await invokeGoogleCalendar("start");
+        if(!data.auth_url)throw new Error("Google authorization URL was not returned.");
+        window.location.assign(data.auth_url);
+      }catch(err){
+        toast(err?.message||"Unable to start Google Calendar connection.",true);
+        button.disabled=false;button.textContent=original;
+      }
+    }
+
+    function renderGoogleCalendarPicker(){
+      const box=$("googleCalendarPicker");
+      if(!state.googleCalendars.length){
+        box.innerHTML='<div class="setting-note">No Google calendars were returned.</div>';
+        return;
+      }
+      box.innerHTML='<div class="setting-note"><strong>Choose which calendars Open Brain should show.</strong> Google access remains read-only.</div>'+
+        state.googleCalendars.map(cal=>
+          '<label class="google-calendar-choice">'+
+            '<input type="checkbox" data-google-calendar-id="'+esc(cal.id)+'" '+(cal.selected?"checked":"")+'>'+
+            '<span class="google-dot"'+(cal.background_color?' style="background:'+esc(cal.background_color)+'"':'')+'></span>'+
+            '<span><strong>'+esc(cal.name)+(cal.primary?" · Primary":"")+'</strong><span>'+esc(cal.access_role||"read only")+'</span></span>'+
+          '</label>'
+        ).join("")+
+        '<div class="google-connection-actions"><button id="saveGoogleCalendars" class="primary" type="button">Save calendars</button><button id="cancelGoogleCalendars" class="ghost" type="button">Cancel</button></div>';
+    }
+
+    async function chooseGoogleCalendars(){
+      try{
+        if(!state.googleCalendars.length){
+          const data=await invokeGoogleCalendar("calendars");
+          state.googleCalendars=data.calendars||[];
+        }
+        renderGoogleCalendarPicker();
+        $("googleCalendarPicker").classList.remove("hidden");
+      }catch(err){toast(err?.message||"Unable to load Google calendars.",true);}
+    }
+
+    async function saveGoogleCalendarSelection(){
+      const selected=[...$("googleCalendarPicker").querySelectorAll("[data-google-calendar-id]:checked")].map(x=>x.dataset.googleCalendarId);
+      if(!selected.length){toast("Choose at least one calendar.",true);return;}
+      try{
+        await invokeGoogleCalendar("select_calendars",{calendar_ids:selected});
+        $("googleCalendarPicker").classList.add("hidden");
+        toast("Google calendars updated.");
+        await loadGoogleCalendarIntegration();
+      }catch(err){toast(err?.message||"Unable to save calendar choices.",true);}
+    }
+
+    async function disconnectGoogleCalendar(){
+      if(!confirm("Disconnect Google Calendar from Open Brain? Your Google events will disappear from Open Brain, but nothing will be deleted from Google."))return;
+      try{
+        await invokeGoogleCalendar("disconnect");
+        state.googleCalendarStatus={configured:true,connected:false};
+        state.googleCalendars=[];state.googleEvents=[];
+        $("googleCalendarPicker").classList.add("hidden");
+        renderGoogleCalendarSettings();renderToday();renderWeek();renderOverview();
+        toast("Google Calendar disconnected.");
+      }catch(err){toast(err?.message||"Unable to disconnect Google Calendar.",true);}
+    }
+
+    function normalizedEventTitle(value){
+      return String(value||"").trim().toLowerCase().replace(/\s+/g," ");
+    }
+
+    function combinedEvents(){
+      const local=state.events.map(e=>({...e,source:e.source||"openbrain"}));
+      const result=[...local];
+      for(const g of state.googleEvents){
+        const gt=normalizedEventTitle(g.title);
+        const gd=localDayKey(g.starts_at);
+        const gms=new Date(g.starts_at).getTime();
+        const duplicate=result.some(e=>{
+          if(normalizedEventTitle(e.title)!==gt||localDayKey(e.starts_at)!==gd)return false;
+          const ems=new Date(e.starts_at).getTime();
+          return e.all_day&&g.all_day || (Number.isFinite(ems)&&Number.isFinite(gms)&&Math.abs(ems-gms)<=5*60*1000);
+        });
+        if(!duplicate)result.push(g);
+      }
+      return result.sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at));
     }
 
     function renderToday(){
@@ -2429,7 +2645,7 @@
         return date && localDayKey(date)===todayKey;
       });
       const display=[...overdue,...today.filter(t=>!overdue.includes(t))].slice(0,6);
-      const todayEvents=state.events.filter(e=>localDayKey(e.starts_at)===todayKey);
+      const todayEvents=combinedEvents().filter(e=>localDayKey(e.starts_at)===todayKey);
 
       $("todayTaskCount").textContent=today.length;
       $("todayEventCount").textContent=todayEvents.length;
@@ -3659,7 +3875,7 @@
         const x=new Date(d); return x>=start && x<=end;
       });
       const overdue=mine.filter(t=>t.remind_at && new Date(t.remind_at)<start);
-      const weekEvents=state.events.filter(e=>{const x=new Date(e.starts_at); return x>=start && x<=end;});
+      const weekEvents=combinedEvents().filter(e=>{const x=new Date(e.starts_at); return x>=start && x<=end;});
       $("weekTaskCount").textContent=weekTasks.length;
       $("weekEventCount").textContent=weekEvents.length;
       $("weekOverdueCount").textContent=overdue.length;
@@ -3942,7 +4158,7 @@
     }
 
     function canEditEvent(event){
-      return !!event && (isAdmin() || event.created_by===state.user.id);
+      return !!event && event.source!=="google" && (isAdmin() || event.created_by===state.user.id);
     }
 
     function activeGoal(){
@@ -3957,23 +4173,29 @@
       const eventBox=$("upcomingEvents");
       const now=new Date();
       const todayKey=localDayKey(now);
+      const events=combinedEvents();
       const upcoming=state.eventScope==="today"
-        ? state.events.filter(e=>localDayKey(e.starts_at)===todayKey)
-        : state.events.filter(e=>new Date(e.starts_at)>=new Date(Date.now()-6*60*60*1000)).slice(0,4);
+        ? events.filter(e=>localDayKey(e.starts_at)===todayKey)
+        : events.filter(e=>new Date(e.starts_at)>=new Date(Date.now()-6*60*60*1000)).slice(0,6);
       $("eventsHeading").textContent=state.eventScope==="today"?"Today’s events":"Upcoming events";
       $("clearEventScope").classList.toggle("hidden",state.eventScope!=="today");
       if(!upcoming.length){
         eventBox.innerHTML=state.eventScope==="today"
-          ? '<div class="overview-empty">There are no family events scheduled for today.</div>'
-          : '<div class="overview-empty">No upcoming family events yet. Add appointments, school events, practices, trips, birthdays, or anything the whole family needs to see.</div>';
+          ? '<div class="overview-empty">There are no events scheduled for today.</div>'
+          : '<div class="overview-empty">No upcoming events yet. Connect Google Calendar or add an Open Brain family event.</div>';
       }else{
         eventBox.innerHTML=upcoming.map(e=>{
           const d=new Date(e.starts_at);
           const date=new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(d);
           const time=e.all_day?"All day":new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(d);
-          const notify=eventNotificationSummary(e.id);
-          const edit=canEditEvent(e)?'<button class="smallbtn" data-event-edit="'+e.id+'">Edit</button>':'<span class="memory-date">Read only</span>';
-          return '<div class="event-row"><div class="event-date">'+esc(date)+'<br>'+esc(time)+'</div><div><div class="event-title">'+esc(e.title)+'</div><div class="event-sub">'+esc(e.location||e.description||"Family event")+(notify?' · '+esc(notify):'')+'</div></div>'+edit+'</div>';
+          const isGoogle=e.source==="google";
+          const notify=isGoogle?"":eventNotificationSummary(e.id);
+          const source=isGoogle?("Google · "+(e.calendar_name||"Calendar")):"Open Brain family event";
+          const detail=e.location||source;
+          const action=isGoogle
+            ? '<span class="memory-date">Google · read only</span>'
+            : (canEditEvent(e)?'<button class="smallbtn" data-event-edit="'+e.id+'">Edit</button>':'<span class="memory-date">Read only</span>');
+          return '<div class="event-row"><div class="event-date">'+esc(date)+'<br>'+esc(time)+'</div><div><div class="event-title">'+esc(e.title)+'</div><div class="event-sub">'+esc(detail)+(detail!==source?' · '+esc(source):'')+(notify?' · '+esc(notify):'')+'</div></div>'+action+'</div>';
         }).join("");
       }
 
@@ -4525,7 +4747,7 @@
       });
     }
     refreshInstallButton();
-    $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
+    $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();await loadGoogleCalendarIntegration();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
     $("inviteFamilyMember").addEventListener("click",openFamilyInviteEditor);
     $("closeFamilyInviteEditor").addEventListener("click",()=>$("familyInviteEditor").close());
     $("cancelFamilyInvite").addEventListener("click",()=>$("familyInviteEditor").close());
@@ -4545,6 +4767,14 @@
       if(!btn)return;
       const member=state.members.find(m=>m.user_id===btn.dataset.familyManage);
       if(member)openFamilyMemberEditor(member);
+    });
+    $("connectGoogleCalendar").addEventListener("click",connectGoogleCalendar);
+    $("chooseGoogleCalendars").addEventListener("click",chooseGoogleCalendars);
+    $("refreshGoogleCalendar").addEventListener("click",async()=>{try{await loadGoogleCalendarIntegration();toast("Google Calendar refreshed.");}catch(e){toast(e.message,true);}});
+    $("disconnectGoogleCalendar").addEventListener("click",disconnectGoogleCalendar);
+    $("googleCalendarPicker").addEventListener("click",async e=>{
+      if(e.target.closest("#saveGoogleCalendars")){await saveGoogleCalendarSelection();return;}
+      if(e.target.closest("#cancelGoogleCalendars"))$("googleCalendarPicker").classList.add("hidden");
     });
     $("openHealthCheckin").addEventListener("click",openHealthCheckin);
     $("closeHealthCheckin").addEventListener("click",()=>$("healthCheckinDialog").close());
@@ -4724,7 +4954,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=14-health-checkinshopping-default",
+          "/openbrain-oauth-ui/sw.js?v=15-google-calendar",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

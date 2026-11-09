@@ -102,6 +102,9 @@
     input,select,textarea{width:100%;border:1px solid #d5dbe4;border-radius:10px;padding:10px 11px;background:#fff;color:#111827}
     textarea{min-height:88px;resize:vertical}.helper{font-size:12px;color:var(--muted);margin-top:5px}
     .modalfoot{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:9px}
+    .notify-box{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fafcfc}.notify-box h4{margin:0 0 4px;font-size:14px}.notify-box .helper{margin-bottom:10px}
+    .notify-grid{display:flex;gap:8px;flex-wrap:wrap}.notify-choice{display:flex;align-items:center;gap:7px;border:1px solid #dce5e5;background:#fff;border-radius:10px;padding:8px 10px;font-size:13px}
+    .notify-choice input{width:auto;margin:0}.notify-choice.disabled{opacity:.5}.notify-section{margin-top:12px}.notify-label{font-size:12px;font-weight:800;color:#536568;margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}
     .loginwrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at top left,#eaf4f3,transparent 34%),radial-gradient(circle at bottom right,#f7eee8,transparent 30%),var(--bg)}
     .logincard{width:min(480px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:var(--shadow)}
     .logincard h1{margin:0 0 8px;font-size:28px}.logincard p{color:var(--muted);line-height:1.5}.loginlogo{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,var(--peach),var(--slate));display:grid;place-items:center;font-size:24px;margin-bottom:18px}
@@ -378,6 +381,30 @@
         </div>
         <div><label for="eventLocation">Location (optional)</label><input id="eventLocation" maxlength="180" /></div>
         <div><label for="eventDescription">Details (optional)</label><textarea id="eventDescription"></textarea></div>
+        <div class="notify-box">
+          <h4>🔔 Event notifications</h4>
+          <div class="helper">Choose who should be notified and when. Selected alerts are sent through each person's connected Telegram account.</div>
+          <div class="notify-section">
+            <div class="notify-label">Notify</div>
+            <div id="eventNotifyMembers" class="notify-grid"></div>
+          </div>
+          <div class="notify-section">
+            <div class="notify-label">When</div>
+            <div id="eventNotifyTimes" class="notify-grid">
+              <label class="notify-choice"><input type="checkbox" value="morning_of"> Morning of (8:00 AM)</label>
+              <label class="notify-choice"><input type="checkbox" value="1w"> 1 week before</label>
+              <label class="notify-choice"><input type="checkbox" value="2d"> 2 days before</label>
+              <label class="notify-choice"><input type="checkbox" value="1d"> 1 day before</label>
+              <label class="notify-choice"><input type="checkbox" value="2h"> 2 hours before</label>
+              <label class="notify-choice"><input type="checkbox" value="1h"> 1 hour before</label>
+              <label class="notify-choice"><input type="checkbox" value="30m"> 30 min before</label>
+              <label class="notify-choice"><input type="checkbox" value="15m"> 15 min before</label>
+              <label class="notify-choice"><input type="checkbox" value="10m"> 10 min before</label>
+              <label class="notify-choice"><input type="checkbox" value="5m"> 5 min before</label>
+              <label class="notify-choice"><input type="checkbox" value="at_time"> At event time</label>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modalfoot"><button id="cancelEventEdit" class="ghost" type="button">Cancel</button><button class="primary" type="submit">Save event</button></div>
     </form>
@@ -411,7 +438,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], goals:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
+    const state = { user:null, member:null, household:null, members:[], tasks:[], events:[], eventNotifications:[], goals:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -511,11 +538,12 @@
     }
 
     async function loadData(){
-      const [membersRes, householdRes, tasksRes, eventsRes, goalsRes, weeksRes, inboxRes]=await Promise.all([
-        sb.from("household_members").select("user_id,household_id,display_name,role").eq("household_id",state.member.household_id).order("display_name"),
+      const [membersRes, householdRes, tasksRes, eventsRes, eventNotificationsRes, goalsRes, weeksRes, inboxRes]=await Promise.all([
+        sb.from("household_members").select("user_id,household_id,display_name,role,telegram_enabled").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
         sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
         sb.from("family_events").select("*").eq("household_id",state.member.household_id).gte("starts_at",new Date(Date.now()-86400000).toISOString()).order("starts_at",{ascending:true}).limit(12),
+        sb.from("event_notifications").select("id,event_id,recipient_user_id,timing_key,status,notify_at").eq("household_id",state.member.household_id),
         sb.from("family_goals").select("*").eq("household_id",state.member.household_id).eq("status","active").order("updated_at",{ascending:false}),
         sb.from("weekly_plans").select("*").eq("owner_user_id",state.user.id).order("week_start",{ascending:false}).limit(12),
         sb.from("inbox_items").select("*").eq("owner_user_id",state.user.id).eq("status","unprocessed").order("created_at",{ascending:false}).limit(50)
@@ -524,10 +552,11 @@
       if(householdRes.error) throw householdRes.error;
       if(tasksRes.error) throw tasksRes.error;
       if(eventsRes.error) throw eventsRes.error;
+      if(eventNotificationsRes.error) throw eventNotificationsRes.error;
       if(goalsRes.error) throw goalsRes.error;
       if(weeksRes.error) throw weeksRes.error;
       if(inboxRes.error) throw inboxRes.error;
-      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.goals=goalsRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
+      state.members=membersRes.data||[]; state.household=householdRes.data; state.tasks=tasksRes.data||[]; state.events=eventsRes.data||[]; state.eventNotifications=eventNotificationsRes.data||[]; state.goals=goalsRes.data||[]; state.weeklyPlans=weeksRes.data||[]; state.inbox=inboxRes.data||[];
       if(!state.memberFilter) state.memberFilter=state.member.user_id;
       populateMembers();
     }
@@ -932,7 +961,8 @@
           const d=new Date(e.starts_at);
           const date=new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(d);
           const time=e.all_day?"All day":new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(d);
-          return '<div class="event-row"><div class="event-date">'+esc(date)+'<br>'+esc(time)+'</div><div><div class="event-title">'+esc(e.title)+'</div><div class="event-sub">'+esc(e.location||e.description||"Family event")+'</div></div><button class="smallbtn" data-event-edit="'+e.id+'">Edit</button></div>';
+          const notify=eventNotificationSummary(e.id);
+          return '<div class="event-row"><div class="event-date">'+esc(date)+'<br>'+esc(time)+'</div><div><div class="event-title">'+esc(e.title)+'</div><div class="event-sub">'+esc(e.location||e.description||"Family event")+(notify?' · '+esc(notify):'')+'</div></div><button class="smallbtn" data-event-edit="'+e.id+'">Edit</button></div>';
         }).join("");
       }
 
@@ -952,6 +982,82 @@
       }
     }
 
+    function eventNotificationSummary(eventId){
+      const rows=state.eventNotifications.filter(n=>n.event_id===eventId && !["cancelled","failed"].includes(n.status));
+      if(!rows.length)return "";
+      const people=new Set(rows.map(n=>n.recipient_user_id)).size;
+      const timings=new Set(rows.map(n=>n.timing_key)).size;
+      return "🔔 "+timings+" alert"+(timings===1?"":"s")+" · "+people+" "+(people===1?"person":"people");
+    }
+
+    function renderEventNotificationOptions(event=null){
+      const rows=event?state.eventNotifications.filter(n=>n.event_id===event.id && n.status!=="cancelled"):[];
+      const selectedPeople=new Set(rows.map(n=>n.recipient_user_id));
+      const selectedTimes=new Set(rows.map(n=>n.timing_key));
+
+      const membersBox=$("eventNotifyMembers");
+      membersBox.innerHTML=state.members.map(m=>{
+        const enabled=!!m.telegram_enabled;
+        const checked=event?selectedPeople.has(m.user_id):(m.user_id===state.user.id && enabled);
+        return '<label class="notify-choice '+(enabled?"":"disabled")+'">'+
+          '<input type="checkbox" value="'+m.user_id+'" '+(checked?"checked ":"")+(enabled?"":"disabled ")+'> '+
+          esc(m.display_name)+(enabled?"":" · Telegram not connected")+
+        '</label>';
+      }).join("");
+
+      $("eventNotifyTimes").querySelectorAll('input[type="checkbox"]').forEach(input=>{
+        input.checked=selectedTimes.has(input.value);
+      });
+    }
+
+    function selectedEventNotificationRecipients(){
+      return [...$("eventNotifyMembers").querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);
+    }
+
+    function selectedEventNotificationTimings(){
+      return [...$("eventNotifyTimes").querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);
+    }
+
+    async function syncEventNotifications(eventId){
+      const recipients=selectedEventNotificationRecipients();
+      const timings=selectedEventNotificationTimings();
+
+      const {data:existing,error:existingError}=await sb.from("event_notifications")
+        .select("id,recipient_user_id,timing_key,status")
+        .eq("event_id",eventId);
+      if(existingError) throw existingError;
+
+      const sentKeys=new Set((existing||[]).filter(x=>x.status==="sent").map(x=>x.recipient_user_id+"|"+x.timing_key));
+
+      const deletable=(existing||[]).filter(x=>x.status!=="sent").map(x=>x.id);
+      if(deletable.length){
+        const {error:deleteError}=await sb.from("event_notifications").delete().in("id",deletable);
+        if(deleteError) throw deleteError;
+      }
+
+      const rows=[];
+      for(const recipient of recipients){
+        for(const timing of timings){
+          const key=recipient+"|"+timing;
+          if(sentKeys.has(key)) continue;
+          rows.push({
+            event_id:eventId,
+            household_id:state.member.household_id,
+            recipient_user_id:recipient,
+            timing_key:timing,
+            notify_at:new Date().toISOString(),
+            status:"pending",
+            created_by:state.user.id
+          });
+        }
+      }
+
+      if(rows.length){
+        const {error:insertError}=await sb.from("event_notifications").insert(rows);
+        if(insertError) throw insertError;
+      }
+    }
+
     function openEventEditor(event=null){
       $("eventForm").reset(); $("eventId").value=event?.id||"";
       $("eventEditorTitle").textContent=event?"Edit family event":"New family event";
@@ -960,6 +1066,7 @@
       $("eventEnd").value=event?.ends_at?toLocalInput(event.ends_at):"";
       $("eventLocation").value=event?.location||"";
       $("eventDescription").value=event?.description||"";
+      renderEventNotificationOptions(event);
       $("eventEditor").showModal();
     }
 
@@ -976,12 +1083,16 @@
           updated_at:new Date().toISOString()
         };
         if(!payload.title||!payload.starts_at) throw new Error("Add an event title and start time.");
+        let savedEventId=id;
         if(id){
           const {error}=await sb.from("family_events").update(payload).eq("id",id); if(error) throw error;
+          await syncEventNotifications(id);
           toast("Family event updated.");
         }else{
           Object.assign(payload,{household_id:state.member.household_id,created_by:state.user.id});
           const {data:created,error}=await sb.from("family_events").insert(payload).select("id").single(); if(error) throw error;
+          savedEventId=created.id;
+          await syncEventNotifications(created.id);
           if(state.pendingInboxProcess?.type==="event"){
             const item=state.inbox.find(x=>x.id===state.pendingInboxProcess.id);
             if(item) await finishInbox(item,"event",created.id);

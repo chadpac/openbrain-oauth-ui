@@ -153,6 +153,9 @@
     .family-member-top{display:flex;align-items:center;gap:12px}
     .family-avatar{width:44px;height:44px;border-radius:14px;background:var(--green-soft);color:var(--navy2);display:grid;place-items:center;font-weight:800}
     .family-member-name{font-weight:800;font-size:16px}
+    .family-member-actions{display:flex;justify-content:flex-end}
+    .family-settings-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+    .family-settings-head h4{margin:0}
     .family-badges{display:flex;flex-wrap:wrap;gap:7px;margin-top:3px}
     .family-badge{font-size:12px;border-radius:999px;padding:4px 8px;background:var(--purple-soft);color:var(--ink)}
     .family-badge.admin{background:var(--blue-soft);color:var(--navy2)}
@@ -441,7 +444,10 @@
             <div id="familyRoster" class="family-roster"><div class="list-empty">Loading family…</div></div>
           </div>
           <div id="familySettings" class="family-settings">
-            <h4>Household settings</h4>
+            <div class="family-settings-head">
+              <h4>Household settings</h4>
+              <button id="editHouseholdSettings" class="ghost hidden" type="button">Edit</button>
+            </div>
             <div class="setting-row">
               <div class="setting-label">Household</div>
               <div id="familyHouseholdName" class="setting-value">—</div>
@@ -837,6 +843,57 @@
     </form>
   </dialog>
 
+  <dialog id="householdEditor">
+    <form id="householdForm">
+      <div class="modalhead"><h3>Household settings</h3><button id="closeHouseholdEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <div>
+          <label for="householdName">Household name</label>
+          <input id="householdName" maxlength="80" required />
+        </div>
+        <div>
+          <label for="householdTimezone">Time zone</label>
+          <input id="householdTimezone" maxlength="80" required placeholder="America/Denver" />
+          <div class="helper">Use an IANA time zone such as America/Denver, America/Chicago, or America/New_York.</div>
+        </div>
+      </div>
+      <div class="modalfoot">
+        <button id="cancelHouseholdEdit" class="ghost" type="button">Cancel</button>
+        <button class="primary" type="submit">Save household</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="familyMemberEditor">
+    <form id="familyMemberForm">
+      <div class="modalhead"><h3>Manage family member</h3><button id="closeFamilyMemberEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalbody">
+        <input id="familyMemberUserId" type="hidden" />
+        <div>
+          <label for="familyMemberName">Display name</label>
+          <input id="familyMemberName" maxlength="80" required />
+        </div>
+        <div>
+          <label for="familyMemberRole">Access level</label>
+          <select id="familyMemberRole">
+            <option value="member">Family member</option>
+            <option value="admin">Household admin</option>
+          </select>
+          <div class="helper">Admins can manage household-level settings and other members. Open Brain will not allow the last household admin to be demoted.</div>
+        </div>
+        <div class="notify-box">
+          <h4>Telegram</h4>
+          <div id="familyMemberTelegramStatus" class="helper"></div>
+          <div class="helper">Telegram connections are established through the existing Open Brain Telegram linking flow; this screen does not expose or edit chat IDs.</div>
+        </div>
+      </div>
+      <div class="modalfoot">
+        <button id="cancelFamilyMemberEdit" class="ghost" type="button">Cancel</button>
+        <button class="primary" type="submit">Save member</button>
+      </div>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast hidden"></div>
 
   <script type="module">
@@ -1018,6 +1075,62 @@
       }
     }
 
+    async function invokeHouseholdAdmin(body){
+      const {data,error}=await sb.functions.invoke("manage-household",{body});
+      if(error) throw error;
+      if(data?.error) throw new Error(data.error);
+      return data;
+    }
+
+    function openHouseholdEditor(){
+      if(!isAdmin())return;
+      $("householdName").value=state.household?.name||"";
+      $("householdTimezone").value=state.household?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||"America/Denver";
+      $("householdEditor").showModal();
+    }
+
+    async function saveHouseholdSettings(e){
+      e.preventDefault();
+      try{
+        const name=$("householdName").value.trim();
+        const timezone=$("householdTimezone").value.trim();
+        await invokeHouseholdAdmin({action:"update_household",name,timezone});
+        $("householdEditor").close();
+        await loadData();
+        renderAll();
+        toast("Household settings updated.");
+      }catch(err){
+        toast(err?.message||"Unable to update household settings.",true);
+      }
+    }
+
+    function openFamilyMemberEditor(member){
+      if(!isAdmin()||!member)return;
+      $("familyMemberUserId").value=member.user_id;
+      $("familyMemberName").value=member.display_name||"";
+      $("familyMemberRole").value=member.role||"member";
+      $("familyMemberTelegramStatus").textContent=member.telegram_enabled
+        ?"Telegram is connected for this family member."
+        :"Telegram is not connected for this family member.";
+      $("familyMemberEditor").showModal();
+    }
+
+    async function saveFamilyMember(e){
+      e.preventDefault();
+      try{
+        const user_id=$("familyMemberUserId").value;
+        const display_name=$("familyMemberName").value.trim();
+        const role=$("familyMemberRole").value;
+        await invokeHouseholdAdmin({action:"update_member",user_id,display_name,role});
+        $("familyMemberEditor").close();
+        await loadData();
+        renderAll();
+        toast("Family member updated.");
+      }catch(err){
+        toast(err?.message||"Unable to update family member.",true);
+      }
+    }
+
     function renderFamily(){
       const roster=$("familyRoster");
       if(!roster)return;
@@ -1044,6 +1157,7 @@
             '<div class="family-metric"><strong>'+overdue+'</strong><span>Overdue</span></div>'+
           '</div>'+
           (joined?'<div class="subtitle">Open Brain member since '+esc(joined)+'</div>':'')+
+          (isAdmin()?'<div class="family-member-actions"><button class="ghost smallbtn" type="button" data-family-manage="'+m.user_id+'">Manage</button></div>':'')+
         '</div>';
       }).join("");
 
@@ -1053,8 +1167,9 @@
       $("familyHouseholdName").textContent=state.household?.name||"Open Brain household";
       $("familyHouseholdTimezone").textContent=state.household?.timezone||"Not set";
       $("familyMyRole").textContent=roleLabel(state.member?.role);
+      $("editHouseholdSettings").classList.toggle("hidden",!isAdmin());
       $("familyAccessNote").textContent=isAdmin()
-        ?"You have household administrator access. Member-management controls will only be added where permissions are explicit."
+        ?"You can manage household settings and family-member access from this Family Hub."
         :"You can use your personal Open Brain areas and household features shared with you.";
       $("familyConnectedCount").textContent=connected;
       $("familyAdminCount").textContent=admins;
@@ -2480,6 +2595,19 @@
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
+    $("editHouseholdSettings").addEventListener("click",openHouseholdEditor);
+    $("closeHouseholdEditor").addEventListener("click",()=>$("householdEditor").close());
+    $("cancelHouseholdEdit").addEventListener("click",()=>$("householdEditor").close());
+    $("householdForm").addEventListener("submit",saveHouseholdSettings);
+    $("closeFamilyMemberEditor").addEventListener("click",()=>$("familyMemberEditor").close());
+    $("cancelFamilyMemberEdit").addEventListener("click",()=>$("familyMemberEditor").close());
+    $("familyMemberForm").addEventListener("submit",saveFamilyMember);
+    $("familyRoster").addEventListener("click",e=>{
+      const btn=e.target.closest("[data-family-manage]");
+      if(!btn)return;
+      const member=state.members.find(m=>m.user_id===btn.dataset.familyManage);
+      if(member)openFamilyMemberEditor(member);
+    });
     $("newHealthTracker").addEventListener("click",()=>openHealthTrackerEditor());
     $("closeHealthTrackerEditor").addEventListener("click",()=>$("healthTrackerEditor").close());
     $("cancelHealthTrackerEdit").addEventListener("click",()=>$("healthTrackerEditor").close());

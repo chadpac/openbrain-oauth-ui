@@ -1833,21 +1833,24 @@
       if(!state.aiMessages.length&&!state.aiBusy){
         box.innerHTML='<div class="ai-empty">'+
           '<div class="ai-empty-title">What can I help with?</div>'+
-          '<div class="ai-empty-text">Ask about your day, family calendar, shopping lists, goals, habits, or memories. I can also prepare something for you to review and save.</div>'+
+          '<div class="ai-empty-text">Ask about your day, family calendar, shopping lists, goals, habits, or saved memories. I can prepare one or several things for you to review and save.</div>'+
           '<div class="ai-suggestions">'+
             '<button class="ai-suggestion" type="button" data-ai-prompt="What do I have today?">What do I have today?</button>'+
             '<button class="ai-suggestion" type="button" data-ai-prompt="What is on our shopping lists right now?">What’s on our shopping lists?</button>'+
             '<button class="ai-suggestion" type="button" data-ai-prompt="What should I focus on this week?">What should I focus on?</button>'+
             '<button class="ai-suggestion" type="button" data-ai-prompt="What are my overdue tasks?">What’s overdue?</button>'+
+            '<button class="ai-suggestion" type="button" data-ai-prompt="Where did I put the spare batteries?">Where are the spare batteries?</button>'+
           '</div>'+
         '</div>';
         return;
       }
-      let html=state.aiMessages.map((m,index)=>{
-        const action=m.action
-          ? '<div class="ai-action-card"><strong>Proposed '+esc(String(m.action.type).replace("_"," "))+'</strong><button class="primary smallbtn" type="button" data-ai-action-index="'+index+'">'+esc(m.action.label||"Review")+'</button></div>'
-          : "";
-        return '<div class="ai-msg '+(m.role==="user"?"user":"assistant")+'"><div class="ai-bubble">'+esc(m.content)+'</div>'+action+'</div>';
+      let html=state.aiMessages.map((m,messageIndex)=>{
+        const actions=Array.isArray(m.actions)?m.actions:(m.action?[m.action]:[]);
+        const actionHtml=actions.map((action,actionIndex)=>{
+          const typeLabel=String(action.type||"action").replaceAll("_"," ");
+          return '<div class="ai-action-card"><strong>Proposed '+esc(typeLabel)+'</strong><button class="primary smallbtn" type="button" data-ai-message-index="'+messageIndex+'" data-ai-action-index="'+actionIndex+'">'+esc(action.label||"Review")+'</button></div>';
+        }).join("");
+        return '<div class="ai-msg '+(m.role==="user"?"user":"assistant")+'"><div class="ai-bubble">'+esc(m.content)+'</div>'+actionHtml+'</div>';
       }).join("");
       if(state.aiBusy){
         html+='<div class="ai-thinking"><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span><span>Open Brain is thinking…</span></div>';
@@ -1891,7 +1894,7 @@
         state.aiMessages.push({
           role:"assistant",
           content:data?.answer||"I couldn't form an answer.",
-          action:data?.action||null
+          actions:Array.isArray(data?.actions)?data.actions:(data?.action?[data.action]:[])
         });
       }catch(err){
         state.aiMessages.push({
@@ -1944,13 +1947,7 @@
     }
 
     function aiSetListProposal(payload){
-      let list=null;
-      if(payload?.list_id)list=state.lists.find(l=>l.id===payload.list_id&&!l.archived_at)||null;
-      if(!list&&payload?.list_name){
-        const wanted=String(payload.list_name).toLowerCase();
-        list=state.lists.find(l=>!l.archived_at&&l.name.toLowerCase()===wanted)||null;
-      }
-      if(!list)list=activeList();
+      const list=aiResolveList(payload);
       if(!list){
         closeAiPanel();
         $("listsPanel").scrollIntoView({behavior:"smooth",block:"start"});
@@ -1967,6 +1964,43 @@
       $("listItemNotes").value=payload?.notes||"";
     }
 
+    function aiResolveList(payload){
+      let list=null;
+      if(payload?.list_id)list=state.lists.find(l=>l.id===payload.list_id&&!l.archived_at)||null;
+      if(!list&&payload?.list_name){
+        const wanted=String(payload.list_name).trim().toLowerCase();
+        list=state.lists.find(l=>!l.archived_at&&l.name.toLowerCase()===wanted)||null;
+      }
+      if(!list)list=activeList();
+      return list;
+    }
+
+    function aiSetListItemsProposal(payload){
+      const list=aiResolveList(payload);
+      if(!list){
+        closeAiPanel();
+        $("listsPanel").scrollIntoView({behavior:"smooth",block:"start"});
+        toast("Choose or create a list first, then ask Open Brain again.",true);
+        return;
+      }
+      const items=Array.isArray(payload?.items)
+        ? payload.items.filter(x=>x&&String(x.content||"").trim()).slice(0,50)
+        : [];
+      if(!items.length){toast("Open Brain did not return any list items to review.",true);return;}
+
+      state.activeListId=list.id;
+      if(state.listShoppingMode)setShoppingMode(false);
+      renderLists();
+      closeAiPanel();
+      openBulkListItems();
+      $("bulkListItemsText").value=items.map(item=>{
+        const qty=String(item.quantity||"").trim();
+        const content=String(item.content||"").trim();
+        return (qty?qty+" ":"")+content;
+      }).join("\n");
+      $("bulkListItemsText").focus();
+    }
+
     function aiSetMemoryProposal(payload){
       closeAiPanel();
       openMemoryEditor();
@@ -1978,13 +2012,15 @@
       $("memoryTopics").value=Array.isArray(payload?.topics)?payload.topics.slice(0,12).join(", "):"";
     }
 
-    function reviewAiAction(index){
-      const message=state.aiMessages[Number(index)];
-      const action=message?.action;
+    function reviewAiAction(messageIndex,actionIndex=0){
+      const message=state.aiMessages[Number(messageIndex)];
+      const actions=Array.isArray(message?.actions)?message.actions:(message?.action?[message.action]:[]);
+      const action=actions[Number(actionIndex)];
       if(!action)return;
       if(action.type==="task")aiSetTaskProposal(action.payload);
       else if(action.type==="event")aiSetEventProposal(action.payload);
       else if(action.type==="list_item")aiSetListProposal(action.payload);
+      else if(action.type==="list_items")aiSetListItemsProposal(action.payload);
       else if(action.type==="memory")aiSetMemoryProposal(action.payload);
     }
 
@@ -3779,8 +3815,8 @@
     $("aiMessages").addEventListener("click",e=>{
       const prompt=e.target.closest("[data-ai-prompt]");
       if(prompt){sendAiMessage(prompt.dataset.aiPrompt);return;}
-      const action=e.target.closest("[data-ai-action-index]");
-      if(action)reviewAiAction(action.dataset.aiActionIndex);
+      const action=e.target.closest("[data-ai-message-index][data-ai-action-index]");
+      if(action)reviewAiAction(action.dataset.aiMessageIndex,action.dataset.aiActionIndex);
     });
     document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("aiPanel").classList.contains("hidden"))closeAiPanel();});
 

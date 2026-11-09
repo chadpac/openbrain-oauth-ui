@@ -1029,6 +1029,8 @@
     let speechHeardAudio=false;
     let speechHeardSpeech=false;
     let speechHadError=false;
+    let speechInputStream=null;
+    let speechInputTrack=null;
 
     function currentSpeechTarget(){ return $(speechTargetId); }
     function currentSpeechButton(){ return $(speechButtonId); }
@@ -1124,26 +1126,79 @@
             status.textContent="I heard speech, but the browser did not return a transcript. Try again; if it repeats, the browser speech service is failing.";
           }
         }
+        if(speechInputStream){
+          speechInputStream.getTracks().forEach(track=>track.stop());
+          speechInputStream=null;
+          speechInputTrack=null;
+        }
         target?.focus();
       };
     }
 
-    function toggleSpeechRecognition(targetId="quickCapture",buttonId="voiceCapture",statusId="voiceStatus"){
+    async function toggleSpeechRecognition(targetId="quickCapture",buttonId="voiceCapture",statusId="voiceStatus"){
       if(!speechRecognition)return;
       try{
         if(speechListening){
           speechRecognition.stop();
-        }else{
-          speechTargetId=targetId;
-          speechButtonId=buttonId;
-          speechStatusId=statusId;
-          const status=currentSpeechStatus();
-          if(status) status.textContent="";
-          speechRecognition.start();
+          return;
         }
-      }catch(err){
+
+        speechTargetId=targetId;
+        speechButtonId=buttonId;
+        speechStatusId=statusId;
         const status=currentSpeechStatus();
-        if(status) status.textContent="Voice capture is already starting. Try again in a moment.";
+        if(status) status.textContent="Connecting to microphone…";
+
+        if(navigator.mediaDevices?.getUserMedia){
+          try{
+            speechInputStream=await navigator.mediaDevices.getUserMedia({
+              audio:{
+                echoCancellation:true,
+                noiseSuppression:true,
+                autoGainControl:true
+              }
+            });
+            speechInputTrack=speechInputStream.getAudioTracks()[0]||null;
+            if(speechInputTrack){
+              try{ speechInputTrack.contentHint="speech-recognition"; }catch(_){}
+              const label=speechInputTrack.label?.trim();
+              if(status) status.textContent=label?("Listening with "+label+"…"):"Listening… speak naturally.";
+              try{
+                speechRecognition.start(speechInputTrack);
+                return;
+              }catch(trackErr){
+                speechInputStream.getTracks().forEach(track=>track.stop());
+                speechInputStream=null;
+                speechInputTrack=null;
+                if(trackErr?.name!=="TypeError" && trackErr?.name!=="NotSupportedError") throw trackErr;
+              }
+            }
+          }catch(micErr){
+            if(speechInputStream){
+              speechInputStream.getTracks().forEach(track=>track.stop());
+              speechInputStream=null;
+              speechInputTrack=null;
+            }
+            const messages={
+              "NotAllowedError":"Microphone permission was blocked. Allow microphone access for this site and try again.",
+              "NotFoundError":"No microphone was found for this site.",
+              "NotReadableError":"The selected microphone could not be opened. Another app or device setting may be blocking it."
+            };
+            if(status && messages[micErr?.name]) status.textContent=messages[micErr.name];
+            if(messages[micErr?.name]) return;
+          }
+        }
+
+        if(status) status.textContent="Listening… speak naturally.";
+        speechRecognition.start();
+      }catch(err){
+        if(speechInputStream){
+          speechInputStream.getTracks().forEach(track=>track.stop());
+          speechInputStream=null;
+          speechInputTrack=null;
+        }
+        const status=currentSpeechStatus();
+        if(status) status.textContent="Voice capture could not start. Try again in a moment.";
       }
     }
 

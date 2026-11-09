@@ -830,6 +830,20 @@
     </form>
   </dialog>
 
+  <dialog id="duplicateListDialog">
+    <div class="modalhead"><h3 id="duplicateListTitle">Already on this list</h3><button id="closeDuplicateList" class="ghost" type="button">Close</button></div>
+    <div class="modalbody">
+      <div id="duplicateListMessage" class="subtitle"></div>
+      <div id="duplicateListItems" style="display:grid;gap:8px"></div>
+      <div class="helper">Only unchecked items count as duplicates. Checked-off items can still be added again normally.</div>
+    </div>
+    <div class="modalfoot" style="flex-wrap:wrap">
+      <button id="cancelDuplicateList" class="ghost" type="button">Cancel</button>
+      <button id="skipDuplicateList" class="ghost" type="button">Skip duplicate</button>
+      <button id="addDuplicateListAnyway" class="primary" type="button">Add anyway</button>
+    </div>
+  </dialog>
+
   <dialog id="listItemEditor">
     <form id="listItemForm">
       <div class="modalhead"><h3 id="listItemEditorTitle">Add list item</h3><button id="closeListItemEditor" class="ghost" type="button">Close</button></div>
@@ -2560,7 +2574,49 @@
     }
 
     function normalizedListItemName(value){
-      return String(value||"").trim().toLowerCase().replace(/\s+/g," ");
+      return String(value||"").trim().toLowerCase().replace(/[.,;:!?]+$/g,"").replace(/\s+/g," ");
+    }
+
+    function openListDuplicates(listId,contents){
+      const wanted=new Set((contents||[]).map(normalizedListItemName).filter(Boolean));
+      if(!wanted.size)return[];
+      return state.listItems.filter(item=>
+        item.list_id===listId &&
+        !item.completed &&
+        wanted.has(normalizedListItemName(item.content))
+      );
+    }
+
+    let duplicateListResolver=null;
+
+    function resolveDuplicateListChoice(choice){
+      if(duplicateListResolver){
+        const resolve=duplicateListResolver;
+        duplicateListResolver=null;
+        $("duplicateListDialog").close();
+        resolve(choice);
+      }else{
+        $("duplicateListDialog").close();
+      }
+    }
+
+    function askAboutListDuplicates(list,duplicates){
+      if(!list||!duplicates?.length)return Promise.resolve("add");
+      const names=[...new Map(duplicates.map(item=>[normalizedListItemName(item.content),item])).values()];
+      $("duplicateListTitle").textContent=names.length===1?"Already on this list":"Some items are already on this list";
+      $("duplicateListMessage").textContent=names.length===1
+        ? '"'+names[0].content+'" is already unchecked on '+list.name+'. Do you want to add it again?'
+        : names.length+" items are already unchecked on "+list.name+". Do you want to add them again?";
+      $("duplicateListItems").innerHTML=names.map(item=>
+        '<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#f8faf9">'+
+          '<strong>'+esc(item.content)+'</strong>'+
+          (item.quantity?'<div class="helper" style="margin-top:3px">Current quantity: '+esc(item.quantity)+'</div>':'')+
+        '</div>'
+      ).join("");
+      $("skipDuplicateList").textContent=names.length===1?"Don’t add":"Skip duplicates";
+      $("addDuplicateListAnyway").textContent=names.length===1?"Add again":"Add duplicates anyway";
+      $("duplicateListDialog").showModal();
+      return new Promise(resolve=>{duplicateListResolver=resolve;});
     }
 
     function recentListSuggestions(list){
@@ -2773,7 +2829,7 @@
       button.disabled=true;
       button.textContent="Adding…";
       try{
-        const rows=lines.map(line=>{
+        let rows=lines.map(line=>{
           const parsed=parseShoppingLine(line);
           return{
             household_id:state.member.household_id,
@@ -2787,13 +2843,29 @@
             completed:false
           };
         });
+
+        const duplicates=openListDuplicates(list.id,rows.map(r=>r.content));
+        if(duplicates.length){
+          const choice=await askAboutListDuplicates(list,duplicates);
+          if(choice==="cancel")return;
+          if(choice==="skip"){
+            const duplicateNames=new Set(duplicates.map(d=>normalizedListItemName(d.content)));
+            rows=rows.filter(r=>!duplicateNames.has(normalizedListItemName(r.content)));
+          }
+        }
+        if(!rows.length){
+          $("bulkListItemsDialog").close();
+          toast("No new items added.");
+          return;
+        }
+
         const {data,error}=await sb.from("list_items").insert(rows).select("*");
         if(error)throw error;
         state.listItems.push(...(data||[]));
         $("bulkListItemsDialog").close();
         renderLists();
         renderFamilyActivity();
-        toast(lines.length+" items added.");
+        toast(rows.length+" item"+(rows.length===1?"":"s")+" added.");
       }catch(err){
         toast(err?.message||"Unable to add items.",true);
       }finally{
@@ -2846,6 +2918,12 @@
           }).eq("id",id);
           if(error)throw error;toast("Item updated.");
         }else{
+          const list=activeList();
+          const duplicates=openListDuplicates(list?.id,[content]);
+          if(duplicates.length){
+            const choice=await askAboutListDuplicates(list,duplicates);
+            if(choice==="cancel"||choice==="skip")return;
+          }
           await createListItem(content,$("listItemQuantity").value.trim(),$("listItemNotes").value.trim());
           toast("Item added.");
         }
@@ -2861,6 +2939,15 @@
       const qty=parsed.quantity||"";
       $("listQuickItem").value="";$("listQuickQty").value="";
       try{
+        const list=activeList();
+        const duplicates=openListDuplicates(list?.id,[content]);
+        if(duplicates.length){
+          const choice=await askAboutListDuplicates(list,duplicates);
+          if(choice==="cancel"||choice==="skip"){
+            $("listQuickItem").value=rawContent;$("listQuickQty").value=typedQty;
+            return;
+          }
+        }
         const item=await createListItem(content,qty,"");
         state.listItems.push(item);
         renderLists();
@@ -4146,6 +4233,11 @@
     $("closeBulkListItems").addEventListener("click",()=>$("bulkListItemsDialog").close());
     $("cancelBulkListItems").addEventListener("click",()=>$("bulkListItemsDialog").close());
     $("bulkListItemsForm").addEventListener("submit",saveBulkListItems);
+    $("closeDuplicateList").addEventListener("click",()=>resolveDuplicateListChoice("cancel"));
+    $("cancelDuplicateList").addEventListener("click",()=>resolveDuplicateListChoice("cancel"));
+    $("skipDuplicateList").addEventListener("click",()=>resolveDuplicateListChoice("skip"));
+    $("addDuplicateListAnyway").addEventListener("click",()=>resolveDuplicateListChoice("add"));
+    $("duplicateListDialog").addEventListener("cancel",e=>{e.preventDefault();resolveDuplicateListChoice("cancel");});
     $("closeListEditor").addEventListener("click",()=>$("listEditor").close());
     $("cancelListEdit").addEventListener("click",()=>$("listEditor").close());
     $("listForm").addEventListener("submit",saveList);
@@ -4284,7 +4376,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=10-ai-latest-review-card",
+          "/openbrain-oauth-ui/sw.js?v=11-list-duplicate-check",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

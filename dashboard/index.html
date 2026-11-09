@@ -95,16 +95,23 @@
     @media(max-width:900px){.memory-grid{grid-template-columns:1fr}}
     .lists-panel{margin-bottom:18px}.lists-layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:320px}
     .list-sidebar{border-right:1px solid var(--line);padding:14px;display:grid;align-content:start;gap:8px;background:#fbfcfc}
-    .list-selector{border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 12px;text-align:left;display:grid;gap:4px}
+    .list-selector{border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 12px;text-align:left;display:grid;gap:4px;cursor:pointer}
     .list-selector.active{border-color:#8db8b4;background:#eef7f6;box-shadow:0 0 0 2px rgba(91,161,153,.10)}
     .list-selector.archived{opacity:.6}.list-selector-title{font-weight:800}.list-selector-meta{font-size:11px;color:var(--muted)}
     .list-workspace{min-width:0}.list-workspace-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .list-quickadd{padding:12px 20px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(180px,1fr) 100px auto auto;gap:8px;align-items:center}
+    .list-quickadd{padding:12px 20px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(180px,1fr) 100px auto;gap:8px;align-items:center}
+    .list-toolbar{padding:9px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .list-progress{font-size:12px;color:var(--muted);font-weight:700}.list-live{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:#eef7f6;color:#397f81;font-size:11px;font-weight:850}
+    .list-live::before{content:"";width:7px;height:7px;border-radius:50%;background:#5ba199}
+    .list-suggestions{padding:10px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px;flex-wrap:wrap;background:#fbfcfc}
+    .list-suggestions-label{font-size:11px;color:var(--muted);font-weight:850;margin-right:2px}.list-suggestion{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:750;color:var(--ink)}
+    .list-suggestion:hover{border-color:#8db8b4;background:#eef7f6}
     .list-items{display:grid}.list-item-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)}
-    .list-item-row.done{opacity:.58}.list-item-row.done .list-item-name{text-decoration:line-through}.list-check{width:27px;height:27px;border-radius:8px;border:2px solid var(--navy);background:#fff;display:grid;place-items:center;padding:0;color:#fff;font-weight:900}
-    .list-check.done{background:var(--navy)}.list-item-name{font-weight:760}.list-item-meta{font-size:12px;color:var(--muted);margin-top:3px}.list-type-icon{font-size:17px;margin-right:5px}
+    .list-item-row.done{opacity:.58}.list-item-row.done .list-item-name{text-decoration:line-through}.list-check{width:31px;height:31px;border-radius:9px;border:2px solid var(--navy);background:#fff;display:grid;place-items:center;padding:0;color:#fff;font-weight:900;cursor:pointer}
+    .list-check.done{background:var(--navy)}.list-item-main{border:0;background:transparent;text-align:left;padding:4px 0;color:inherit;min-width:0;cursor:pointer}.list-item-name{font-weight:760}.list-item-meta{font-size:12px;color:var(--muted);margin-top:3px}.list-type-icon{font-size:17px;margin-right:5px}
     .list-empty{padding:28px 20px;text-align:center;color:var(--muted)}.list-header-meta{font-size:12px;color:var(--muted);margin-top:4px}.list-actions{display:flex;gap:6px;flex-wrap:wrap}
-    @media(max-width:850px){.lists-layout{grid-template-columns:1fr}.list-sidebar{border-right:0;border-bottom:1px solid var(--line);grid-template-columns:repeat(2,minmax(0,1fr))}.list-quickadd{grid-template-columns:1fr 90px}.list-quickadd button{grid-column:1/-1}}
+    .lists-panel.shopping-mode .list-sidebar{display:none}.lists-panel.shopping-mode .lists-layout{grid-template-columns:1fr}.lists-panel.shopping-mode .list-item-row{grid-template-columns:auto minmax(0,1fr);padding:15px 18px}.lists-panel.shopping-mode .list-check{width:42px;height:42px;border-radius:12px;font-size:18px}.lists-panel.shopping-mode .list-item-name{font-size:17px}.lists-panel.shopping-mode [data-list-item-edit]{display:none}.lists-panel.shopping-mode .list-workspace-head{position:sticky;top:0;z-index:5;background:#fff}.lists-panel.shopping-mode .list-quickadd{position:sticky;top:70px;z-index:4;background:#fff;box-shadow:0 5px 12px rgba(30,55,58,.06)}
+    @media(max-width:850px){.lists-layout{grid-template-columns:1fr}.list-sidebar{border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:8px;padding:10px 12px}.list-selector{min-width:170px;flex:0 0 auto}.list-quickadd{grid-template-columns:minmax(0,1fr) 76px auto;padding:10px 12px}.list-toolbar,.list-suggestions{padding-left:12px;padding-right:12px}.list-workspace-head{padding:14px 12px}.list-item-row{padding:13px 12px}.list-check{width:36px;height:36px}.lists-panel.shopping-mode .list-quickadd{top:62px}}
     .health-panel{margin-bottom:18px}.health-private{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;background:var(--peach-soft);color:#7f5a47;font-size:12px;font-weight:800}
     .health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px 20px}.health-card{border:1px solid var(--line);border-radius:15px;background:#fff;padding:15px;display:grid;gap:10px}
     .health-card.inactive{opacity:.6;background:#fafafa}.health-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.health-title{font-weight:820}.health-cat{font-size:11px;color:var(--muted);text-transform:capitalize;margin-top:3px}
@@ -422,17 +429,23 @@
                 <div id="activeListMeta" class="list-header-meta"></div>
               </div>
               <div class="list-actions">
+                <button id="shoppingMode" class="ghost hidden" type="button">Shopping mode</button>
                 <button id="editList" class="ghost hidden">Edit list</button>
                 <button id="newListItem" class="ghost hidden">+ Item</button>
               </div>
             </div>
             <div id="listQuickAdd" class="list-quickadd hidden">
-              <input id="listQuickItem" maxlength="240" placeholder="Quick add item…" />
-              <input id="listQuickQty" maxlength="30" placeholder="Qty" />
+              <input id="listQuickItem" maxlength="240" autocomplete="off" placeholder="Add item…" />
+              <input id="listQuickQty" maxlength="30" inputmode="text" placeholder="Qty" />
               <button id="addQuickListItem" class="primary">Add</button>
             </div>
-            <div style="padding:9px 20px;border-bottom:1px solid var(--line)">
-              <label class="notify-choice" style="width:max-content"><input id="showCompletedListItems" type="checkbox"> Show completed</label>
+            <div id="listSuggestions" class="list-suggestions hidden"></div>
+            <div class="list-toolbar">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <label class="notify-choice" style="width:max-content"><input id="showCompletedListItems" type="checkbox"> Show checked</label>
+                <span id="listLiveBadge" class="list-live hidden">Live family list</span>
+              </div>
+              <div id="listProgress" class="list-progress"></div>
             </div>
             <div id="listItems" class="list-items"><div class="list-empty">Choose or create a list.</div></div>
           </div>
@@ -1051,8 +1064,10 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"" };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"" };
     let deferredInstallPrompt=null;
+    let listRealtimeChannel=null;
+    let listRealtimeTimer=null;
 
     function isInstalledApp(){
       return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone===true;
@@ -1450,6 +1465,7 @@
       $("avatar").textContent=initials(state.member.display_name);
       $("timezoneNote").textContent="Times shown in "+Intl.DateTimeFormat().resolvedOptions().timeZone+".";
       renderAll();
+      startListRealtime();
     }
 
     async function loadData(){
@@ -1986,12 +2002,83 @@
       $("healthTrackerEditor").close();await loadData();renderAll();toast("Health tracker deleted.");
     }
 
+    async function reloadListsFromServer(){
+      if(!state.member?.household_id)return;
+      const [listsRes,itemsRes]=await Promise.all([
+        sb.from("lists").select("*").eq("household_id",state.member.household_id).order("updated_at",{ascending:false}),
+        sb.from("list_items").select("*").eq("household_id",state.member.household_id).order("created_at",{ascending:true}).limit(750)
+      ]);
+      if(listsRes.error)throw listsRes.error;
+      if(itemsRes.error)throw itemsRes.error;
+      state.lists=listsRes.data||[];
+      state.listItems=itemsRes.data||[];
+      if(state.activeListId&&!state.lists.some(l=>l.id===state.activeListId))state.activeListId=null;
+      renderLists();
+      renderFamilyActivity();
+    }
+
+    function scheduleListRealtimeRefresh(){
+      clearTimeout(listRealtimeTimer);
+      listRealtimeTimer=setTimeout(()=>{
+        reloadListsFromServer().catch(err=>console.warn("List realtime refresh failed:",err));
+      },220);
+    }
+
+    function stopListRealtime(){
+      if(listRealtimeChannel){
+        sb.removeChannel(listRealtimeChannel);
+        listRealtimeChannel=null;
+      }
+      clearTimeout(listRealtimeTimer);
+      listRealtimeTimer=null;
+    }
+
+    function startListRealtime(){
+      stopListRealtime();
+      if(!state.member?.household_id)return;
+      const filter="household_id=eq."+state.member.household_id;
+      listRealtimeChannel=sb.channel("open-brain-lists-"+state.member.household_id)
+        .on("postgres_changes",{event:"*",schema:"public",table:"lists",filter},scheduleListRealtimeRefresh)
+        .on("postgres_changes",{event:"*",schema:"public",table:"list_items",filter},scheduleListRealtimeRefresh)
+        .subscribe(status=>{
+          if(status==="CHANNEL_ERROR")console.warn("Shared-list realtime channel error.");
+        });
+    }
+
     function listTypeIcon(type){
       return ({grocery:"🛒",shopping:"🛍️",packing:"🧳",meal:"🍽️",wish:"⭐",general:"📝"})[type]||"📝";
     }
 
     function activeList(){
       return state.lists.find(l=>l.id===state.activeListId)||null;
+    }
+
+    function normalizedListItemName(value){
+      return String(value||"").trim().toLowerCase().replace(/\s+/g," ");
+    }
+
+    function recentListSuggestions(list){
+      if(!list)return[];
+      const openNames=new Set(
+        state.listItems.filter(i=>i.list_id===list.id&&!i.completed).map(i=>normalizedListItemName(i.content))
+      );
+      const seen=new Set();
+      return state.listItems
+        .filter(i=>i.list_id===list.id&&i.completed&&i.content)
+        .sort((a,b)=>new Date(b.completed_at||b.updated_at||b.created_at)-new Date(a.completed_at||a.updated_at||a.created_at))
+        .filter(item=>{
+          const key=normalizedListItemName(item.content);
+          if(!key||openNames.has(key)||seen.has(key))return false;
+          seen.add(key);return true;
+        })
+        .slice(0,8);
+    }
+
+    function setShoppingMode(enabled){
+      state.listShoppingMode=!!enabled;
+      $("listsPanel").classList.toggle("shopping-mode",state.listShoppingMode);
+      $("shoppingMode").textContent=state.listShoppingMode?"Exit shopping mode":"Shopping mode";
+      if(state.listShoppingMode)$("listQuickItem")?.focus();
     }
 
     function renderLists(){
@@ -2017,10 +2104,15 @@
       const list=activeList();
       $("editList").classList.toggle("hidden",!list);
       $("newListItem").classList.toggle("hidden",!list||!!list.archived_at);
+      $("shoppingMode").classList.toggle("hidden",!list||!!list.archived_at);
       $("listQuickAdd").classList.toggle("hidden",!list||!!list.archived_at);
+      if(!list&&state.listShoppingMode)setShoppingMode(false);
       if(!list){
         $("activeListName").textContent="Choose a list";
         $("activeListMeta").textContent="";
+        $("listLiveBadge").classList.add("hidden");
+        $("listProgress").textContent="";
+        $("listSuggestions").classList.add("hidden");
         $("listItems").innerHTML='<div class="list-empty">Choose or create a list.</div>';
         return;
       }
@@ -2028,9 +2120,24 @@
       $("activeListName").textContent=listTypeIcon(list.list_type)+" "+list.name;
       const owner=memoryOwnerName(list.owner_user_id);
       $("activeListMeta").textContent=(list.visibility==="household"?"Shared with household":"Private")+" · Created by "+owner+(list.archived_at?" · Archived":"");
+      $("listLiveBadge").classList.toggle("hidden",list.visibility!=="household");
+
+      const allItems=state.listItems.filter(i=>i.list_id===list.id);
+      const openCount=allItems.filter(i=>!i.completed).length;
+      const doneCount=allItems.filter(i=>i.completed).length;
+      $("listProgress").textContent=openCount+" left"+(doneCount?" · "+doneCount+" checked":"");
+
+      const suggestions=recentListSuggestions(list);
+      const suggestionBox=$("listSuggestions");
+      suggestionBox.classList.toggle("hidden",!suggestions.length||!!list.archived_at);
+      suggestionBox.innerHTML=suggestions.length
+        ? '<span class="list-suggestions-label">Add again</span>'+suggestions.map(item=>
+            '<button class="list-suggestion" type="button" data-list-add-again="'+item.id+'">+ '+esc(item.content)+'</button>'
+          ).join("")
+        : "";
 
       const showCompleted=$("showCompletedListItems").checked;
-      const items=state.listItems.filter(i=>i.list_id===list.id && (showCompleted||!i.completed))
+      const items=allItems.filter(i=>showCompleted||!i.completed)
         .sort((a,b)=>Number(a.completed)-Number(b.completed)||new Date(a.created_at)-new Date(b.created_at));
 
       if(!items.length){
@@ -2040,14 +2147,15 @@
 
       $("listItems").innerHTML=items.map(item=>{
         const addedBy=memoryOwnerName(item.owner_user_id);
+        const checkedBy=item.completed&&item.completed_by?memoryOwnerName(item.completed_by):"";
         const meta=[
           item.quantity?("Qty: "+item.quantity):"",
           item.notes||"",
-          "Added by "+addedBy
+          item.completed?(checkedBy?"Checked by "+checkedBy:"Checked"):"Added by "+addedBy
         ].filter(Boolean).join(" · ");
         return '<div class="list-item-row '+(item.completed?"done":"")+'">'+
-          '<button class="list-check '+(item.completed?"done":"")+'" data-list-item-toggle="'+item.id+'">'+(item.completed?"✓":"")+'</button>'+
-          '<div><div class="list-item-name">'+esc(item.content)+'</div><div class="list-item-meta">'+esc(meta)+'</div></div>'+
+          '<button class="list-check '+(item.completed?"done":"")+'" data-list-item-toggle="'+item.id+'" aria-label="'+(item.completed?"Uncheck ":"Check ")+esc(item.content)+'">'+(item.completed?"✓":"")+'</button>'+
+          '<button class="list-item-main" type="button" data-list-item-toggle-body="'+item.id+'"><div class="list-item-name">'+esc(item.content)+'</div><div class="list-item-meta">'+esc(meta)+'</div></button>'+
           '<button class="smallbtn" data-list-item-edit="'+item.id+'">Edit</button>'+
         '</div>';
       }).join("");
@@ -2128,7 +2236,7 @@
         notes:notes||null,
         visibility:list.visibility,
         completed:false
-      }).select("id").single();
+      }).select("*").single();
       if(error)throw error;
       return data;
     }
@@ -2157,24 +2265,61 @@
 
     async function quickAddListItem(){
       const content=$("listQuickItem").value.trim();if(!content)return;
+      const qty=$("listQuickQty").value.trim();
+      $("listQuickItem").value="";$("listQuickQty").value="";
       try{
-        await createListItem(content,$("listQuickQty").value.trim(),"");
-        $("listQuickItem").value="";$("listQuickQty").value="";
-        await loadData();renderAll();$("listQuickItem").focus();
-      }catch(err){toast(err?.message||"Unable to add item.",true);}
+        const item=await createListItem(content,qty,"");
+        state.listItems.push(item);
+        renderLists();
+        renderFamilyActivity();
+        $("listQuickItem").focus();
+      }catch(err){
+        $("listQuickItem").value=content;$("listQuickQty").value=qty;
+        toast(err?.message||"Unable to add item.",true);
+      }
     }
 
     async function toggleListItem(id){
       const item=state.listItems.find(i=>i.id===id);if(!item)return;
+      const before={completed:item.completed,completed_at:item.completed_at,completed_by:item.completed_by,updated_at:item.updated_at};
       const done=!item.completed;
-      const {error}=await sb.from("list_items").update({
-        completed:done,
-        completed_at:done?new Date().toISOString():null,
-        completed_by:done?state.user.id:null,
-        updated_at:new Date().toISOString()
-      }).eq("id",id);
-      if(error){toast(error.message,true);return;}
-      await loadData();renderAll();
+      const now=new Date().toISOString();
+      item.completed=done;
+      item.completed_at=done?now:null;
+      item.completed_by=done?state.user.id:null;
+      item.updated_at=now;
+      renderLists();
+      try{
+        const {error}=await sb.from("list_items").update({
+          completed:done,
+          completed_at:item.completed_at,
+          completed_by:item.completed_by,
+          updated_at:now
+        }).eq("id",id);
+        if(error)throw error;
+        renderFamilyActivity();
+      }catch(err){
+        Object.assign(item,before);renderLists();
+        toast(err?.message||"Unable to update item.",true);
+      }
+    }
+
+    async function addAgainListItem(id){
+      const item=state.listItems.find(i=>i.id===id);if(!item)return;
+      const before={completed:item.completed,completed_at:item.completed_at,completed_by:item.completed_by,updated_at:item.updated_at};
+      const now=new Date().toISOString();
+      item.completed=false;item.completed_at=null;item.completed_by=null;item.updated_at=now;
+      renderLists();
+      try{
+        const {error}=await sb.from("list_items").update({
+          completed:false,completed_at:null,completed_by:null,updated_at:now
+        }).eq("id",id);
+        if(error)throw error;
+        $("listQuickItem")?.focus();
+      }catch(err){
+        Object.assign(item,before);renderLists();
+        toast(err?.message||"Unable to add item again.",true);
+      }
     }
 
     async function deleteCurrentListItem(){
@@ -3293,7 +3438,7 @@
       await setStatus(btn.dataset.todayDone,"completed");
     });
 
-    $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
+    $("signOut").addEventListener("click",async()=>{stopListRealtime();await sb.auth.signOut();location.reload();});
     $("installOpenBrain").addEventListener("click",installOpenBrain);
     $("mobileInstallApp").addEventListener("click",()=>{ $("mobileMoreMenu").classList.add("hidden"); installOpenBrain(); });
     $("mobileMoreButton").addEventListener("click",()=>{
@@ -3391,16 +3536,24 @@
     $("deleteListItem").addEventListener("click",deleteCurrentListItem);
     $("showArchivedLists").addEventListener("change",()=>{state.activeListId=null;renderLists();});
     $("showCompletedListItems").addEventListener("change",renderLists);
+    $("shoppingMode").addEventListener("click",()=>setShoppingMode(!state.listShoppingMode));
+    $("listSuggestions").addEventListener("click",async e=>{
+      const btn=e.target.closest("[data-list-add-again]");if(btn)await addAgainListItem(btn.dataset.listAddAgain);
+    });
     $("addQuickListItem").addEventListener("click",quickAddListItem);
     $("listQuickItem").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();quickAddListItem();}});
     $("listQuickQty").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();quickAddListItem();}});
     $("listChooser").addEventListener("click",e=>{
       const btn=e.target.closest("[data-list-select]");if(!btn)return;
-      state.activeListId=btn.dataset.listSelect;renderLists();
+      state.activeListId=btn.dataset.listSelect;
+      if(state.listShoppingMode)setShoppingMode(false);
+      renderLists();
     });
     $("listItems").addEventListener("click",async e=>{
       const toggle=e.target.closest("[data-list-item-toggle]");
       if(toggle){await toggleListItem(toggle.dataset.listItemToggle);return;}
+      const body=e.target.closest("[data-list-item-toggle-body]");
+      if(body){await toggleListItem(body.dataset.listItemToggleBody);return;}
       const edit=e.target.closest("[data-list-item-edit]");
       if(edit){const item=state.listItems.find(i=>i.id===edit.dataset.listItemEdit);if(item)openListItemEditor(item);}
     });

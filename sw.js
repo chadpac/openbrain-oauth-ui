@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v13";
-const SW_VERSION = "v13-family-shopping-default";
+const CACHE_NAME = "open-brain-pwa-v14";
+const SW_VERSION = "v14-health-checkin";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",
@@ -90,6 +90,10 @@ self.addEventListener("push", event => {
     actions.push(
       { action: "done", title: "✅ Done" },
       { action: "open", title: "Open" }
+    );
+  } else if (data.kind === "health_checkin") {
+    actions.push(
+      { action: "open", title: "Open check-in" }
     );
   }
 

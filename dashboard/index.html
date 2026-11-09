@@ -141,8 +141,9 @@
     .b-active{background:var(--green-soft);color:#15803d}.b-paused{background:var(--amber-soft);color:#b45309}.b-cancelled{background:var(--red-soft);color:#b91c1c}.b-completed{background:#f3f4f6;color:#4b5563}.b-recurring{background:var(--purple-soft);color:var(--purple)}.b-priority{background:var(--blue-soft);color:#1d4ed8}
     .actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}.smallbtn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 9px;font-size:12px;font-weight:750}.smallbtn:hover{background:#f8fafc}.smallbtn.warn{color:#b45309}.smallbtn.danger{color:#b91c1c}
     .empty{padding:55px 20px;text-align:center;color:var(--muted)}.empty strong{display:block;color:var(--ink);font-size:17px;margin-bottom:5px}
-    .toast{position:fixed;right:24px;bottom:24px;z-index:50;background:#111827;color:#fff;border-radius:12px;padding:12px 15px;box-shadow:var(--shadow);max-width:360px}
+    .toast{position:fixed;right:24px;bottom:24px;z-index:80;background:#111827;color:#fff;border-radius:12px;padding:12px 15px;box-shadow:var(--shadow);max-width:360px}
     .toast.error{background:#991b1b}
+    .push-error{margin-top:10px;padding:12px 13px;border-radius:12px;background:var(--red-soft);color:#8f3030;font-size:13px;line-height:1.45;border:1px solid #efcccc}
     dialog{border:0;border-radius:18px;padding:0;width:min(640px,calc(100% - 28px));box-shadow:0 30px 70px rgba(0,0,0,.28)}
     dialog::backdrop{background:rgba(15,23,42,.52)}
     .modalhead{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.modalhead h3{margin:0}
@@ -200,7 +201,7 @@
     .mobile-more-grid button{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;text-align:left;color:var(--ink);font-weight:700}
     @media(max-width:1100px){.family-shell{grid-template-columns:1fr}.family-roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:1100px){.today-grid,.overview,.week-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
-    @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:10px 14px 4px}.brand{padding:2px 4px 8px}aside nav{display:none}.aside-foot{display:none}main{padding:14px 14px calc(96px + env(safe-area-inset-bottom))}.topbar{align-items:flex-start;margin-bottom:18px}.topbar>div:first-child{display:none}.userbox{width:100%;justify-content:flex-end}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}.mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:5px 6px calc(5px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.mobile-more{display:block}}
+    @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:10px 14px 4px}.brand{padding:2px 4px 8px}aside nav{display:none}.aside-foot{display:none}main{padding:14px 14px calc(116px + env(safe-area-inset-bottom))}.topbar{align-items:flex-start;margin-bottom:18px}.topbar>div:first-child{display:none}.userbox{width:100%;justify-content:flex-end}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}.mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:5px 6px calc(5px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.mobile-more{display:block}.toast{left:12px;right:12px;bottom:calc(88px + env(safe-area-inset-bottom));max-width:none}}
   </style>
 </head>
 <body>
@@ -492,6 +493,7 @@
               <div class="setting-label">Phone notifications</div>
               <div id="pushNotificationStatus" class="setting-value">Checking this device…</div>
               <div id="pushNotificationNote" class="setting-note">Open Brain can send reminders directly to this installed web app. Telegram can stay enabled too.</div>
+              <div id="pushNotificationError" class="push-error hidden"></div>
               <div class="push-controls">
                 <button id="enablePushNotifications" class="primary" type="button">Enable notifications</button>
                 <button id="disablePushNotifications" class="ghost hidden" type="button">Turn off on this device</button>
@@ -1049,6 +1051,32 @@
       return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
     }
 
+    async function reportPushSetupError(stage,err){
+      try{
+        await sb.functions.invoke("web-push",{body:{
+          action:"client_error",
+          stage,
+          message:err?.message||String(err),
+          name:err?.name||"",
+          user_agent:navigator.userAgent,
+          notification_permission:("Notification" in window?Notification.permission:"unsupported"),
+          standalone:isInstalledApp()
+        }});
+      }catch(_){}
+    }
+
+    function showPushError(message){
+      const box=$("pushNotificationError");
+      box.textContent=message;
+      box.classList.remove("hidden");
+      box.scrollIntoView({behavior:"smooth",block:"center"});
+    }
+
+    function clearPushError(){
+      $("pushNotificationError")?.classList.add("hidden");
+      if($("pushNotificationError"))$("pushNotificationError").textContent="";
+    }
+
     async function currentPushSubscription(){
       if(!pushSupported())return null;
       const registration=await navigator.serviceWorker.ready;
@@ -1058,6 +1086,7 @@
     async function refreshPushStatus(){
       const status=$("pushNotificationStatus");
       const note=$("pushNotificationNote");
+      clearPushError();
       const enable=$("enablePushNotifications");
       const disable=$("disablePushNotifications");
       if(!status)return;
@@ -1118,26 +1147,37 @@
       const original=button.textContent;
       button.disabled=true;
       button.textContent="Enabling…";
+      let stage="permission";
       try{
+        clearPushError();
         const permission=await Notification.requestPermission();
         if(permission!=="granted")throw new Error("Notification permission was not granted.");
 
+        stage="public_key";
         const {data:keyData,error:keyError}=await sb.functions.invoke("web-push",{body:{action:"public_key"}});
         if(keyError)throw keyError;
         if(!keyData?.public_key)throw new Error(keyData?.error||"Unable to get the Open Brain push key.");
 
+        stage="service_worker";
         const registration=await navigator.serviceWorker.ready;
+        if(!registration.active)throw new Error("The Open Brain service worker is not active yet. Close and reopen the app, then try again.");
+
+        stage="browser_subscription";
         let subscription=await registration.pushManager.getSubscription();
         if(!subscription){
+          const serverKey=base64UrlToUint8Array(keyData.public_key);
+          if(serverKey.length!==65)throw new Error("Open Brain received an invalid push public key length: "+serverKey.length+".");
           subscription=await registration.pushManager.subscribe({
             userVisibleOnly:true,
-            applicationServerKey:base64UrlToUint8Array(keyData.public_key)
+            applicationServerKey:serverKey
           });
         }
 
+        stage="subscription_data";
         const json=subscription.toJSON();
         if(!json.endpoint||!json.keys?.p256dh||!json.keys?.auth)throw new Error("The browser returned an incomplete push subscription.");
 
+        stage="save_subscription";
         const {error:saveError}=await sb.from("push_subscriptions").upsert({
           household_id:state.member.household_id,
           user_id:state.user.id,
@@ -1150,6 +1190,7 @@
         },{onConflict:"endpoint"});
         if(saveError)throw saveError;
 
+        stage="test_notification";
         const {data:testData,error:testError}=await sb.functions.invoke("web-push",{body:{action:"test_self"}});
         if(testError)throw testError;
         if(!testData?.ok)throw new Error(testData?.error||"The subscription was saved, but the test notification could not be delivered.");
@@ -1157,11 +1198,13 @@
         await refreshPushStatus();
         toast("Phone notifications enabled.");
       }catch(err){
-        console.error("Unable to enable push notifications:",err);
-        const message=err?.message||"Unable to enable phone notifications.";
+        console.error("Unable to enable push notifications:",stage,err);
+        const message=(err?.name?err.name+": ":"")+(err?.message||"Unable to enable phone notifications.");
+        await reportPushSetupError(stage,err);
         toast(message,true);
         $("pushNotificationStatus").textContent="Could not enable notifications";
-        $("pushNotificationNote").textContent=message;
+        $("pushNotificationNote").textContent="Setup stopped during: "+stage.replaceAll("_"," ")+".";
+        showPushError(message);
         $("enablePushNotifications").classList.remove("hidden");
         $("disablePushNotifications").classList.add("hidden");
       }finally{

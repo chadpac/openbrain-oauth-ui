@@ -1158,8 +1158,12 @@
         toast("Phone notifications enabled.");
       }catch(err){
         console.error("Unable to enable push notifications:",err);
-        toast(err?.message||"Unable to enable phone notifications.",true);
-        await refreshPushStatus();
+        const message=err?.message||"Unable to enable phone notifications.";
+        toast(message,true);
+        $("pushNotificationStatus").textContent="Could not enable notifications";
+        $("pushNotificationNote").textContent=message;
+        $("enablePushNotifications").classList.remove("hidden");
+        $("disablePushNotifications").classList.add("hidden");
       }finally{
         button.disabled=false;
         button.textContent=original;

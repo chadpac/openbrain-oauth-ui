@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "scripts": {"test:reminders": "node --test reminder-reliability.test.cjs"},
+  "devDependencies": {"@electric-sql/pglite": "0.5.16"}
+}

@@ -40,7 +40,9 @@
     .today-hero h2{font-size:30px;margin:4px 0 5px}.today-date{color:var(--muted);font-size:14px}
     .quick-capture{margin-top:20px;display:flex;gap:9px;align-items:center}.quick-capture input{flex:1;background:#fff;border:1px solid #d8e2e2;border-radius:12px;padding:12px 14px;min-width:160px}
     .quick-actions{display:flex;gap:7px;flex-wrap:wrap}.quickbtn{border:1px solid #d7e2e2;background:#fff;border-radius:10px;padding:10px 11px;font-size:13px;font-weight:760;color:#3e6f71}
-    .quickbtn:hover{background:#f4f9f8}.today-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:16px;margin-bottom:18px}
+    .quickbtn:hover{background:#f4f9f8}.voicebtn{border:1px solid #d7e2e2;background:#fff;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:800;color:#3e6f71}
+    .voicebtn:hover{background:#f4f9f8}.voicebtn.listening{background:#fff1ee;border-color:#e6b9aa;color:#9a5c47;box-shadow:0 0 0 3px rgba(221,190,170,.22)}
+    .voice-status{font-size:11px;color:var(--muted);margin-top:6px;min-height:16px}.today-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:16px;margin-bottom:18px}
     .today-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
     .today-card h3{margin:0;font-size:18px}.today-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
     .today-list{display:grid;gap:8px}.today-task{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border-top:1px solid var(--line);padding:10px 0}.today-task:first-child{border-top:0}
@@ -166,12 +168,14 @@
         <div class="quick-capture">
           <input id="quickCapture" maxlength="220" placeholder="Quick add… e.g. Call the dentist, Track meet Friday, Walk after breakfast" />
           <div class="quick-actions">
+            <button id="voiceCapture" class="voicebtn" type="button" title="Speak instead of typing">🎤 Speak</button>
             <button id="quickInbox" class="primary" type="button">Save to Inbox</button>
             <button id="quickTask" class="quickbtn" type="button">Task</button>
             <button id="quickEvent" class="quickbtn" type="button">Event</button>
             <button id="quickGoal" class="quickbtn" type="button">Goal</button>
           </div>
         </div>
+        <div id="voiceStatus" class="voice-status"></div>
       </section>
 
       <section class="today-grid">
@@ -597,6 +601,80 @@
         const when=t.remind_at?formatDate(t.remind_at):(t.due_at?formatDate(t.due_at):"No time");
         return '<div class="today-task"><div><div class="today-task-title">'+esc(t.title)+'</div><div class="today-task-meta '+(isOverdue?"today-overdue":"")+'">'+(isOverdue?"Overdue · ":"")+esc(when)+'</div></div><button class="smallbtn" data-today-done="'+t.id+'">Done</button></div>';
       }).join("");
+    }
+
+    let speechRecognition=null;
+    let speechListening=false;
+    let speechBaseText="";
+
+    function setupSpeechRecognition(){
+      const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+      const btn=$("voiceCapture");
+      if(!SpeechRecognition){
+        btn.classList.add("hidden");
+        $("voiceStatus").textContent="Voice capture is not supported by this browser.";
+        return;
+      }
+
+      speechRecognition=new SpeechRecognition();
+      speechRecognition.lang=navigator.language||"en-US";
+      speechRecognition.continuous=false;
+      speechRecognition.interimResults=true;
+      speechRecognition.maxAlternatives=1;
+
+      speechRecognition.onstart=()=>{
+        speechListening=true;
+        speechBaseText=$("quickCapture").value.trim();
+        btn.classList.add("listening");
+        btn.textContent="■ Stop";
+        btn.setAttribute("aria-pressed","true");
+        $("voiceStatus").textContent="Listening… speak naturally.";
+      };
+
+      speechRecognition.onresult=(event)=>{
+        let transcript="";
+        for(let i=event.resultIndex;i<event.results.length;i++){
+          transcript+=event.results[i][0].transcript;
+        }
+        const prefix=speechBaseText?speechBaseText+" ":"";
+        $("quickCapture").value=(prefix+transcript).trimStart();
+      };
+
+      speechRecognition.onerror=(event)=>{
+        const messages={
+          "not-allowed":"Microphone permission was blocked. Allow microphone access for this site and try again.",
+          "service-not-allowed":"Speech recognition is blocked by this browser or device.",
+          "no-speech":"I didn't hear anything. Try again and speak a little closer to the microphone.",
+          "audio-capture":"I couldn't access a microphone on this device.",
+          "network":"Speech recognition had a network problem. Please try again."
+        };
+        $("voiceStatus").textContent=messages[event.error]||"Voice capture stopped. You can try again.";
+      };
+
+      speechRecognition.onend=()=>{
+        speechListening=false;
+        btn.classList.remove("listening");
+        btn.textContent="🎤 Speak";
+        btn.setAttribute("aria-pressed","false");
+        if($("voiceStatus").textContent==="Listening… speak naturally."){
+          $("voiceStatus").textContent=$("quickCapture").value.trim()?"Voice added. Review it, then save or choose a destination.":"Voice capture ended.";
+        }
+        $("quickCapture").focus();
+      };
+    }
+
+    function toggleSpeechRecognition(){
+      if(!speechRecognition)return;
+      try{
+        if(speechListening){
+          speechRecognition.stop();
+        }else{
+          $("voiceStatus").textContent="";
+          speechRecognition.start();
+        }
+      }catch(err){
+        $("voiceStatus").textContent="Voice capture is already starting. Try again in a moment.";
+      }
     }
 
     function quickText(){
@@ -1108,6 +1186,7 @@
       }
     }));
 
+    $("voiceCapture").addEventListener("click",toggleSpeechRecognition);
     $("quickInbox").addEventListener("click",saveToInbox);
     $("quickTask").addEventListener("click",()=>{
       const text=quickText();
@@ -1200,6 +1279,7 @@
       if(event==="SIGNED_OUT"){location.reload();}
     });
 
+    setupSpeechRecognition();
     start();
   </script>
 </body>

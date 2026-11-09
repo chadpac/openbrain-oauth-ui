@@ -212,14 +212,12 @@
         <div class="quick-capture">
           <input id="quickCapture" maxlength="220" placeholder="Quick add… e.g. Call the dentist, Track meet Friday, Walk after breakfast" />
           <div class="quick-actions">
-            <button id="voiceCapture" class="voicebtn" type="button" title="Speak instead of typing">🎤 Speak</button>
             <button id="quickInbox" class="primary" type="button">Save to Inbox</button>
             <button id="quickTask" class="quickbtn" type="button">Task</button>
             <button id="quickEvent" class="quickbtn" type="button">Event</button>
             <button id="quickGoal" class="quickbtn" type="button">Goal</button>
           </div>
         </div>
-        <div id="voiceStatus" class="voice-status"></div>
       </section>
 
       <section class="today-grid">
@@ -351,9 +349,7 @@
             <div id="listQuickAdd" class="list-quickadd hidden">
               <input id="listQuickItem" maxlength="240" placeholder="Quick add item…" />
               <input id="listQuickQty" maxlength="30" placeholder="Qty" />
-              <button id="listVoiceCapture" class="voicebtn" type="button" title="Speak item instead of typing">🎤 Speak</button>
               <button id="addQuickListItem" class="primary">Add</button>
-              <div id="listVoiceStatus" class="voice-status" style="grid-column:1/-1"></div>
             </div>
             <div style="padding:9px 20px;border-bottom:1px solid var(--line)">
               <label class="notify-choice" style="width:max-content"><input id="showCompletedListItems" type="checkbox"> Show completed</label>
@@ -1017,213 +1013,6 @@
         const when=t.remind_at?formatDate(t.remind_at):(t.due_at?formatDate(t.due_at):"No time");
         return '<div class="today-task"><div><div class="today-task-title">'+esc(t.title)+'</div><div class="today-task-meta '+(isOverdue?"today-overdue":"")+'">'+(isOverdue?"Overdue · ":"")+esc(when)+'</div></div><button class="smallbtn" data-today-done="'+t.id+'">Done</button></div>';
       }).join("");
-    }
-
-    let voiceRecorder=null;
-    let voiceStream=null;
-    let voiceChunks=[];
-    let voiceRecording=false;
-    let voiceBaseText="";
-    let voiceTargetId="quickCapture";
-    let voiceButtonId="voiceCapture";
-    let voiceStatusId="voiceStatus";
-    let voiceStopTimer=null;
-
-    function currentSpeechTarget(){ return $(voiceTargetId); }
-    function currentSpeechButton(){ return $(voiceButtonId); }
-    function currentSpeechStatus(){ return voiceStatusId ? $(voiceStatusId) : null; }
-
-    function stopVoiceStream(){
-      if(voiceStream){
-        voiceStream.getTracks().forEach(track=>track.stop());
-        voiceStream=null;
-      }
-    }
-
-    function resetVoiceButton(){
-      const btn=currentSpeechButton();
-      voiceRecording=false;
-      if(voiceStopTimer){
-        clearTimeout(voiceStopTimer);
-        voiceStopTimer=null;
-      }
-      if(btn){
-        btn.classList.remove("listening");
-        btn.disabled=false;
-        btn.textContent="🎤 Speak";
-        btn.setAttribute("aria-pressed","false");
-      }
-    }
-
-    function setupSpeechRecognition(){
-      const supported=!!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
-      const btn=$("voiceCapture");
-      const listBtn=$("listVoiceCapture");
-      if(!supported){
-        btn?.classList.add("hidden");
-        listBtn?.classList.add("hidden");
-        if($("voiceStatus")) $("voiceStatus").textContent="Voice capture is not supported by this browser.";
-        if($("listVoiceStatus")) $("listVoiceStatus").textContent="Voice capture is not supported by this browser.";
-      }
-    }
-
-    function preferredVoiceMimeType(){
-      const choices=[
-        "audio/webm;codecs=opus",
-        "audio/webm",
-        "audio/ogg;codecs=opus",
-        "audio/ogg"
-      ];
-      return choices.find(type=>MediaRecorder.isTypeSupported?.(type))||"";
-    }
-
-    function voiceFormatFromMime(mime){
-      const lower=(mime||"").toLowerCase();
-      if(lower.includes("ogg"))return "ogg";
-      if(lower.includes("wav"))return "wav";
-      if(lower.includes("mp3")||lower.includes("mpeg"))return "mp3";
-      if(lower.includes("m4a")||lower.includes("mp4"))return "m4a";
-      return "webm";
-    }
-
-    function blobToBase64(blob){
-      return new Promise((resolve,reject)=>{
-        const reader=new FileReader();
-        reader.onerror=()=>reject(reader.error||new Error("Unable to read recording."));
-        reader.onload=()=>{
-          const value=String(reader.result||"");
-          const comma=value.indexOf(",");
-          resolve(comma>=0?value.slice(comma+1):value);
-        };
-        reader.readAsDataURL(blob);
-      });
-    }
-
-    async function transcribeVoiceBlob(blob,mimeType){
-      const audio_base64=await blobToBase64(blob);
-      const {data,error}=await sb.functions.invoke("transcribe-voice",{body:{
-        audio_base64,
-        format:voiceFormatFromMime(mimeType)
-      }});
-      if(error)throw error;
-      if(data?.error)throw new Error(data.error);
-      const text=typeof data?.text==="string"?data.text.trim():"";
-      if(!text)throw new Error("No speech was recognized.");
-      return text;
-    }
-
-    async function finishVoiceRecording(mimeType){
-      const status=currentSpeechStatus();
-      const target=currentSpeechTarget();
-      const btn=currentSpeechButton();
-      const blob=new Blob(voiceChunks,{type:mimeType||"audio/webm"});
-      voiceChunks=[];
-      stopVoiceStream();
-      voiceRecorder=null;
-      voiceRecording=false;
-      if(voiceStopTimer){
-        clearTimeout(voiceStopTimer);
-        voiceStopTimer=null;
-      }
-
-      if(btn){
-        btn.classList.remove("listening");
-        btn.disabled=true;
-        btn.textContent="Transcribing…";
-        btn.setAttribute("aria-pressed","false");
-      }
-
-      if(blob.size<500){
-        if(status)status.textContent="I didn't receive enough audio to transcribe. Try again.";
-        resetVoiceButton();
-        target?.focus();
-        return;
-      }
-
-      try{
-        if(status)status.textContent="Transcribing your voice…";
-        const transcript=await transcribeVoiceBlob(blob,mimeType);
-        const prefix=voiceBaseText?voiceBaseText+" ":"";
-        if(target)target.value=(prefix+transcript).trim();
-        if(status)status.textContent="Voice added. Review it, then add it.";
-      }catch(err){
-        console.error("Voice transcription failed:",err);
-        if(status)status.textContent=err?.message||"I couldn't transcribe that recording. Please try again.";
-      }finally{
-        resetVoiceButton();
-        target?.focus();
-      }
-    }
-
-    async function toggleSpeechRecognition(targetId="quickCapture",buttonId="voiceCapture",statusId="voiceStatus"){
-      voiceTargetId=targetId;
-      voiceButtonId=buttonId;
-      voiceStatusId=statusId;
-
-      if(voiceRecording && voiceRecorder){
-        const status=currentSpeechStatus();
-        if(status)status.textContent="Finishing recording…";
-        try{voiceRecorder.stop();}catch(_){}
-        return;
-      }
-
-      const target=currentSpeechTarget();
-      const btn=currentSpeechButton();
-      const status=currentSpeechStatus();
-
-      try{
-        if(status)status.textContent="Connecting to microphone…";
-        voiceStream=await navigator.mediaDevices.getUserMedia({
-          audio:{
-            echoCancellation:true,
-            noiseSuppression:true,
-            autoGainControl:true
-          }
-        });
-
-        const track=voiceStream.getAudioTracks()[0];
-        const microphoneName=track?.label?.trim()||"microphone";
-        const mimeType=preferredVoiceMimeType();
-        voiceChunks=[];
-        voiceBaseText=target?.value.trim()||"";
-        voiceRecorder=mimeType?new MediaRecorder(voiceStream,{mimeType}):new MediaRecorder(voiceStream);
-
-        voiceRecorder.ondataavailable=e=>{
-          if(e.data?.size)voiceChunks.push(e.data);
-        };
-        voiceRecorder.onerror=e=>{
-          console.error("Voice recorder error:",e);
-          if(status)status.textContent="The microphone recording failed. Please try again.";
-          stopVoiceStream();
-          resetVoiceButton();
-        };
-        voiceRecorder.onstop=()=>finishVoiceRecording(voiceRecorder?.mimeType||mimeType);
-
-        voiceRecorder.start(250);
-        voiceRecording=true;
-        if(btn){
-          btn.classList.add("listening");
-          btn.textContent="■ Stop";
-          btn.setAttribute("aria-pressed","true");
-        }
-        if(status)status.textContent="Listening with "+microphoneName+"… speak, then press Stop.";
-
-        voiceStopTimer=setTimeout(()=>{
-          if(voiceRecording && voiceRecorder?.state==="recording"){
-            if(status)status.textContent="20-second voice limit reached. Transcribing…";
-            try{voiceRecorder.stop();}catch(_){}
-          }
-        },20000);
-      }catch(err){
-        console.error("Unable to start voice recording:",err);
-        stopVoiceStream();
-        resetVoiceButton();
-        if(status){
-          status.textContent=err?.name==="NotAllowedError"
-            ?"Microphone permission was blocked. Allow microphone access for this site and try again."
-            :"I couldn't open the microphone. Check the selected microphone and try again.";
-        }
-      }
     }
 
     function quickText(){
@@ -2549,7 +2338,6 @@
       }
     }));
 
-    $("voiceCapture").addEventListener("click",()=>toggleSpeechRecognition("quickCapture","voiceCapture","voiceStatus"));
     $("quickInbox").addEventListener("click",saveToInbox);
     $("quickTask").addEventListener("click",()=>{
       const text=quickText();
@@ -2619,7 +2407,6 @@
     $("deleteListItem").addEventListener("click",deleteCurrentListItem);
     $("showArchivedLists").addEventListener("change",()=>{state.activeListId=null;renderLists();});
     $("showCompletedListItems").addEventListener("change",renderLists);
-    $("listVoiceCapture").addEventListener("click",()=>toggleSpeechRecognition("listQuickItem","listVoiceCapture","listVoiceStatus"));
     $("addQuickListItem").addEventListener("click",quickAddListItem);
     $("listQuickItem").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();quickAddListItem();}});
     $("listQuickQty").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();quickAddListItem();}});
@@ -2727,7 +2514,6 @@
       if(event==="SIGNED_OUT"){location.reload();}
     });
 
-    setupSpeechRecognition();
     start();
   </script>
 </body>

@@ -4,7 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#469597" />
-  <title>Open Brain Family Dashboard</title>
+  <meta name="application-name" content="Open Brain" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Open Brain" />
+  <link rel="manifest" href="/openbrain-oauth-ui/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/openbrain-oauth-ui/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/openbrain-oauth-ui/icons/icon-192.png" />
+  <title>Open Brain</title>
   <style>
     :root{
       color-scheme:light;
@@ -32,6 +39,10 @@
     .topbar{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:26px}
     .topbar h2{font-size:28px;margin:0 0 4px}.subtitle{color:var(--muted);font-size:14px}
     .userbox{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:var(--peach-soft);color:#8b624b;display:grid;place-items:center;font-weight:800}
+    .install-app{white-space:nowrap}
+    .install-steps{display:grid;gap:12px;margin-top:6px}
+    .install-step{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+    .install-step-num{width:28px;height:28px;flex:0 0 28px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#fff;font-weight:800;font-size:13px}
     .ghost{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--ink)}
     .primary{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:750}
     .primary:hover{background:var(--navy2)}
@@ -226,6 +237,7 @@
           <div class="subtitle">A calm view of what matters today and what is coming next.</div>
         </div>
         <div class="userbox">
+          <button id="installOpenBrain" class="ghost install-app hidden" type="button">Install app</button>
           <div id="avatar" class="avatar">OB</div>
           <div class="name"><strong id="displayName">Open Brain</strong><div id="roleText" class="subtitle"></div></div>
           <button id="signOut" class="ghost">Sign out</button>
@@ -929,6 +941,19 @@
     </form>
   </dialog>
 
+  <dialog id="installAppDialog">
+    <div class="modalhead"><h3>Install Open Brain</h3><button id="closeInstallApp" class="ghost" type="button">Close</button></div>
+    <div class="modalbody">
+      <div class="subtitle">Put Open Brain on your phone's Home Screen so it opens like an app.</div>
+      <div class="install-steps">
+        <div class="install-step"><div class="install-step-num">1</div><div><strong>Open the browser menu or Share menu</strong><div class="helper">On iPhone/iPad, tap the Share button. On Android, open the browser menu.</div></div></div>
+        <div class="install-step"><div class="install-step-num">2</div><div><strong>Choose Add to Home Screen or Install app</strong><div class="helper">The wording varies slightly by browser.</div></div></div>
+        <div class="install-step"><div class="install-step-num">3</div><div><strong>Confirm Open Brain</strong><div class="helper">It will appear with the Open Brain icon and launch in its own app-style window.</div></div></div>
+      </div>
+    </div>
+    <div class="modalfoot"><button id="dismissInstallApp" class="primary" type="button">Got it</button></div>
+  </dialog>
+
   <div id="toast" class="toast hidden"></div>
 
   <script type="module">
@@ -940,6 +965,40 @@
 
     const $ = (id) => document.getElementById(id);
     const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, healthTrackers:[], healthEntries:[], weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"" };
+    let deferredInstallPrompt=null;
+
+    function isInstalledApp(){
+      return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone===true;
+    }
+
+    function canShowManualInstall(){
+      const ua=navigator.userAgent||"";
+      return /iphone|ipad|ipod|android/i.test(ua);
+    }
+
+    function refreshInstallButton(){
+      const btn=$("installOpenBrain");
+      if(!btn)return;
+      const shouldShow=!isInstalledApp() && (!!deferredInstallPrompt || canShowManualInstall());
+      btn.classList.toggle("hidden",!shouldShow);
+    }
+
+    async function installOpenBrain(){
+      if(isInstalledApp()){
+        $("installOpenBrain").classList.add("hidden");
+        return;
+      }
+      if(deferredInstallPrompt){
+        deferredInstallPrompt.prompt();
+        const choice=await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt=null;
+        if(choice?.outcome==="accepted") $("installOpenBrain").classList.add("hidden");
+        else refreshInstallButton();
+        return;
+      }
+      $("installAppDialog").showModal();
+    }
+
 
     function toast(message, error=false){
       const el=$("toast"); el.textContent=message; el.className="toast"+(error?" error":"");
@@ -2740,6 +2799,21 @@
     });
 
     $("signOut").addEventListener("click",async()=>{await sb.auth.signOut();location.reload();});
+    $("installOpenBrain").addEventListener("click",installOpenBrain);
+    $("closeInstallApp").addEventListener("click",()=>$("installAppDialog").close());
+    $("dismissInstallApp").addEventListener("click",()=>$("installAppDialog").close());
+    window.addEventListener("beforeinstallprompt",event=>{
+      event.preventDefault();
+      deferredInstallPrompt=event;
+      refreshInstallButton();
+    });
+    window.addEventListener("appinstalled",()=>{
+      deferredInstallPrompt=null;
+      $("installOpenBrain").classList.add("hidden");
+      toast("Open Brain installed.");
+    });
+    window.matchMedia("(display-mode: standalone)").addEventListener?.("change",refreshInstallButton);
+    refreshInstallButton();
     $("refresh").addEventListener("click",async()=>{try{await loadData();renderAll();toast("Dashboard refreshed.");}catch(e){toast(e.message,true);}});
     $("inviteFamilyMember").addEventListener("click",openFamilyInviteEditor);
     $("closeFamilyInviteEditor").addEventListener("click",()=>$("familyInviteEditor").close());
@@ -2904,6 +2978,13 @@
     sb.auth.onAuthStateChange((event)=>{
       if(event==="SIGNED_OUT"){location.reload();}
     });
+
+    if("serviceWorker" in navigator){
+      window.addEventListener("load",()=>{
+        navigator.serviceWorker.register("/openbrain-oauth-ui/sw.js",{scope:"/openbrain-oauth-ui/"})
+          .catch(err=>console.warn("Open Brain service worker registration failed:",err));
+      });
+    }
 
     start();
   </script>

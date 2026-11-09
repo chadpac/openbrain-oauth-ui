@@ -104,9 +104,11 @@ test('failed revocation retains connection for retry; successful disconnect remo
 });
 function serviceWorker(){
   const handlers={},entries=new Map(),deleted=[];
+  const source=fs.readFileSync('sw.js','utf8');
+  const cacheName=source.match(/const CACHE_NAME = "([^"]+)"/)[1];
   const cache={addAll:async()=>{},put:async(k,v)=>entries.set(k,v),match:async k=>entries.get(k)};
-  const context=vm.createContext({self:{location:{origin:'https://app.example'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}},skipWaiting:async()=>{}},caches:{open:async()=>cache,match:async k=>entries.get(k),keys:async()=>['open-brain-pwa-v15','other-app-cache','open-brain-pwa-v16'],delete:async k=>deleted.push(k)},fetch:async()=>new Response('page'),Response,URL});
-  vm.runInContext(fs.readFileSync('sw.js','utf8'),context);
+  const context=vm.createContext({self:{location:{origin:'https://app.example'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}},skipWaiting:async()=>{}},caches:{open:async()=>cache,match:async k=>entries.get(k),keys:async()=>['open-brain-pwa-v15','other-app-cache',cacheName],delete:async k=>deleted.push(k)},fetch:async()=>new Response('page'),Response,URL});
+  vm.runInContext(source,context);
   return {context,handlers,entries,deleted,async navigate(path){const waits=[];let response;handlers.fetch({request:{url:'https://app.example'+path,method:'GET',mode:'navigate'},respondWith:r=>response=r,waitUntil:p=>waits.push(p)});const result=await response;await Promise.all(waits);return result;}};
 }
 test('service worker does not overwrite dashboard with OAuth/landing navigations',async()=>{

@@ -18,3 +18,6 @@ verify_jwt = false
 verify_jwt = false
 [functions.web-push]
 verify_jwt = true
+
+[functions.open-brain-assistant]
+verify_jwt = true

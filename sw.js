@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v17";
-const SW_VERSION = "v17-visible-notifications";
+const CACHE_NAME = "open-brain-pwa-v18";
+const SW_VERSION = "v18-calendar-questions";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",

@@ -31,7 +31,7 @@ test('suppress local duplicates but preserve distinct Google calendars',()=>{
   c.state.events=[{...e,title:' Birthday '}];
   assert.equal(c.combinedEvents().length,1);
 });
-function backend({connection=null,states=[],revokeStatus=200,scopes,tokenRefresh='new-refresh',member=true}={}){
+function backend({connection=null,states=[],revokeStatus=200,scopes,tokenRefresh='new-refresh',member=true,eventItems}={}){
   const db={google_calendar_connections:connection?[connection]:[],google_oauth_states:states,household_members:member?[{user_id:'user',household_id:'home'}]:[]};
   const calls=[];let handler;
   function from(table){
@@ -51,7 +51,7 @@ function backend({connection=null,states=[],revokeStatus=200,scopes,tokenRefresh
     if(String(url).includes('/revoke'))return Response.json(revokeStatus===200?{}:{error:'server_error'},{status:revokeStatus});
     if(String(url).includes('/token'))return Response.json({access_token:'access-secret',refresh_token:tokenRefresh,scope:scopes??'https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.readonly'});
     if(String(url).includes('/calendarList'))return Response.json({items:[{id:'primary@example.com',primary:true,summary:'Personal'}]});
-    if(String(url).includes('/events'))return Response.json({items:[{id:'e',summary:'Appointment',start:{date:'2026-11-09'},end:{date:'2026-11-11'}}]});
+    if(String(url).includes('/events'))return Response.json({items:eventItems??[{id:'e',summary:'Appointment',start:{date:'2026-11-09'},end:{date:'2026-11-11'}}]});
     throw Error('Unexpected URL '+url);
   };
   let source=fs.readFileSync('supabase/functions/google-calendar-oauth/index.ts','utf8').replace(/import \{ createClient \} from [^;]+;/,'');
@@ -117,4 +117,10 @@ test('service worker does not overwrite dashboard with OAuth/landing navigations
 });
 test('service worker cleans up only Open Brain caches',async()=>{
   const w=serviceWorker();let done;w.handlers.activate({waitUntil:p=>done=p});await done;assert.deepEqual(w.deleted,['open-brain-pwa-v15']);
+});
+
+test('Google availability flags respect free events and the calendar self attendee declining',async()=>{
+ const event={id:'event',summary:'Event',start:{dateTime:'2026-11-12T13:00:00-07:00'},end:{dateTime:'2026-11-12T14:00:00-07:00'}};
+ const b=backend({connection,eventItems:[event,{...event,transparency:'transparent'},{...event,attendees:[{self:true,responseStatus:'declined'}]},{...event,attendees:[{self:false,responseStatus:'declined'}]}]});
+ const data=await (await b.request('events')).json();assert.deepEqual(data.events.map(e=>e.busy),[true,false,false,true]);
 });

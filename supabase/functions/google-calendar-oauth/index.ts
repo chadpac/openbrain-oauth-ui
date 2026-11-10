@@ -183,6 +183,7 @@ async function listEventsForCalendar(accessToken:string,calendar:any,timeMin:str
         starts_at:start,
         ends_at:end||null,
         all_day:allDay,
+        busy:e.transparency!=="transparent" && !(Array.isArray(e.attendees)&&e.attendees.some((a:any)=>a.self&&a.responseStatus==="declined")),
         location:e.location?String(e.location):null,
         description:e.description?String(e.description):null,
         html_link:e.htmlLink?String(e.htmlLink):null,

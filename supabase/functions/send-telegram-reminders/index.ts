@@ -1,3 +1,4 @@
+import { loadQuietHours } from "../_shared/quiet-hours.ts";
 import { authorizeScheduler, claimReminder, finishReminder } from "../_shared/reminder-delivery.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.119.0";
 import { createPushActionToken, sendPushToUser } from "../_shared/push.ts";
@@ -11,15 +12,20 @@ Deno.serve(async (req:Request) => {
   if(unauthorized)return unauthorized;
   const requestBody=await req.json().catch(()=>({}));
   if(requestBody.dry_run===true)return Response.json({ok:true,dry_run:true});
+  let quietHours;
+  try{quietHours=await loadQuietHours(supabase);}catch{return Response.json({error:"Notification preferences are unavailable; delivery was held."},{status:503});}
+  const quietUsers=quietHours.excludedUserIds();
   const now = new Date().toISOString();
 
-  const { data: tasks, error: taskError } = await supabase
+  let dueQuery = supabase
     .from("family_tasks")
     .select("id,title,description,household_id,assigned_to_user_id,remind_at")
     .lte("remind_at", now)
     .is("reminder_sent_at", null)
     .not("remind_at", "is", null)
     .in("status", ["pending", "in_progress"]).or("reminder_error.is.null,reminder_error.not.like.Retry limit reached:%").order("remind_at").limit(100);
+  if(quietUsers.length)dueQuery=dueQuery.not("assigned_to_user_id","in","("+quietUsers.join(",")+")");
+  const {data:tasks,error:taskError}=await dueQuery;
 
   if (taskError) return Response.json({ error:taskError.message }, { status:500 });
 
@@ -43,6 +49,8 @@ Deno.serve(async (req:Request) => {
         continue;
       }
 
+      if(quietHours.isQuiet(task.assigned_to_user_id)){results.push({task_id:task.id,sent:false,deferred:true});continue;}
+
       deliveryKey=`task:${task.id}:${task.assigned_to_user_id}:${task.remind_at}`;
       const claim=await claimReminder(supabase,deliveryKey);
       if(!claim.claimed){
@@ -61,7 +69,7 @@ Deno.serve(async (req:Request) => {
       const text = `⏰ Reminder\n\n${task.title}` + (task.description ? `\n\n${task.description}` : "");
       let telegramSent=false;
       let telegramError:string|null=null;
-      if (member.telegram_enabled && member.telegram_chat_id) {
+      if (member.telegram_enabled && member.telegram_chat_id && !quietHours.isQuiet(task.assigned_to_user_id)) {
         try {
           const response=await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`,{
             method:"POST",signal:AbortSignal.timeout(10000),headers:{"Content-Type":"application/json"},
@@ -97,9 +105,9 @@ Deno.serve(async (req:Request) => {
           tag:`task-${task.id}`,
           kind:"task",
           action_token:actionToken
-        });
+        },undefined,()=>!quietHours.isQuiet(task.assigned_to_user_id));
         pushSent=push.sent;
-        pushError=push.results.filter((r:any)=>!r.sent).map((r:any)=>r.error).join("; ")||null;
+        pushError=push.deferred?"Held for quiet hours.":push.results.filter((r:any)=>!r.sent).map((r:any)=>r.error).join("; ")||null;
       } catch(err) {
         pushError=err instanceof Error?err.message:String(err);
       }

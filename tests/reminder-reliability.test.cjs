@@ -109,11 +109,11 @@ function clean(source){return stripTypeScriptTypes(source).replace(/^import[\s\S
 function transportContext(extra={}){
  return vm.createContext({Request,Response,URL,AbortSignal,Uint8Array,atob,btoa,crypto,console:{log(){},error(){},warn(){}},...extra});
 }
-function worker(name,{rows={},pushResult={sent:1,results:[{sent:true}]},failPush=false,now='2026-11-10T05:00:00Z'}={}){
+function worker(name,{rows={},pushResult={sent:1,results:[{sent:true}]},failPush=false,now='2026-11-10T05:00:00Z',errors={},onFetch}={}){
  const calls={push:[],fetch:[],tables:[]};const data=structuredClone(rows);let handler;
  function from(table){
   calls.tables.push(table);let op='select',value,filters=[],single=false;
-  const q={select(){return q},eq(k,v){filters.push(r=>r[k]===v);return q},in(k,v){filters.push(r=>v.includes(r[k]));return q},is(k,v){filters.push(r=>(r[k]??null)===v);return q},not(k,op,v){filters.push(r=>r[k]!==v&&r[k]!=null);return q},lte(k,v){filters.push(r=>r[k]<=v);return q},or(value){const field=value.split('.')[0];filters.push(r=>!String(r[field]||'').startsWith('Retry limit reached:'));return q},order(){return q},limit(){return q},update(v){op='update';value=v;return q},upsert(v){op='upsert';value=v;return q},insert(v){op='insert';value=v;return q},delete(){op='delete';return q},maybeSingle(){single=true;return q},then(resolve,reject){
+  const q={select(){return q},eq(k,v){filters.push(r=>r[k]===v);return q},in(k,v){filters.push(r=>v.includes(r[k]));return q},is(k,v){filters.push(r=>(r[k]??null)===v);return q},not(k,op,v){filters.push(r=>op==='in'?!v.slice(1,-1).split(',').includes(r[k]):r[k]!==v&&r[k]!=null);return q},lte(k,v){filters.push(r=>r[k]<=v);return q},or(value){const field=value.split('.')[0];filters.push(r=>!String(r[field]||'').startsWith('Retry limit reached:'));return q},order(){return q},limit(){return q},update(v){op='update';value=v;return q},upsert(v){op='upsert';value=v;return q},insert(v){op='insert';value=v;return q},delete(){op='delete';return q},maybeSingle(){single=true;return q},then(resolve,reject){
    data[table]??=[];let found=data[table].filter(r=>filters.every(f=>f(r)));
    if(op==='update')found.forEach(r=>Object.assign(r,value));
    if(op==='delete')data[table]=data[table].filter(r=>!found.includes(r));
@@ -121,12 +121,13 @@ function worker(name,{rows={},pushResult={sent:1,results:[{sent:true}]},failPush
     let prev=op==='upsert'?data[table].find(r=>r.habit_id===value.habit_id&&r.reminder_on===value.reminder_on):null;
     if(prev){Object.assign(prev,value);found=[prev]}else{data[table].push(value);found=[value]}
    }
-   return Promise.resolve({data:single?(found[0]||null):found,error:null}).then(resolve,reject);
+   return Promise.resolve({data:single?(found[0]||null):found,error:errors[table]||null}).then(resolve,reject);
   }};return q;
  }
  const admin={from,rpc};
- const ctx=transportContext({createClient:()=>admin,Date:class extends Date{constructor(...a){super(...(a.length?a:[now]))}},Deno:{env:{get:k=>'fixture'},serve:fn=>handler=fn},fetch:async(...a)=>{calls.fetch.push(a);return Response.json({ok:true})},createPushActionToken:async()=>ids.token,sendPushToUser:async(...args)=>{calls.push.push(args);if(failPush)throw Error('temporary push failure');return pushResult}});
+ const ctx=transportContext({createClient:()=>admin,Date:class extends Date{constructor(...a){super(...(a.length?a:[typeof now==='function'?now():now]))}static now(){return new Date(typeof now==='function'?now():now).getTime()}},Deno:{env:{get:k=>'fixture'},serve:fn=>handler=fn},fetch:async(...a)=>{calls.fetch.push(a);if(onFetch)onFetch();return Response.json({ok:true})},createPushActionToken:async()=>ids.token,sendPushToUser:async(...args)=>{if(args[4]&&!args[4]())return {sent:0,results:[],deferred:true};calls.push.push(args);if(failPush)throw Error('temporary push failure');return pushResult}});
  vm.runInContext(clean(read('supabase/functions/_shared/reminder-delivery.ts')),ctx);
+ vm.runInContext(clean(read('supabase/functions/_shared/quiet-hours.ts')),ctx);
  vm.runInContext(clean(read(`supabase/functions/${name}/index.ts`)),ctx);
  return {calls,data,async run({authorized=true,dryRun=false,method='POST',body={}}={}){
   const token=authorized?(await db.query("select decrypted_secret from vault.secrets where name='open_brain_scheduler_token'")).rows[0].decrypted_secret:'';
@@ -165,12 +166,12 @@ test('private health reminders use only the owner and generic check-in copy',asy
  await w.run();assert.equal(w.calls.push.length,1);assert.equal(w.calls.push[0][1],ids.user);assert.equal(w.calls.push[0][2].kind,'health_checkin');assert.equal(w.calls.fetch.length,0);
  assert(!w.calls.tables.includes('health_entries'));assert(!w.calls.tables.includes('health_trackers'));
 });
-function pushHelper({rows,errorStatus,permanent=false}={}){
+function pushHelper({rows,errorStatus,permanent=false,beforeDispatch}={}){
  const calls={sent:[],deleted:[]};
  const admin={rpc:async()=>({data:'{}',error:null}),from(){let filters=[];let deleting=false;const q={select(){return q},eq(k,v){filters.push(r=>r[k]===v);return q},delete(){deleting=true;return q},then(resolve,reject){const found=rows.filter(r=>filters.every(f=>f(r)));if(deleting)calls.deleted.push(...found);return Promise.resolve({data:found,error:null}).then(resolve,reject)}};return q}};
- const ctx=transportContext({vapidPublicKey:async()=>'',generateVapidKey:async()=>({}),send:async(...a)=>{calls.sent.push(a);if(errorStatus)throw Object.assign(Error('provider failure'),{statusCode:errorStatus,permanent})}});
+ const ctx=transportContext({vapidPublicKey:async()=>'',generateVapidKey:async()=>({}),send:async(...a)=>{calls.sent.push(a);if(beforeDispatch)await beforeDispatch(a);if(errorStatus)throw Object.assign(Error('provider failure'),{statusCode:errorStatus,permanent})}});
  vm.runInContext(clean(read('supabase/functions/_shared/push.ts')),ctx);
- return {calls,run:(kind,endpoint)=>ctx.sendPushToUser(admin,ids.user,{title:'Fixture',body:'Fixture',kind},endpoint)};
+ return {calls,run:(kind,endpoint,canSend)=>ctx.sendPushToUser(admin,ids.user,{title:'Fixture',body:'Fixture',kind},endpoint,canSend)};
 }
 const subscription={id:'device',user_id:ids.user,enabled:true,endpoint:'https://fixture.example/push',p256dh:'fixture',auth:'fixture'};
 test('push respects per-device opt-outs and endpoint filtering',async()=>{
@@ -214,4 +215,60 @@ test('service role can authorize, claim, and settle without browser privileges',
   assert.equal(await call('authorize_open_brain_scheduler',{p_token:token}),true);
   const c=await claim('task:service-role-check');assert(c.claimed);assert.equal(await finish('task:service-role-check',c.lease_id,true),true);
  }finally{await db.exec('reset role');}
+});
+
+const quietPref={owner_user_id:ids.user,quiet_hours_enabled:true,quiet_start:'22:00:00',quiet_end:'08:00:00',timezone:'America/Denver'};
+test('quiet tasks are not claimed or sent, then deliver once after quiet hours end',async()=>{
+ let now='2026-11-10T05:00:00Z';
+ const w=worker('send-telegram-reminders',{now:()=>now,rows:{notification_preferences:[quietPref],family_tasks:[task],household_members:[member]}});
+ await w.run();assert.equal(w.calls.push.length,0);assert.equal(w.calls.fetch.length,0);assert.equal(Number((await sqlValue('select count(*) as n from reminder_delivery_claims')).n),0);
+ now='2026-11-10T15:00:00Z';await w.run();assert.equal(w.calls.push.length,1);assert(w.data.family_tasks[0].reminder_sent_at);
+ await w.run();assert.equal(w.calls.push.length,1);
+});
+test('one quiet recipient does not block another recipient',async()=>{
+ const w=worker('send-telegram-reminders',{rows:{notification_preferences:[quietPref],family_tasks:[task,{...task,id:ids.token,assigned_to_user_id:ids.token2}],household_members:[member,{...member,user_id:ids.token2}]}});
+ await w.run();assert.equal(w.calls.push.length,1);assert.equal(w.calls.push[0][1],ids.token2);
+});
+test('a task completed during quiet hours is not delivered afterward',async()=>{
+ let now='2026-11-10T05:00:00Z';
+ const w=worker('send-telegram-reminders',{now:()=>now,rows:{notification_preferences:[quietPref],family_tasks:[task],household_members:[member]}});
+ await w.run();w.data.family_tasks[0].status='completed';now='2026-11-10T15:00:00Z';await w.run();assert.equal(w.calls.push.length,0);
+});
+test('quiet-hour preference outages hold delivery without consuming attempts',async()=>{
+ const w=worker('send-telegram-reminders',{rows:{family_tasks:[task],household_members:[member]},errors:{notification_preferences:{message:'offline'}}});
+ assert.equal((await w.run()).status,503);assert.equal(w.calls.push.length,0);assert.equal(Number((await sqlValue('select count(*) as n from reminder_delivery_claims')).n),0);
+});
+test('an expired event alert is not replayed when quiet hours end',async()=>{
+ const n={id:ids.token,event_id:ids.task,household_id:ids.home,recipient_user_id:ids.user,timing_key:'1h',notify_at:'2026-11-10T13:00:00Z',status:'pending'};
+ const w=worker('send-event-notifications',{now:'2026-11-10T15:00:00Z',rows:{notification_preferences:[quietPref],event_notifications:[n],family_events:[{id:ids.task,household_id:ids.home,title:'Expired',starts_at:'2026-11-10T14:00:00Z'}],households:[{id:ids.home,timezone:'America/Denver'}],household_members:[member]}});
+ await w.run();assert.equal(w.calls.push.length,0);assert.equal(w.calls.fetch.length,0);assert.equal(w.data.event_notifications[0].status,'cancelled');
+});
+test('a relevant delayed event gets accurate non-relative notification text',async()=>{
+ const n={id:ids.token,event_id:ids.task,household_id:ids.home,recipient_user_id:ids.user,timing_key:'1d',notify_at:'2026-11-10T05:00:00Z',status:'pending'};
+ const w=worker('send-event-notifications',{now:'2026-11-10T15:00:00Z',rows:{notification_preferences:[quietPref],event_notifications:[n],family_events:[{id:ids.task,household_id:ids.home,title:'Upcoming',starts_at:'2026-11-10T16:00:00Z'}],households:[{id:ids.home,timezone:'America/Denver'}],household_members:[member]}});
+ await w.run();assert.equal(w.calls.push.length,1);assert(w.calls.push[0][2].body.includes('Upcoming event'));assert(!w.calls.push[0][2].body.includes('Starts in 1 day'));
+});
+test('daily habit and Health reminders held overnight are not replayed for yesterday',async()=>{
+ let now='2026-11-10T05:00:00Z';
+ const base={notification_preferences:[quietPref],households:[{id:ids.home,timezone:'America/Denver'}],household_members:[member]};
+ const h=worker('send-habit-reminders',{now:()=>now,rows:{...base,habits:[{id:ids.habit,title:'Monday',household_id:ids.home,owner_user_id:ids.user,weekdays:[1],reminder_time:'21:00',status:'active',reminder_enabled:true}]}});
+ const health=worker('send-health-checkin-reminders',{now:()=>now,rows:{...base,health_checkin_preferences:[{owner_user_id:ids.user,household_id:ids.home,enabled:true,reminder_time:'21:30'}]}});
+ await h.run();await health.run();assert.equal(h.calls.push.length+health.calls.push.length,0);
+ now='2026-11-10T15:00:00Z';await h.run();await health.run();assert.equal(h.calls.push.length+health.calls.push.length,0);
+});
+test('quiet hours starting during Telegram delivery prevent the later push dispatch',async()=>{
+ let now='2026-11-10T04:59:59Z';
+ const w=worker('send-telegram-reminders',{now:()=>now,onFetch:()=>{now='2026-11-10T05:00:00Z'},rows:{notification_preferences:[quietPref],family_tasks:[task],household_members:[{...member,telegram_enabled:true,telegram_chat_id:42}]}});
+ await w.run();assert.equal(w.calls.fetch.length,1);assert.equal(w.calls.push.length,0);assert(w.data.family_tasks[0].reminder_sent_at);
+});
+test('shared push sender rechecks the dispatch gate for each device; manual sends can bypass it',async()=>{
+ const rows=[subscription,{...subscription,id:'second',endpoint:'https://fixture.example/second'}];
+ const h=pushHelper({rows});let checks=0;const r=await h.run('task',undefined,()=>++checks===1);assert.equal(h.calls.sent.length,1);assert.equal(r.deferred,true);
+ const manual=pushHelper({rows});await manual.run(undefined);assert.equal(manual.calls.sent.length,2);
+});
+
+test('quiet hours beginning during push encryption prevent the network dispatch',async()=>{
+ let allowed=true;
+ const h=pushHelper({rows:[subscription],beforeDispatch:async args=>{allowed=false;await args[3].fetch('https://fixture.example/push',{})}});
+ const r=await h.run('task',undefined,()=>allowed);assert.equal(r.sent,0);assert.equal(r.deferred,true);assert.equal(r.results.length,0);
 });

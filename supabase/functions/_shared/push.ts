@@ -86,7 +86,8 @@ export async function sendPushToUser(
   admin:any,
   userId:string,
   payload:{title:string;body:string;url?:string;tag?:string;kind?:string;action_token?:string},
-  onlyEndpoint?:string
+  onlyEndpoint?:string,
+  canSend?:()=>boolean
 ) {
   const { privateKey } = await ensureVapid(admin);
 
@@ -102,11 +103,13 @@ export async function sendPushToUser(
   if (error) throw new Error(error.message);
 
   const results:any[] = [];
+  let deferred=false;
   for (const row of subscriptions ?? []) {
     if (payload.kind==="task" && row.task_notifications===false) continue;
     if (payload.kind==="event" && row.event_notifications===false) continue;
     if (payload.kind==="habit" && row.habit_notifications===false) continue;
     if (payload.kind==="health_checkin" && row.health_notifications===false) continue;
+    if(canSend&&!canSend()){deferred=true;continue;}
     try {
       await send({
         endpoint: row.endpoint,
@@ -115,9 +118,13 @@ export async function sendPushToUser(
         vapid: privateKey,
         subscriber: VAPID_SUBSCRIBER,
         ttl: 3600
-      }, { fetch:(input,init)=>fetch(input,{...init,signal:AbortSignal.timeout(10000)}) });
+      }, { fetch:(input,init)=>{
+        if(canSend&&!canSend())throw Object.assign(new Error("Held for quiet hours."),{quietHoursDeferred:true});
+        return fetch(input,{...init,signal:AbortSignal.timeout(10000)});
+      } });
       results.push({ id: row.id, sent: true });
     } catch (err:any) {
+      if(err?.quietHoursDeferred){deferred=true;continue;}
       const message = err?.message || String(err);
       console.error("Web push send failed:", message);
       if (err?.statusCode === 404 || err?.statusCode === 410 || err?.status === 404 || err?.status === 410) {
@@ -129,6 +136,7 @@ export async function sendPushToUser(
 
   return {
     attempted: results.length,
+    deferred,
     sent: results.filter(r => r.sent).length,
     results
   };

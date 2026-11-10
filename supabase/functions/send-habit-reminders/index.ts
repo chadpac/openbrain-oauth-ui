@@ -1,3 +1,4 @@
+import { loadQuietHours } from "../_shared/quiet-hours.ts";
 import { authorizeScheduler, claimReminder, finishReminder } from "../_shared/reminder-delivery.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.119.0";
 import { createPushActionToken, sendPushToUser } from "../_shared/push.ts";
@@ -11,10 +12,15 @@ Deno.serve(async (req:Request) => {
   if(unauthorized)return unauthorized;
   const requestBody=await req.json().catch(()=>({}));
   if(requestBody.dry_run===true)return Response.json({ok:true,dry_run:true});
+  let quietHours;
+  try{quietHours=await loadQuietHours(supabase);}catch{return Response.json({error:"Notification preferences are unavailable; delivery was held."},{status:503});}
+  const quietUsers=quietHours.excludedUserIds();
 
-  const {data:habits,error:habitError}=await supabase.from("habits")
+  let dueQuery=supabase.from("habits")
     .select("id,title,description,household_id,owner_user_id,weekdays,reminder_time,status,paused_until")
     .eq("status","active").eq("reminder_enabled",true).not("reminder_time","is",null);
+  if(quietUsers.length)dueQuery=dueQuery.not("owner_user_id","in","("+quietUsers.join(",")+")");
+  const {data:habits,error:habitError}=await dueQuery;
   if(habitError)return Response.json({error:habitError.message},{status:500});
 
   const results:any[]=[];
@@ -23,6 +29,7 @@ Deno.serve(async (req:Request) => {
   for(const habit of habits??[]){
     let deliveryKey="",leaseId="";
     try{
+      if(quietHours.isQuiet(habit.owner_user_id)){results.push({habit_id:habit.id,sent:false,deferred:true});continue;}
       const [{data:household,error:householdError},{data:member,error:memberError}]=await Promise.all([
         supabase.from("households").select("timezone").eq("id",habit.household_id).maybeSingle(),
         supabase.from("household_members").select("display_name,telegram_chat_id,telegram_enabled").eq("household_id",habit.household_id).eq("user_id",habit.owner_user_id).maybeSingle()
@@ -68,7 +75,7 @@ Deno.serve(async (req:Request) => {
       try{
         const text=`🌿 Habit reminder\n\n${habit.title}`+(habit.description?`\n\n${habit.description}`:"");
         let telegramSent=false,telegramError:string|null=null;
-        if(member.telegram_enabled&&member.telegram_chat_id){
+        if(member.telegram_enabled&&member.telegram_chat_id&&!quietHours.isQuiet(habit.owner_user_id)){
           try{
             const response=await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`,{
               method:"POST",signal:AbortSignal.timeout(10000),headers:{"Content-Type":"application/json"},
@@ -96,9 +103,9 @@ Deno.serve(async (req:Request) => {
             tag:`habit-${habit.id}-${localDate}`,
             kind:"habit",
             action_token:actionToken
-          });
+          },undefined,()=>!quietHours.isQuiet(habit.owner_user_id));
           pushSent=push.sent;
-          pushError=push.results.filter((r:any)=>!r.sent).map((r:any)=>r.error).join("; ")||null;
+          pushError=push.deferred?"Held for quiet hours.":push.results.filter((r:any)=>!r.sent).map((r:any)=>r.error).join("; ")||null;
         }catch(err){pushError=err instanceof Error?err.message:String(err);}
 
         if(!telegramSent&&pushSent===0)throw new Error(telegramError||pushError||"No notification channel is enabled for this user.");

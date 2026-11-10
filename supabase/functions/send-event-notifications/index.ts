@@ -1,3 +1,4 @@
+import { loadQuietHours, eventReminderRelevant } from "../_shared/quiet-hours.ts";
 import { authorizeScheduler, claimReminder, finishReminder } from "../_shared/reminder-delivery.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.119.0";
 import { sendPushToUser } from "../_shared/push.ts";
@@ -11,15 +12,21 @@ Deno.serve(async (req:Request) => {
   if(unauthorized)return unauthorized;
   const requestBody=await req.json().catch(()=>({}));
   if(requestBody.dry_run===true)return Response.json({ok:true,dry_run:true});
+  let quietHours;
+  try{quietHours=await loadQuietHours(supabase);}catch{return Response.json({error:"Notification preferences are unavailable; delivery was held."},{status:503});}
+  const quietUsers=quietHours.excludedUserIds();
   const now=new Date().toISOString();
 
-  const {data:due,error:dueError}=await supabase.from("event_notifications")
+  let dueQuery=supabase.from("event_notifications")
     .select("id,event_id,household_id,recipient_user_id,timing_key,notify_at")
     .in("status",["pending","processing","failed"]).lte("notify_at",now).or("error.is.null,error.not.like.Retry limit reached:%").order("notify_at",{ascending:true}).limit(100);
+  if(quietUsers.length)dueQuery=dueQuery.not("recipient_user_id","in","("+quietUsers.join(",")+")");
+  const {data:due,error:dueError}=await dueQuery;
   if(dueError)return Response.json({error:dueError.message},{status:500});
 
   const results:any[]=[];
   for(const notification of due??[]){
+    if(quietHours.isQuiet(notification.recipient_user_id)){results.push({id:notification.id,sent:false,deferred:true});continue;}
     const deliveryKey=`event:${notification.id}:${notification.recipient_user_id}:${notification.notify_at}`;
     let leaseId="";
     try{
@@ -38,7 +45,7 @@ Deno.serve(async (req:Request) => {
       if(!claimed){await finishReminder(supabase,deliveryKey,leaseId,false,"Event reminder changed before delivery.");continue;}
 
       const [{data:event,error:eventError},{data:member,error:memberError},{data:household,error:householdError}]=await Promise.all([
-        supabase.from("family_events").select("title,description,location,starts_at,all_day").eq("id",notification.event_id).eq("household_id",notification.household_id).maybeSingle(),
+        supabase.from("family_events").select("title,description,location,starts_at,ends_at,all_day").eq("id",notification.event_id).eq("household_id",notification.household_id).maybeSingle(),
         supabase.from("household_members").select("display_name,telegram_chat_id,telegram_enabled").eq("household_id",notification.household_id).eq("user_id",notification.recipient_user_id).maybeSingle(),
         supabase.from("households").select("timezone").eq("id",notification.household_id).maybeSingle()
       ]);
@@ -47,15 +54,23 @@ Deno.serve(async (req:Request) => {
       if(householdError||!household)throw new Error(householdError?.message||"Household not found");
 
       const timezone=household.timezone||"America/Denver";
+      if(!eventReminderRelevant(event,new Date(),timezone)){
+        const {error:skipError}=await supabase.from("event_notifications").update({status:"cancelled",error:"Skipped: the event has already started or ended.",updated_at:new Date().toISOString()})
+          .eq("id",notification.id).eq("notify_at",notification.notify_at).eq("status","processing");
+        if(skipError)throw skipError;
+        await finishReminder(supabase,deliveryKey,leaseId,false,"Skipped expired event reminder.");
+        results.push({id:notification.id,sent:false,skipped:true});continue;
+      }
       const start=new Date(event.starts_at);
       const when=event.all_day
         ? new Intl.DateTimeFormat("en-US",{timeZone:timezone,weekday:"long",month:"short",day:"numeric"}).format(start)
         : new Intl.DateTimeFormat("en-US",{timeZone:timezone,weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(start);
-      const timingText=({morning_of:"Morning-of reminder",at_time:"Starting now","5m":"Starts in 5 minutes","10m":"Starts in 10 minutes","15m":"Starts in 15 minutes","30m":"Starts in 30 minutes","1h":"Starts in 1 hour","2h":"Starts in 2 hours","1d":"Starts in 1 day","2d":"Starts in 2 days","1w":"Starts in 1 week"} as Record<string,string>)[notification.timing_key]||"Event reminder";
+      let timingText=({morning_of:"Morning-of reminder",at_time:"Starting now","5m":"Starts in 5 minutes","10m":"Starts in 10 minutes","15m":"Starts in 15 minutes","30m":"Starts in 30 minutes","1h":"Starts in 1 hour","2h":"Starts in 2 hours","1d":"Starts in 1 day","2d":"Starts in 2 days","1w":"Starts in 1 week"} as Record<string,string>)[notification.timing_key]||"Event reminder";
+      if(Date.now()-Date.parse(notification.notify_at)>2*60000)timingText=event.all_day?"All-day event reminder":(start.getTime()<=Date.now()?"Starting now":"Upcoming event");
       const text=`📅 Event reminder\n\n${event.title}\n${timingText}\n${when}`+(event.location?`\n📍 ${event.location}`:"")+(event.description?`\n\n${event.description}`:"");
 
       let telegramSent=false, telegramError:string|null=null;
-      if(member.telegram_enabled&&member.telegram_chat_id){
+      if(member.telegram_enabled&&member.telegram_chat_id&&!quietHours.isQuiet(notification.recipient_user_id)){
         try{
           const response=await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`,{
             method:"POST",signal:AbortSignal.timeout(10000),headers:{"Content-Type":"application/json"},
@@ -75,9 +90,9 @@ Deno.serve(async (req:Request) => {
           url:"/openbrain-oauth-ui/dashboard/",
           tag:`event-${notification.id}`,
           kind:"event"
-        });
+        },undefined,()=>!quietHours.isQuiet(notification.recipient_user_id));
         pushSent=push.sent;
-        pushError=push.results.filter((r:any)=>!r.sent).map((r:any)=>r.error).join("; ")||null;
+        pushError=push.deferred?"Held for quiet hours.":push.results.filter((r:any)=>!r.sent).map((r:any)=>r.error).join("; ")||null;
       }catch(err){pushError=err instanceof Error?err.message:String(err);}
 
       if(!telegramSent&&pushSent===0)throw new Error(telegramError||pushError||"No notification channel is enabled for this user.");

@@ -116,3 +116,6 @@ can remain because previous workers ignore it. Keep the Vault secret and ledger
 until rollback has been verified; do not delete tokens or existing app records.
 Revert the recurrence helper separately if necessary. No frontend or PWA update
 is needed for this backend change.
+
+Optional personal quiet hours and their deferral/expiry rules are documented in
+[quiet-hours.md](quiet-hours.md).

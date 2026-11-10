@@ -1,3 +1,4 @@
+import { loadQuietHours } from "../_shared/quiet-hours.ts";
 import { authorizeScheduler, claimReminder, finishReminder } from "../_shared/reminder-delivery.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.119.0";
 import { sendPushToUser } from "../_shared/push.ts";
@@ -10,11 +11,16 @@ Deno.serve(async (req:Request) => {
   if(unauthorized)return unauthorized;
   const requestBody=await req.json().catch(()=>({}));
   if(requestBody.dry_run===true)return Response.json({ok:true,dry_run:true});
+  let quietHours;
+  try{quietHours=await loadQuietHours(supabase);}catch{return Response.json({error:"Notification preferences are unavailable; delivery was held."},{status:503});}
+  const quietUsers=quietHours.excludedUserIds();
   const now=new Date();
 
-  const {data:prefs,error:prefsError}=await supabase.from("health_checkin_preferences")
+  let dueQuery=supabase.from("health_checkin_preferences")
     .select("owner_user_id,household_id,enabled,reminder_time,last_reminder_on")
     .eq("enabled",true);
+  if(quietUsers.length)dueQuery=dueQuery.not("owner_user_id","in","("+quietUsers.join(",")+")");
+  const {data:prefs,error:prefsError}=await dueQuery;
   if(prefsError)return Response.json({error:prefsError.message},{status:500});
 
   const results:any[]=[];
@@ -22,6 +28,7 @@ Deno.serve(async (req:Request) => {
   for(const pref of prefs??[]){
     let deliveryKey="",leaseId="";
     try{
+      if(quietHours.isQuiet(pref.owner_user_id)){results.push({user_id:pref.owner_user_id,sent:false,deferred:true});continue;}
       const {data:household,error:householdError}=await supabase.from("households")
         .select("timezone").eq("id",pref.household_id).maybeSingle();
       if(householdError||!household)throw new Error(householdError?.message||"Household not found.");
@@ -74,10 +81,10 @@ Deno.serve(async (req:Request) => {
         url:"/openbrain-oauth-ui/dashboard/?health_checkin=1",
         tag:`health-checkin-${pref.owner_user_id}-${localDate}`,
         kind:"health_checkin"
-      });
+      },undefined,()=>!quietHours.isQuiet(pref.owner_user_id));
 
       if(push.sent===0){
-        const reason=push.results.filter((r:any)=>!r.sent).map((r:any)=>r.error).join("; ")||"No enabled Health check-in notification device was available.";
+        const reason=push.deferred?"Held for quiet hours.":push.results.filter((r:any)=>!r.sent).map((r:any)=>r.error).join("; ")||"No enabled Health check-in notification device was available.";
         await finishReminder(supabase,deliveryKey,leaseId,false,reason);
         await supabase.from("health_checkin_preferences").update({
           reminder_error:reason,

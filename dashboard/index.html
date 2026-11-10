@@ -116,6 +116,7 @@
     .list-empty{padding:28px 20px;text-align:center;color:var(--muted)}.list-header-meta{font-size:12px;color:var(--muted);margin-top:4px}.list-actions{display:flex;gap:6px;flex-wrap:wrap}
     .lists-panel.shopping-mode .list-sidebar{display:none}.lists-panel.shopping-mode .lists-layout{grid-template-columns:1fr}.lists-panel.shopping-mode .list-item-row{grid-template-columns:auto minmax(0,1fr);padding:15px 18px}.lists-panel.shopping-mode .list-check{width:42px;height:42px;border-radius:12px;font-size:18px}.lists-panel.shopping-mode .list-item-name{font-size:17px}.lists-panel.shopping-mode [data-list-item-edit]{display:none}.lists-panel.shopping-mode .list-workspace-head{position:sticky;top:0;z-index:5;background:#fff}.lists-panel.shopping-mode .list-quickadd{position:sticky;top:70px;z-index:4;background:#fff;box-shadow:0 5px 12px rgba(30,55,58,.06)}
     @media(max-width:850px){.lists-layout{grid-template-columns:1fr}.list-sidebar{border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:8px;padding:10px 12px}.list-selector{min-width:170px;flex:0 0 auto}.list-quickadd{grid-template-columns:minmax(0,1fr) 76px auto;padding:10px 12px}.list-toolbar,.list-suggestions{padding-left:12px;padding-right:12px}.list-workspace-head{padding:14px 12px}.list-item-row{padding:13px 12px}.list-check{width:36px;height:36px}.lists-panel.shopping-mode .list-quickadd{top:62px}}
+    .quiet-hours-form{display:grid;gap:10px;margin-top:12px}.quiet-hours-toggle{display:flex;gap:8px;align-items:center}.quiet-hours-toggle input{width:18px;height:18px;margin:0}.quiet-hours-times{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}.quiet-hours-times label,.quiet-hours-form>label{min-width:0}.quiet-hours-actions{display:flex;flex-wrap:wrap;gap:8px}.quiet-hours-form input{max-width:100%;min-width:0}
     .ai-launcher{position:fixed;right:22px;bottom:22px;z-index:850;border:0;border-radius:999px;background:var(--navy);color:#fff;padding:12px 16px;box-shadow:0 12px 28px rgba(47,82,84,.28);display:flex;align-items:center;gap:8px;font-weight:850;cursor:pointer}
     .ai-launcher .ai-star{font-size:17px}.ai-backdrop{position:fixed;inset:0;background:rgba(28,42,43,.28);z-index:899}.ai-panel{position:fixed;top:14px;right:14px;bottom:14px;width:min(430px,calc(100vw - 28px));z-index:900;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 22px 60px rgba(28,42,43,.24);display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
     .ai-panel.hidden,.ai-backdrop.hidden{display:none}.ai-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 16px 13px;border-bottom:1px solid var(--line);background:linear-gradient(145deg,#fff,#f2f8f7)}
@@ -613,6 +614,22 @@
                 </div>
                 <div class="setting-note" style="grid-column:1/-1">Web apps cannot select a specific ringtone. Choose the actual notification tone in your phone's notification settings.</div>
               </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label">Your quiet hours</div>
+              <div id="quietHoursStatus" class="setting-value" role="status">Loading your preferences…</div>
+              <form id="quietHoursForm" class="quiet-hours-form">
+                <label class="quiet-hours-toggle"><input id="quietHoursEnabled" type="checkbox" disabled> Enable quiet hours</label>
+                <div class="quiet-hours-times">
+                  <label for="quietHoursStart">Start<input id="quietHoursStart" type="time" value="22:00" required disabled></label>
+                  <label for="quietHoursEnd">End<input id="quietHoursEnd" type="time" value="08:00" required disabled></label>
+                </div>
+                <label for="quietHoursTimezone">Quiet-hours time zone<input id="quietHoursTimezone" maxlength="80" required placeholder="America/Denver" disabled></label>
+                <div class="setting-note">Applies to your scheduled push and Telegram reminders on all devices. Tasks wait; past event alerts are skipped. Habit reminders and Health check-ins expire at midnight in the household time zone.</div>
+                <div class="setting-note">The Send test notification button sends immediately, even during quiet hours.</div>
+                <div id="quietHoursError" class="message err hidden" role="alert"></div>
+                <div class="quiet-hours-actions"><button id="saveQuietHours" class="primary" type="submit" disabled>Save quiet hours</button><button id="retryQuietHours" class="ghost hidden" type="button">Retry loading</button></div>
+              </form>
             </div>
             <div class="setting-row">
               <div class="setting-label">Google Calendar</div>
@@ -1272,7 +1289,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], googleCalendarStatus:null, googleCalendars:[], googleEvents:[], googleCalendarBusy:false, goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], healthCheckins:[], healthCheckinPrefs:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], notificationPreferences:null,quietHoursLoaded:false,googleCalendarStatus:null, googleCalendars:[], googleEvents:[], googleCalendarBusy:false, goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], healthCheckins:[], healthCheckinPrefs:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
     let deferredInstallPrompt=null;
     let listRealtimeChannel=null;
     let listRealtimeTimer=null;
@@ -1350,6 +1367,64 @@
       if(!pushSupported())return null;
       const registration=await navigator.serviceWorker.ready;
       return registration.pushManager.getSubscription();
+    }
+
+    function quietHoursControls(loaded){
+      for(const id of ["quietHoursEnabled","quietHoursStart","quietHoursEnd","quietHoursTimezone","saveQuietHours"])$(id).disabled=!loaded;
+    }
+
+    function quietHoursSummary(pref){
+      return pref?.quiet_hours_enabled
+        ?"On · "+String(pref.quiet_start).slice(0,5)+"–"+String(pref.quiet_end).slice(0,5)+" · "+pref.timezone
+        :"Off — scheduled reminders can arrive at any time.";
+    }
+
+    async function loadQuietHoursPreferences(){
+      state.quietHoursLoaded=false;quietHoursControls(false);
+      $("quietHoursError").classList.add("hidden");$("retryQuietHours").classList.add("hidden");
+      $("quietHoursStatus").textContent="Loading your preferences…";
+      try{
+        const {data,error}=await sb.from("notification_preferences")
+          .select("quiet_hours_enabled,quiet_start,quiet_end,timezone")
+          .eq("owner_user_id",state.user.id).maybeSingle();
+        if(error)throw error;
+        const pref=data||{quiet_hours_enabled:false,quiet_start:"22:00",quiet_end:"08:00",timezone:state.household?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||"America/Denver"};
+        state.notificationPreferences=pref;state.quietHoursLoaded=true;
+        $("quietHoursEnabled").checked=pref.quiet_hours_enabled===true;
+        $("quietHoursStart").value=String(pref.quiet_start).slice(0,5);
+        $("quietHoursEnd").value=String(pref.quiet_end).slice(0,5);
+        $("quietHoursTimezone").value=pref.timezone;
+        $("quietHoursStatus").textContent=quietHoursSummary(pref);
+        quietHoursControls(true);
+      }catch(err){
+        $("quietHoursStatus").textContent="Quiet-hours settings could not be loaded.";
+        $("quietHoursError").textContent="Your existing preferences were not changed. Please retry loading them.";
+        $("quietHoursError").classList.remove("hidden");$("retryQuietHours").classList.remove("hidden");
+      }
+    }
+
+    async function saveQuietHoursPreferences(event){
+      event.preventDefault();if(!state.quietHoursLoaded)return;
+      $("quietHoursError").classList.add("hidden");
+      try{
+        const quiet_hours_enabled=$("quietHoursEnabled").checked;
+        const quiet_start=$("quietHoursStart").value,quiet_end=$("quietHoursEnd").value;
+        let timezone=$("quietHoursTimezone").value.trim();
+        if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(quiet_start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(quiet_end))throw new Error("Choose valid start and end times.");
+        if(quiet_hours_enabled&&quiet_start===quiet_end)throw new Error("Choose different start and end times. To allow notifications all day, turn quiet hours off.");
+        try{timezone=new Intl.DateTimeFormat(undefined,{timeZone:timezone}).resolvedOptions().timeZone;}catch{throw new Error("Choose a valid IANA time zone, such as America/Denver.");}
+        quietHoursControls(false);
+        const {data,error}=await sb.from("notification_preferences").upsert({owner_user_id:state.user.id,quiet_hours_enabled,quiet_start,quiet_end,timezone},{onConflict:"owner_user_id"})
+          .select("quiet_hours_enabled,quiet_start,quiet_end,timezone").single();
+        if(error)throw error;
+        state.notificationPreferences=data;
+        $("quietHoursTimezone").value=data.timezone;
+        $("quietHoursStatus").textContent=quietHoursSummary(data);
+        toast(quiet_hours_enabled?"Quiet hours saved for your account.":"Quiet hours turned off.");
+      }catch(err){
+        $("quietHoursError").textContent=err?.message||"Quiet hours could not be saved. Your previous preferences remain in effect.";
+        $("quietHoursError").classList.remove("hidden");
+      }finally{quietHoursControls(true);}
     }
 
     async function loadPushDevicePreferences(subscription){
@@ -1684,6 +1759,7 @@
       openHealthCheckinDeepLink();
       handleGoogleCalendarReturn();
       loadGoogleCalendarIntegration().catch(err=>console.warn("Google Calendar initialization failed:",err));
+      loadQuietHoursPreferences();
       initializeAiBriefs().catch(err=>console.warn("AI brief initialization failed:",err));
     }
 
@@ -4759,6 +4835,9 @@
     $("disablePushNotifications").addEventListener("click",disablePushNotifications);
     $("pushSoundMode").addEventListener("change",savePushDevicePreferences);
     $("pushVibrateEnabled").addEventListener("change",savePushDevicePreferences);
+    $("quietHoursForm").addEventListener("input",()=>{if(state.quietHoursLoaded)$("quietHoursStatus").textContent="Unsaved changes — click Save quiet hours.";});
+    $("quietHoursForm").addEventListener("submit",saveQuietHoursPreferences);
+    $("retryQuietHours").addEventListener("click",loadQuietHoursPreferences);
     $("pushTasksEnabled").addEventListener("change",savePushDevicePreferences);
     $("pushEventsEnabled").addEventListener("change",savePushDevicePreferences);
     $("pushHabitsEnabled").addEventListener("change",savePushDevicePreferences);
@@ -4992,7 +5071,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=18-calendar-questions",
+          "/openbrain-oauth-ui/sw.js?v=19-quiet-hours",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

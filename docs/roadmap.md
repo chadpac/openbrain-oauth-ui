@@ -14,18 +14,19 @@ before publication.
   delivery. The user confirmed real-device push delivery, Done, and creation of
   the next daily occurrence. Snooze has automated coverage; manual device testing
   remains optional.
+- Read-only Calendar questions with explicit per-question opt-in. The user
+  confirmed live schedule lookup and availability checks against Google Calendar.
 - Notification message placement above the Ask Open Brain launcher.
 
 ## Near-term sequence
 
-1. Read-only questions about the signed-in user's Google Calendar: schedule and
-   availability checks with explicit per-question control. This change implements
-   that milestone; no Google event writes or private family availability sharing.
-2. Notification quiet hours with clear per-user/device interruption choices.
-3. Complete Evening Health & Wellbeing check-in history, then descriptive trends.
-4. Task duration estimates and suggested time slots, reviewed by the user.
-5. A focused read/search-only Gmail pilot, such as school deadlines or follow-ups.
-6. A Connections & delivery status view showing last successful refresh,
+1. Personal notification quiet hours (this change): default off, account-wide
+   scheduled push/Telegram control, chosen timezone, and relevant-reminder handling.
+   Per-device quiet-hour overrides can follow if needed.
+2. Complete Evening Health & Wellbeing check-in history, then descriptive trends.
+3. Task duration estimates and suggested time slots, reviewed by the user.
+4. A focused read/search-only Gmail pilot, such as school deadlines or follow-ups.
+5. A Connections & delivery status view showing last successful refresh,
    connections needing attention, notification device state, and exhausted retries.
 
 ## Later ideas to retain

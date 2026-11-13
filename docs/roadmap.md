@@ -16,34 +16,32 @@ publication.
 - Private complete Evening Health check-in history with filters and older pages.
 - Private descriptive Health trends, optional task duration estimates and reviewed
   calendar-gap suggestions; simplified Health cards and collapsible recent entries.
+- Private assistant preferences and saved-memory controls, with context-aware
+  conversation/brief invalidation (merged; deployment verification required).
 
 ## Current work
 
-Assistant profile and memory controls: preferred name, tone, response length,
-planning notes and optional working hours; inspect/correct/remove saved memories,
-pause memory use, and invalidate old assistant conversations/briefs when settings
-or memories change. See [behavior and privacy details](assistant-preferences-and-memory.md).
+Assistant activity and approval center: private request states, model-selected
+source links, scoped one-proposal approvals, durable pause/cancel, Calendar/device
+status and task/event delivery retries. See [behavior, boundaries and deployment](assistant-activity-and-approvals.md).
 
 ## Agreed next phases
 
-1. Assistant activity and approval center: queued/running/waiting/completed/failed,
-   evidence and source links, pause/cancel, and exact scoped approval cards.
-   Include connection health, last refresh, notification devices and failed retries.
-2. Focused read/search-only Gmail pilot and calendar/email intelligence: school
+1. Focused read/search-only Gmail pilot and calendar/email intelligence: school
    deadlines, commitments, daily digests, linked messages/events, suggested tasks,
    reviewed reply drafts, and conflict-aware planning. Calendar writes and email
    sending need separate permissions and review before consequential changes.
-3. Background routines: scheduled and event-driven bounded work after the app
+2. Background routines: scheduled and event-driven bounded work after the app
    closes, resumable progress, meaningful completion/change notifications, pause
    controls, and visible AI/hosting usage limits.
-4. Configurable Spaces: start with School and Home, then projects, meal planning,
+3. Configurable Spaces: start with School and Home, then projects, meal planning,
    maintenance, trips and goals. Combine relevant tasks, events, documents, notes,
    progress and reviewed actions; pin/hide/reorder before considering generated UI.
-5. Photo/PDF capture: reviewed extraction from flyers, forms, receipts and documents
+4. Photo/PDF capture: reviewed extraction from flyers, forms, receipts and documents
    into proposed dates, tasks and records, retaining the source.
-6. Voice: dictation and optional spoken responses first, then live conversation;
+5. Voice: dictation and optional spoken responses first, then live conversation;
    optional avatar/personalization after the useful workflows work reliably.
-7. Shopping, subscriptions and travel: wishlists, gift budgets, price watches,
+6. Shopping, subscriptions and travel: wishlists, gift budgets, price watches,
    renewal/return deadlines, comparisons and itineraries. Begin with tracking and
    recommendations; reviewed transactions are a later step.
 

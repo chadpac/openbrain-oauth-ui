@@ -1,4 +1,5 @@
 import { readAssistantPreferences, assistantStyle, assistantProfileContext } from "./assistant-preferences.ts";
+import { activityCommand, prepareActivityActions } from "../_shared/assistant-activity.ts";
 import { answerCalendarQuestion } from "./calendar-questions.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "npm:@supabase/server@1";
@@ -253,6 +254,7 @@ async function callModel(messages:any[]){
 }
 
 const handler=withSupabase({auth:"user"},async(req,ctx)=>{
+  let activity:any=null,activityOwner:string|null=null,activityFinished=false;
   try{
     const body=await req.json().catch(()=>({}));
     const message=typeof body?.message==="string"?body.message.trim():"";
@@ -274,21 +276,32 @@ const handler=withSupabase({auth:"user"},async(req,ctx)=>{
     if(memberError||!member)return json({error:"Open Brain household not found."},403);
 
     const householdId=member.household_id;
+    if(body?.activity_id){
+      if(typeof body.activity_id!=="string"||!/^[-a-f0-9]{36}$/i.test(body.activity_id))return json({error:"Invalid activity."},400);
+      activityOwner=user.id;
+      activity=await activityCommand(user.id,body.activity_id,"start");
+      if(activity.household_id!==householdId)throw new Error("Activity household changed.");
+      const kind=body?.use_google_calendar===true?"calendar":body?.page_context?.summary_kind||"question";
+      if(activity.kind!==kind)throw new Error("Activity kind changed.");
+    }
     const now=new Date();
     if(body?.use_google_calendar===true){
       const {data:household,error:householdError}=await ctx.supabase.from("households")
         .select("timezone").eq("id",householdId).maybeSingle();
       if(householdError||!household)return json({error:"Household timezone is unavailable."},503);
-      return json(await answerCalendarQuestion({
+      const calendarAnswer=await answerCalendarQuestion({
         message,client:ctx.supabase,householdId,
         authorization:req.headers.get("Authorization")||"",
         supabaseUrl:Deno.env.get("SUPABASE_URL")!,
         timeZone:household.timezone||"America/Denver",now,planner:callModel
-      }));
+      });
+      if(activity){await activityCommand(user.id,activity.id,"finish",activity.version,{actions:[],sources:[]});activityFinished=true;}
+      return json({...calendarAnswer,activity_id:activity?.id||null});
     }
     let assistantContext;
     try{assistantContext=await readAssistantPreferences(ctx.supabase,user.id);}catch(_){return json({error:"Assistant settings could not be verified. Please retry."},503);}
     const preferences=assistantContext.profile;
+    if(activity&&activity.context_version!==assistantContext.context_version)return json({error:"Assistant context changed. Ask again.",context_reset:true},409);
     const contextReset=body?.context_version!==assistantContext.context_version;
     const compatibleHistory=contextReset?[]:body?.history;
     const refersToPriorProposal=/\b(that|those|them|it|also|instead|change|update|modify|make|remove|delete|same|hers|his|the milk|the eggs|the reminder|the event|the list)\b/i.test(message);
@@ -436,6 +449,7 @@ Your job:
 Return JSON only in this exact shape:
 {
   "answer": "plain text answer",
+  "sources": [{"kind":"task"|"event"|"goal"|"list"|"memory","id":"exact ID from APP_CONTEXT"}],
   "actions": [
     {
       "type": "task" | "event" | "list_item" | "list_items" | "memory",
@@ -445,6 +459,7 @@ Return JSON only in this exact shape:
   ]
 }
 Use an empty actions array when no action is proposed. You may return multiple actions when the user asks for multiple distinct reminders/events/memories. Prefer ONE list_items action for multiple items going to the same list.
+Only include sources that support the answer. Use exact IDs from APP_CONTEXT; omit sources if none apply. Never cite Health or Google Calendar here.
 
 Action payload schemas:
 task: {
@@ -487,6 +502,7 @@ memory: {
 }
 
 For task/event timestamps, use valid ISO-8601 timestamps with an explicit timezone offset whenever the user clearly supplied enough scheduling information. Otherwise use null.
+For task recurrence use Open Brain rules: daily, weekdays, weekly, monthly, days:N, weeks:N, months:N, or weekdays:mon,wed,fri. Use null for a one-time task; do not use RFC RRULE strings.
 For shopping requests with several items for one list, preserve explicit quantities and return one list_items action rather than many separate list_item actions.
 If the user asks for multiple distinct actions, return each one in actions, maximum 12.
 Do not include markdown in action payload values.`;
@@ -566,7 +582,21 @@ Do not include markdown in action payload values.`;
     let latestContext;
     try{latestContext=await readAssistantPreferences(ctx.supabase,user.id);}catch(_){return json({error:"Assistant settings could not be verified. Please retry."},503);}
     if(latestContext.context_version!==assistantContext.context_version)return json({error:"Assistant preferences or saved memories changed while answering. Please ask again.",context_reset:true,context_version:latestContext.context_version},409);
+    if(activity){
+      const available=new Map<string,Set<string>>([
+        ["task",new Set(appContext.tasks.map((r:any)=>r.id))],["event",new Set(appContext.events.map((r:any)=>r.id))],
+        ["goal",new Set(appContext.goals.map((r:any)=>r.id))],["list",new Set(appContext.lists.map((r:any)=>r.id))],
+        ["memory",new Set([...appContext.memories,...appContext.semantic_memory_matches].map((r:any)=>r.id))]
+      ]);
+      const sources=(Array.isArray(parsed?.sources)?parsed.sources:[]).filter((s:any)=>available.get(s?.kind)?.has(s?.id)).slice(0,20).map((s:any)=>({kind:s.kind,id:s.id}));
+      await activityCommand(user.id,activity.id,"finish",activity.version,{actions:prepareActivityActions(finalActions,appContext),sources});
+      activityFinished=true;
+      if(isProposalRevision&&typeof body.previous_activity_id==="string"&&/^[a-f0-9-]{36}$/i.test(body.previous_activity_id)&&body.previous_activity_id!==activity.id){
+        try{await activityCommand(user.id,body.previous_activity_id,"cancel");}catch(_){}
+      }
+    }
     return json({
+      activity_id:activity?.id||null,
       context_version:assistantContext.context_version,
       context_reset:contextReset,
       answer,
@@ -579,6 +609,8 @@ Do not include markdown in action payload values.`;
     const message=err instanceof Error?err.message:String(err);
     console.error("Open Brain assistant error:",message);
     return json({error:"Open Brain AI is unavailable right now."},500);
+  }finally{
+    if(activity&&activityOwner&&!activityFinished){try{await activityCommand(activityOwner,activity.id,"fail",activity.version,{error_code:"unavailable"});}catch(_){}}
   }
 });
 

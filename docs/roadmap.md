@@ -17,20 +17,21 @@ before publication.
 - Read-only Calendar questions with explicit per-question opt-in. The user
   confirmed live schedule lookup and availability checks against Google Calendar.
 - Notification message placement above the Ask Open Brain launcher.
+- Personal quiet hours for scheduled push and Telegram reminders.
+- Dashboard count drilldowns and dated weekly-plan display/reuse.
 
 ## Near-term sequence
 
-1. Personal notification quiet hours (this change): default off, account-wide
-   scheduled push/Telegram control, chosen timezone, and relevant-reminder handling.
-   Per-device quiet-hour overrides can follow if needed.
-2. Complete Evening Health & Wellbeing check-in history, then descriptive trends.
-3. Task duration estimates and suggested time slots, reviewed by the user.
-4. A focused read/search-only Gmail pilot, such as school deadlines or follow-ups.
-5. A Connections & delivery status view showing last successful refresh,
+1. Complete Evening Health & Wellbeing check-in history (this change): private,
+   dated complete answers, date filters, and older pages; then descriptive trends.
+2. Task duration estimates and suggested time slots, reviewed by the user.
+3. A focused read/search-only Gmail pilot, such as school deadlines or follow-ups.
+4. A Connections & delivery status view showing last successful refresh,
    connections needing attention, notification device state, and exhausted retries.
 
 ## Later ideas to retain
 
+- Optional per-device quiet-hour overrides.
 - Calendar writes with additional permissions and review before every change.
 - Explicitly shared family free/busy availability, with event details private by
   default; refine household, parents-only, and personal permissions first.

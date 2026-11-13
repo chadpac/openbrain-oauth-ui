@@ -82,6 +82,12 @@
     .week-priority{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fafcfc}
     .week-num{width:26px;height:26px;border-radius:50%;background:var(--peach-soft);color:#8b624b;display:grid;place-items:center;font-size:12px;font-weight:850}
     .week-side{background:#f6faf9;border:1px solid #dfe9e8;border-radius:14px;padding:14px}.week-side h4{margin:0 0 8px}.week-metric{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #e2eceb;font-size:13px}.week-metric:first-of-type{border-top:0}
+    .week-metric{width:100%;border-right:0;border-bottom:0;border-left:0;background:transparent;color:inherit;text-align:left;border-radius:0}
+    .week-metric:hover{background:#eaf4f2}.week-metric:focus-visible,.week-events-link:focus-visible{outline:3px solid var(--navy);outline-offset:3px}
+    .week-events-link{font:inherit;font-weight:inherit;color:inherit;background:none;border:0;padding:0;text-align:left;text-decoration:underline;text-underline-offset:3px}
+    .week-previous{font-size:13px;color:var(--muted);margin-bottom:12px}.week-review-entry{white-space:pre-wrap;margin:8px 0}
+    .summary-item{padding:12px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.summary-item:first-child{border-top:0}.summary-item strong{display:block;margin-bottom:5px}.summary-item .smallbtn{margin-top:8px}
+    #summaryDialog{max-height:calc(100dvh - 28px)}#summaryDialog[open]{display:flex;flex-direction:column}#summaryDialog .modalbody{overflow:auto;min-height:0}#summaryDialog .modalhead,#summaryDialog .modalfoot{flex-shrink:0}#summaryItems{gap:0}#weekPriorities{overflow-wrap:anywhere}
     .week-anchor{margin-top:12px;padding:11px 12px;border-radius:12px;background:var(--peach-soft);font-size:13px}.week-anchor strong{display:block;margin-bottom:3px;color:#76513f}
     .review-note{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.45}
     .activity-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
@@ -381,10 +387,10 @@
             <div id="weekReviewNote" class="review-note"></div>
           </div>
           <div class="week-side">
-            <h4>Capacity snapshot</h4>
-            <div class="week-metric"><span>My active reminders</span><strong id="weekTaskCount">—</strong></div>
-            <div class="week-metric"><span>Events</span><strong id="weekEventCount">—</strong></div>
-            <div class="week-metric"><span>Overdue items</span><strong id="weekOverdueCount">—</strong></div>
+            <h4><button class="week-events-link" type="button" data-week-glance="events" aria-label="Show this week’s events">Capacity snapshot</button></h4>
+            <button class="week-metric" type="button" data-week-glance="tasks"><span>My reminders this week</span><strong id="weekTaskCount">—</strong></button>
+            <button class="week-metric" type="button" data-week-glance="events"><span>Events</span><strong id="weekEventCount">—</strong></button>
+            <button class="week-metric" type="button" data-week-glance="overdue"><span>Overdue before this week</span><strong id="weekOverdueCount">—</strong></button>
             <div id="weekGoalAnchor" class="week-anchor hidden"></div>
           </div>
         </div>
@@ -1083,13 +1089,20 @@
     </form>
   </dialog>
 
-  <dialog id="weekEditor">
+  <dialog id="summaryDialog" aria-labelledby="summaryTitle" aria-describedby="summaryDescription">
+    <div class="modalhead"><h3 id="summaryTitle"></h3><button id="closeSummary" class="ghost" type="button" autofocus>Close</button></div>
+    <div class="modalbody"><div id="summaryDescription" class="subtitle"></div><div id="summaryItems"></div></div>
+    <div class="modalfoot"><button id="summaryFullView" class="ghost" type="button">Open full list</button></div>
+  </dialog>
+
+  <dialog id="weekEditor" aria-labelledby="weekEditorHeading">
     <form id="weekForm">
-      <div class="modalhead"><h3>Weekly plan & review</h3><button id="closeWeekEditor" class="ghost" type="button">Close</button></div>
+      <div class="modalhead"><h3 id="weekEditorHeading">Weekly plan & review</h3><button id="closeWeekEditor" class="ghost" type="button">Close</button></div>
       <div class="modalbody">
         <div class="message ok" style="margin:0">
           Keep this intentionally small. Three meaningful priorities are usually more useful than a long wish list.
         </div>
+        <div id="weekEditorRange" class="subtitle"></div><div id="weekSaveError" class="message err hidden" role="alert"></div>
         <div><label for="weekPriority1">Priority 1</label><input id="weekPriority1" maxlength="220" placeholder="The most important thing to move forward" /></div>
         <div><label for="weekPriority2">Priority 2</label><input id="weekPriority2" maxlength="220" /></div>
         <div><label for="weekPriority3">Priority 3</label><input id="weekPriority3" maxlength="220" /></div>
@@ -1097,7 +1110,7 @@
         <div><label for="weekLessons">What did I learn?</label><textarea id="weekLessons" placeholder="What helped, what got in the way, what should change?"></textarea></div>
         <div><label for="weekCarry">Carry forward / drop / delegate</label><textarea id="weekCarry" placeholder="What should move into next week, be dropped, or be handed off?"></textarea></div>
       </div>
-      <div class="modalfoot"><button id="cancelWeekEdit" class="ghost" type="button">Cancel</button><button class="primary" type="submit">Save weekly plan</button></div>
+      <div class="modalfoot"><button id="cancelWeekEdit" class="ghost" type="button">Cancel</button><button id="saveWeekButton" class="primary" type="submit">Save weekly plan</button></div>
     </form>
   </dialog>
 
@@ -1768,7 +1781,7 @@
         sb.from("household_members").select("user_id,household_id,display_name,role,telegram_enabled,joined_at").eq("household_id",state.member.household_id).order("display_name"),
         sb.from("households").select("id,name,timezone").eq("id",state.member.household_id).maybeSingle(),
         sb.from("family_tasks").select("*").eq("household_id",state.member.household_id).order("remind_at",{ascending:true,nullsFirst:false}),
-        sb.from("family_events").select("*").eq("household_id",state.member.household_id).gte("starts_at",new Date(Date.now()-86400000).toISOString()).order("starts_at",{ascending:true}).limit(12),
+        sb.from("family_events").select("*").eq("household_id",state.member.household_id).or("starts_at.gte."+startOfWeek().toISOString()+",ends_at.gt."+startOfWeek().toISOString()).order("starts_at",{ascending:true}).limit(1000),
         sb.from("event_notifications").select("id,event_id,recipient_user_id,timing_key,status,notify_at").eq("household_id",state.member.household_id),
         sb.from("family_goals").select("*").eq("household_id",state.member.household_id).eq("status","active").order("updated_at",{ascending:false}),
         sb.from("habits").select("*").eq("owner_user_id",state.user.id).neq("status","archived").order("created_at",{ascending:true}),
@@ -2747,14 +2760,10 @@
       $("todayDate").textContent=new Intl.DateTimeFormat(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"}).format(now);
 
       const todayKey=localDayKey(now);
-      const mine=state.tasks.filter(t=>t.assigned_to_user_id===state.user.id && ["pending","in_progress"].includes(t.status));
-      const overdue=mine.filter(t=>t.remind_at && new Date(t.remind_at)<now && localDayKey(t.remind_at)!==todayKey);
-      const today=mine.filter(t=>{
-        const date=t.remind_at||t.due_at;
-        return date && localDayKey(date)===todayKey;
-      });
+      const overdue=dashboardTasks("overdue",now);
+      const today=dashboardTasks("today",now);
       const display=[...overdue,...today.filter(t=>!overdue.includes(t))].slice(0,6);
-      const todayEvents=combinedEvents().filter(e=>eventOnDay(e,now));
+      const todayEvents=dashboardEvents("today",now);
 
       $("todayTaskCount").textContent=today.length;
       $("todayEventCount").textContent=todayEvents.length;
@@ -3960,58 +3969,69 @@
       return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
     }
 
+    function weekRangeLabel(key){
+      const start=new Date(key+"T12:00:00"),end=new Date(start);end.setDate(end.getDate()+6);
+      return new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(start)+" – "+new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",year:"numeric"}).format(end);
+    }
+
     function currentWeeklyPlan(){
       const key=dateOnlyLocal(startOfWeek());
       return state.weeklyPlans.find(w=>w.week_start===key)||null;
     }
 
-    function renderWeek(){
-      const start=startOfWeek(), end=new Date(start); end.setDate(end.getDate()+6); end.setHours(23,59,59,999);
-      $("weekRange").textContent=new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(start)+" – "+new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",year:"numeric"}).format(end);
+    function previousWeeklyPlan(){
+      const key=dateOnlyLocal(startOfWeek());
+      return state.weeklyPlans.filter(w=>w.week_start<key).sort((a,b)=>b.week_start.localeCompare(a.week_start))[0]||null;
+    }
 
-      const plan=currentWeeklyPlan();
-      const priorities=[plan?.priority_1,plan?.priority_2,plan?.priority_3].filter(Boolean);
-      const box=$("weekPriorities");
-      if(!priorities.length){
-        box.innerHTML='<div class="overview-empty">Choose up to three priorities for the week. These should describe outcomes you want to move forward—not every task you need to do.</div>';
-      }else{
-        box.innerHTML=priorities.map((p,i)=>'<div class="week-priority"><div class="week-num">'+(i+1)+'</div><div>'+esc(p)+'</div></div>').join("");
-      }
-
+    function dashboardTasks(scope,now=new Date()){
       const mine=state.tasks.filter(t=>t.assigned_to_user_id===state.user.id && ["pending","in_progress"].includes(t.status));
-      const weekTasks=mine.filter(t=>{
-        const d=t.remind_at||t.due_at; if(!d)return false;
-        const x=new Date(d); return x>=start && x<=end;
+      const key=localDayKey(now),start=startOfWeek(now),end=new Date(start);end.setDate(end.getDate()+7);
+      return mine.filter(t=>{
+        const date=t.remind_at||t.due_at;
+        if(scope==="today")return date && localDayKey(date)===key;
+        if(scope==="overdue")return t.remind_at && new Date(t.remind_at)<now && localDayKey(t.remind_at)!==key;
+        if(scope==="week")return date && new Date(date)>=start && new Date(date)<end;
+        if(scope==="weekOverdue")return t.remind_at && new Date(t.remind_at)<start;
+        return true;
       });
-      const overdue=mine.filter(t=>t.remind_at && new Date(t.remind_at)<start);
-      const weekEnd=new Date(end.getTime()+1);
-      const weekEvents=combinedEvents().filter(e=>eventOverlaps(e,start,weekEnd));
-      $("weekTaskCount").textContent=weekTasks.length;
-      $("weekEventCount").textContent=weekEvents.length;
-      $("weekOverdueCount").textContent=overdue.length;
+    }
 
-      const goal=activeGoal(), anchor=$("weekGoalAnchor");
-      if(goal){
-        anchor.classList.remove("hidden");
-        anchor.innerHTML='<strong>Goal anchor</strong>'+esc(goal.next_action||goal.title);
-      }else{
-        anchor.classList.add("hidden"); anchor.innerHTML="";
-      }
+    function dashboardEvents(scope,now=new Date()){
+      if(scope==="today")return combinedEvents().filter(e=>eventOnDay(e,now));
+      const start=startOfWeek(now),end=new Date(start);end.setDate(end.getDate()+7);
+      return combinedEvents().filter(e=>eventOverlaps(e,start,end));
+    }
 
-      const notes=[];
-      if(plan?.wins) notes.push("Wins recorded");
-      if(plan?.lessons) notes.push("Lessons captured");
-      if(plan?.carry_forward) notes.push("Carry-forward reviewed");
-      $("weekReviewNote").textContent=notes.length?notes.join(" · "):"Use the same weekly plan to reflect at the end of the week. Your review stays private to your account.";
+    function renderWeek(){
+      const key=dateOnlyLocal(startOfWeek());
+      $("weekRange").textContent=weekRangeLabel(key);
+      const plan=currentWeeklyPlan(),previous=plan?null:previousWeeklyPlan(),shown=plan||previous;
+      const priorities=[shown?.priority_1,shown?.priority_2,shown?.priority_3].filter(Boolean);
+      const previousNote=previous?'<div class="week-previous">No plan saved for this week. Your last saved plan is for <strong>'+esc(weekRangeLabel(previous.week_start))+'</strong>.</div>':"";
+      $("weekPriorities").innerHTML=previousNote+(priorities.length
+        ?priorities.map((p,i)=>'<div class="week-priority"><div class="week-num">'+(i+1)+'</div><div>'+esc(p)+'</div></div>').join("")
+        :'<div class="overview-empty">'+(plan?'No priorities added to this plan yet. Edit your week to add them.':'Choose up to three priorities for the week. These should describe outcomes you want to move forward—not every task you need to do.')+'</div>')
+        +(previous?'<button id="reuseWeekPriorities" class="ghost" type="button">Use these priorities for this week</button>':"");
+      $("weekTaskCount").textContent=dashboardTasks("week").length;
+      $("weekEventCount").textContent=dashboardEvents("week").length;
+      $("weekOverdueCount").textContent=dashboardTasks("weekOverdue").length;
+
+      const goal=activeGoal(),anchor=$("weekGoalAnchor");
+      anchor.classList.toggle("hidden",!goal);
+      anchor.innerHTML=goal?'<strong>Goal anchor</strong>'+esc(goal.next_action||goal.title):"";
+      const notes=[["Wins / what went well",shown?.wins],["What I learned",shown?.lessons],["Carry forward / drop / delegate",shown?.carry_forward]].filter(([,value])=>value);
+      $("weekReviewNote").innerHTML=notes.length?(previous?"<strong>Review from that saved week</strong>":"")+notes.map(([label,value])=>'<div class="week-review-entry"><strong>'+esc(label)+'</strong><br>'+esc(value)+'</div>').join(""):"Use the same weekly plan to reflect at the end of the week. Your review stays private to your account.";
       $("planWeek").textContent=plan?"Edit / review week":"Plan this week";
     }
 
-    function openWeekEditor(){
-      const plan=currentWeeklyPlan();
+    function openWeekEditor(reuse=false){
+      const plan=currentWeeklyPlan(),source=plan||(reuse?previousWeeklyPlan():null);
       $("weekForm").reset();
-      $("weekPriority1").value=plan?.priority_1||"";
-      $("weekPriority2").value=plan?.priority_2||"";
-      $("weekPriority3").value=plan?.priority_3||"";
+      $("weekForm").dataset.weekStart=dateOnlyLocal(startOfWeek());
+      $("weekEditorRange").textContent=weekRangeLabel($("weekForm").dataset.weekStart);
+      $("weekSaveError").classList.add("hidden");
+      [1,2,3].forEach(i=>$("weekPriority"+i).value=source?.["priority_"+i]||"");
       $("weekWins").value=plan?.wins||"";
       $("weekLessons").value=plan?.lessons||"";
       $("weekCarry").value=plan?.carry_forward||"";
@@ -4020,28 +4040,46 @@
 
     async function saveWeek(e){
       e.preventDefault();
+      const btn=$("saveWeekButton");if(btn.disabled)return;
+      $("weekForm").querySelectorAll("input,textarea,button").forEach(el=>el.disabled=true);$("weekSaveError").classList.add("hidden");
       try{
-        const plan=currentWeeklyPlan();
+        const key=$("weekForm").dataset.weekStart;
+        const plan=state.weeklyPlans.find(w=>w.week_start===key);
         const payload={
-          household_id:state.member.household_id,
-          owner_user_id:state.user.id,
-          week_start:dateOnlyLocal(startOfWeek()),
+          household_id:state.member.household_id,owner_user_id:state.user.id,week_start:key,
           priority_1:$("weekPriority1").value.trim()||null,
           priority_2:$("weekPriority2").value.trim()||null,
           priority_3:$("weekPriority3").value.trim()||null,
-          wins:$("weekWins").value.trim()||null,
-          lessons:$("weekLessons").value.trim()||null,
-          carry_forward:$("weekCarry").value.trim()||null,
-          updated_at:new Date().toISOString()
+          wins:$("weekWins").value.trim()||null,lessons:$("weekLessons").value.trim()||null,
+          carry_forward:$("weekCarry").value.trim()||null,updated_at:new Date().toISOString()
         };
-        if(plan){
-          const {error}=await sb.from("weekly_plans").update(payload).eq("id",plan.id); if(error) throw error;
-        }else{
-          const {error}=await sb.from("weekly_plans").insert(payload); if(error) throw error;
-        }
-        $("weekEditor").close();
-        await loadData(); renderAll(); toast("Weekly plan saved.");
-      }catch(err){toast(err?.message||"Unable to save weekly plan.",true);}
+        const query=plan?sb.from("weekly_plans").update(payload).eq("id",plan.id).eq("owner_user_id",state.user.id):sb.from("weekly_plans").insert(payload);
+        const {data,error}=await query.select("*").single();
+        if(error)throw error;
+        if(!data || data.owner_user_id!==state.user.id || data.week_start!==key)throw new Error("The saved plan could not be confirmed. Keep this window open and try again.");
+        state.weeklyPlans=[data,...state.weeklyPlans.filter(w=>w.id!==data.id && w.week_start!==key)];
+        renderWeek();$("weekEditor").close();toast("Weekly plan saved for "+weekRangeLabel(key)+".");
+      }catch(err){
+        $("weekSaveError").textContent=err?.code==="23505"?"A plan for this week was saved in another window. Refresh Open Brain before editing it.":err?.message||"Unable to save weekly plan. Your entries are still here.";
+        $("weekSaveError").classList.remove("hidden");
+      }finally{$("weekForm").querySelectorAll("input,textarea,button").forEach(el=>el.disabled=false);}
+    }
+
+    let summarySelection=null;
+    function openDashboardSummary(kind,period="today"){
+      const scope=kind==="overdue"?(period==="week"?"weekOverdue":"overdue"):period;
+      const rows=kind==="events"?dashboardEvents(scope):dashboardTasks(scope);
+      summarySelection={kind,scope};
+      $("summaryTitle").textContent=kind==="events"?(period==="week"?"This week’s events":"Today’s events"):kind==="overdue"?(period==="week"?"Overdue before this week":"My overdue tasks"):(period==="week"?"My reminders this week":"My tasks today");
+      $("summaryDescription").textContent=rows.length+" "+(kind==="events"?(rows.length===1?"event":"events"):(rows.length===1?"task":"tasks"))+" · "+(period==="week"?weekRangeLabel(dateOnlyLocal(startOfWeek())):new Intl.DateTimeFormat(undefined,{dateStyle:"full"}).format(new Date()));
+      $("summaryItems").innerHTML=rows.length?rows.map(row=>{
+        const event=kind==="events",isGoogle=event && row.source==="google";
+        const when=event?(row.all_day?new Intl.DateTimeFormat(undefined,{dateStyle:"medium"}).format(new Date(row.starts_at))+" · All day":formatDate(row.starts_at)):formatDate(row.remind_at||row.due_at);
+        const detail=event?[row.location,isGoogle?"Google · "+(row.calendar_name||"Calendar")+" · read only":"Open Brain family event"].filter(Boolean).join(" · "):(row.description||statusLabel(row.status));
+        const editable=event?canEditEvent(row):canManageTask(row);
+        return '<div class="summary-item"><strong>'+esc(row.title)+'</strong><div class="subtitle">'+esc(when)+'</div><div>'+esc(detail)+'</div>'+(editable?'<button class="smallbtn" type="button" data-summary-edit="'+(event?"event":"task")+'" data-id="'+esc(row.id)+'">'+(event?"Edit event":"Open task")+'</button>':"")+'</div>';
+      }).join(""):'<div class="overview-empty">'+(kind==="events"?'No events in this view.':'No tasks in this view.')+'</div>';
+      $("summaryDialog").showModal();
     }
 
     function inboxTypeLabel(type){
@@ -4284,14 +4322,12 @@
       const now=new Date();
       const todayKey=localDayKey(now);
       const events=combinedEvents();
-      const upcoming=state.eventScope==="today"
-        ? events.filter(e=>eventOnDay(e,now))
-        : events.filter(e=>eventOnDay(e,now)||new Date(e.starts_at)>=now).slice(0,6);
-      $("eventsHeading").textContent=state.eventScope==="today"?"Today’s events":"Upcoming events";
-      $("clearEventScope").classList.toggle("hidden",state.eventScope!=="today");
+      const upcoming=state.eventScope?dashboardEvents(state.eventScope,now):events.filter(e=>eventOnDay(e,now)||new Date(e.starts_at)>=now).slice(0,6);
+      $("eventsHeading").textContent=state.eventScope==="today"?"Today’s events":state.eventScope==="week"?"This week’s events":"Upcoming events";
+      $("clearEventScope").classList.toggle("hidden",!state.eventScope);
       if(!upcoming.length){
-        eventBox.innerHTML=state.eventScope==="today"
-          ? '<div class="overview-empty">There are no events scheduled for today.</div>'
+        eventBox.innerHTML=state.eventScope
+          ? '<div class="overview-empty">There are no events in this view.</div>'
           : '<div class="overview-empty">No upcoming events yet. Connect Google Calendar or add an Open Brain family event.</div>';
       }else{
         eventBox.innerHTML=upcoming.map(e=>{
@@ -4514,8 +4550,8 @@
       renderTasks();
     }
 
-    function openGlanceEvents(){
-      state.eventScope="today";
+    function openGlanceEvents(scope="today"){
+      state.eventScope=scope;
       renderOverview();
       document.querySelectorAll(".mobile-nav-btn").forEach(x=>x.classList.remove("active"));
       document.querySelector('[data-mobile-tab="home"]')?.classList.add("active");
@@ -4533,16 +4569,8 @@
       }
       if(state.memberFilter) rows=rows.filter(t=>t.assigned_to_user_id===state.memberFilter);
       if(state.taskScope){
-        const now=new Date();
-        const todayKey=localDayKey(now);
-        if(state.taskScope==="today"){
-          rows=rows.filter(t=>{
-            const date=t.remind_at||t.due_at;
-            return date && localDayKey(date)===todayKey;
-          });
-        }else if(state.taskScope==="overdue"){
-          rows=rows.filter(t=>t.remind_at && new Date(t.remind_at)<now && localDayKey(t.remind_at)!==todayKey);
-        }
+        const matching=new Set(dashboardTasks(state.taskScope).map(t=>t.id));
+        rows=rows.filter(t=>matching.has(t.id));
       }
       rows.sort((a,b)=>{
         const ah=["completed","cancelled"].includes(a.status), bh=["completed","cancelled"].includes(b.status);
@@ -4569,6 +4597,9 @@
         banner.classList.remove("hidden");
       }else if(state.taskScope==="overdue"){
         scopeText.innerHTML="<strong>Overdue:</strong> showing your active overdue tasks.";
+        banner.classList.remove("hidden");
+      }else if(state.taskScope==="week" || state.taskScope==="weekOverdue"){
+        scopeText.textContent=state.taskScope==="week"?"This week: showing your active reminders scheduled this week.":"Overdue before this week: showing your active reminders scheduled before Monday.";
         banner.classList.remove("hidden");
       }else{
         banner.classList.add("hidden");
@@ -4998,10 +5029,12 @@
       if(edit){const habit=state.habits.find(h=>h.id===edit.dataset.habitEdit);if(habit)openHabitEditor(habit);}
     });
 
-    $("planWeek").addEventListener("click",openWeekEditor);
+    $("planWeek").addEventListener("click",()=>openWeekEditor());
+    $("weekPriorities").addEventListener("click",e=>{if(e.target.closest("#reuseWeekPriorities"))openWeekEditor(true);});
     $("closeWeekEditor").addEventListener("click",()=>$("weekEditor").close());
     $("cancelWeekEdit").addEventListener("click",()=>$("weekEditor").close());
     $("weekForm").addEventListener("submit",saveWeek);
+    $("weekEditor").addEventListener("cancel",e=>{if($("saveWeekButton").disabled)e.preventDefault();});
 
     $("newTask").addEventListener("click",()=>{state.pendingInboxProcess=null;openEditor();});
     $("newEvent").addEventListener("click",()=>{state.pendingInboxProcess=null;openEventEditor();});
@@ -5016,12 +5049,20 @@
     $("cancelEdit").addEventListener("click",()=>{state.pendingInboxProcess=null;$("editor").close();});
     $("taskForm").addEventListener("submit",saveTask);
     $("taskRepeat").addEventListener("change",()=>$("customRepeatWrap").classList.toggle("hidden",$("taskRepeat").value!=="__custom"));
-    document.querySelectorAll("[data-glance]").forEach(btn=>btn.addEventListener("click",()=>{
-      const kind=btn.dataset.glance;
-      if(kind==="tasks")openGlanceTaskScope("today");
-      else if(kind==="overdue")openGlanceTaskScope("overdue");
-      else if(kind==="events")openGlanceEvents();
-    }));
+    document.querySelectorAll("[data-glance]").forEach(btn=>btn.addEventListener("click",()=>openDashboardSummary(btn.dataset.glance)));
+    document.querySelectorAll("[data-week-glance]").forEach(btn=>btn.addEventListener("click",()=>openDashboardSummary(btn.dataset.weekGlance,"week")));
+    $("closeSummary").addEventListener("click",()=>$("summaryDialog").close());
+    $("summaryFullView").addEventListener("click",()=>{
+      $("summaryDialog").close();
+      if(summarySelection?.kind==="events")openGlanceEvents(summarySelection.scope);
+      else if(summarySelection)openGlanceTaskScope(summarySelection.scope);
+    });
+    $("summaryItems").addEventListener("click",e=>{
+      const btn=e.target.closest("[data-summary-edit]");if(!btn)return;
+      const row=(btn.dataset.summaryEdit==="event"?state.events:state.tasks).find(r=>r.id===btn.dataset.id);if(!row)return;
+      $("summaryDialog").close();state.pendingInboxProcess=null;
+      if(btn.dataset.summaryEdit==="event")openEventEditor(row);else openEditor(row);
+    });
     $("clearTaskScope").addEventListener("click",clearTaskScope);
     $("clearEventScope").addEventListener("click",()=>{state.eventScope="";renderOverview();});
     $("search").addEventListener("input",e=>{state.taskScope="";state.search=e.target.value.trim();renderTasks();});

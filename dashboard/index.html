@@ -3410,10 +3410,11 @@
     function renderHealth(){
       const showInactive=!!$("showInactiveHealth")?.checked;
       renderHealthCheckinCard();
-      const trackers=state.healthTrackers.filter(t=>(t.dashboard_visible!==false)&&(showInactive?!t.active:t.active));
+      const trackers=state.healthTrackers.filter(t=>!t.checkin_key&&(t.dashboard_visible!==false)&&(showInactive?!t.active:t.active));
       const grid=$("healthGrid");
+      grid.classList.toggle("hidden",!trackers.length);
       if(!trackers.length){
-        grid.innerHTML='<div class="list-empty">'+(showInactive?"No inactive trackers.":"No trackers yet. Add only the health or wellbeing measures that are useful to you.")+'</div>';
+        grid.innerHTML="";
       }else{
         grid.innerHTML=trackers.map(t=>{
           const entries=entriesForTracker(t.id);
@@ -5541,7 +5542,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=22-trends-duration",
+          "/openbrain-oauth-ui/sw.js?v=23-health-layout",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

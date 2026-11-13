@@ -33,7 +33,7 @@ window.writeFixture=async req=>{writes.push(req);if(window.holdWrite)await new P
  if(req.table==='assistant_preferences'){if(req.payload.owner_user_id!==currentOwner)throw Error('Wrong owner');profile={...req.payload};delete profile.owner_user_id;rev++;return {data:{owner_user_id:currentOwner}}}
  if(req.table==='thoughts'&&req.mode==='delete'){const id=req.filters.find(([,key])=>key==='id')[2];if(!req.filters.some(([,key,value])=>key==='created_by'&&value===currentOwner))throw Error('Missing owner filter');memories=memories.filter(r=>r.id!==id);rev++;return {data:{id}}}
  throw Error('Unexpected write');};
-window.invokeFixture=async(name,body)=>{if(name==='open-brain-assistant'){aiCalls.push(body);const data={answer:'ANSWER '+version(),actions:[],context_version:version()};if(window.holdAI)await new Promise(resolve=>window.releaseAI=resolve);return {data}};return {data:{ok:true,members:[]}}};'''
+window.invokeFixture=async(name,body)=>{if(name==='open-brain-activity')return {data:body.action==='create'?{id:'00000000-0000-4000-8000-000000000001'}:{rows:[],receipts:[]}};if(name==='open-brain-assistant'){aiCalls.push(body);const data={answer:'ANSWER '+version(),actions:[],context_version:version(),activity_id:body.activity_id};if(window.holdAI)await new Promise(resolve=>window.releaseAI=resolve);return {data}};return {data:{ok:true,members:[]}}};'''
 with sync_playwright() as p:
  browser=p.chromium.launch(headless=True,executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'))
  context=browser.new_context(service_workers='block',timezone_id='America/Denver');page=context.new_page();errors=[]

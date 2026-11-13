@@ -24,10 +24,11 @@ with sync_playwright() as p:
  page.on('pageerror',lambda e:errors.append(str(e)))
  page.route('https://cdn.jsdelivr.net/**',lambda route:route.fulfill(content_type='text/javascript',body='export function createClient(){return {auth:{onAuthStateChange(){}},rpc:()=>window.fakePreferences(),functions:{invoke:(name,{body})=>window.fakeAI(name,body)}}}'))
  page.add_init_script('''window.fakePreferences=async()=>({data:{owner_user_id:'fixture',context_version:'a'.repeat(64),profile:{assistant_name:'Open Brain',tone:'warm',response_length:'balanced',planning_notes:'',working_hours_enabled:false,work_start:'09:00',work_end:'17:00',working_days:[1,2,3,4,5],timezone:'America/Denver',use_saved_memories:true}}});window.aiCalls=[];window.fakeAI=async (name,body)=>{
+  if(name==='open-brain-activity')return {data:body.action==='create'?{id:'00000000-0000-4000-8000-000000000001'}:{rows:[],receipts:[]}};
   aiCalls.push({name,body});
   if(window.failAI)return {error:{message:'offline'}};
-  if(body.use_google_calendar&&!window.oldServer)return {data:{answer:'CALENDAR_SECRET <img src=x onerror=alert(1)>',source:'google_calendar',ephemeral:true,actions:[]}};
-  return {data:{answer:'General answer',context_version:'a'.repeat(64),actions:[]}};
+  if(body.use_google_calendar&&!window.oldServer)return {data:{activity_id:body.activity_id,answer:'CALENDAR_SECRET <img src=x onerror=alert(1)>',source:'google_calendar',ephemeral:true,actions:[]}};
+  return {data:{activity_id:body.activity_id,answer:'General answer',context_version:'a'.repeat(64),actions:[]}};
  };''')
  url=f'http://127.0.0.1:{server.server_port}/openbrain-oauth-ui/dashboard/'
  page.goto(url)

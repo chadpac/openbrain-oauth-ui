@@ -21,3 +21,6 @@ verify_jwt = true
 
 [functions.open-brain-assistant]
 verify_jwt = true
+
+[functions.open-brain-activity]
+verify_jwt = true

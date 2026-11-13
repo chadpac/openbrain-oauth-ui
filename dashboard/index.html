@@ -559,10 +559,11 @@
           <div class="controls"><button id="refreshHealthHistory" class="ghost" type="button">Refresh history</button><button id="retryHealthHistory" class="ghost hidden" type="button">Try again</button><button id="moreHealthHistory" class="ghost hidden" type="button">Load older check-ins</button></div>
         </details>
         <div id="healthGrid" class="health-grid"><div class="list-empty">No health trackers yet.</div></div>
-        <div class="panelhead" style="border-top:1px solid var(--line)">
-          <div><h3 style="font-size:16px">Recent entries</h3><div class="subtitle">Your latest private logs across all trackers.</div></div>
-        </div>
-        <div id="healthRecent" class="health-recent"><div class="list-empty">Nothing logged yet.</div></div>
+        <details id="healthRecentSection" class="checkin-history">
+          <summary>Recent entries</summary>
+          <p class="history-private-note">Your latest private logs across all trackers.</p>
+          <div id="healthRecent" class="health-recent"><div class="list-empty">Nothing logged yet.</div></div>
+        </details>
       </section>
 
       <section class="overview">
@@ -5542,7 +5543,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=23-health-layout",
+          "/openbrain-oauth-ui/sw.js?v=24-recent-entries",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

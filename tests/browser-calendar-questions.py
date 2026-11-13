@@ -22,12 +22,12 @@ with sync_playwright() as p:
  context=browser.new_context(service_workers='block',timezone_id='America/Denver')
  page=context.new_page();errors=[]
  page.on('pageerror',lambda e:errors.append(str(e)))
- page.route('https://cdn.jsdelivr.net/**',lambda route:route.fulfill(content_type='text/javascript',body='export function createClient(){return {auth:{onAuthStateChange(){}},functions:{invoke:(name,{body})=>window.fakeAI(name,body)}}}'))
- page.add_init_script('''window.aiCalls=[];window.fakeAI=async (name,body)=>{
+ page.route('https://cdn.jsdelivr.net/**',lambda route:route.fulfill(content_type='text/javascript',body='export function createClient(){return {auth:{onAuthStateChange(){}},rpc:()=>window.fakePreferences(),functions:{invoke:(name,{body})=>window.fakeAI(name,body)}}}'))
+ page.add_init_script('''window.fakePreferences=async()=>({data:{owner_user_id:'fixture',context_version:'a'.repeat(64),profile:{assistant_name:'Open Brain',tone:'warm',response_length:'balanced',planning_notes:'',working_hours_enabled:false,work_start:'09:00',work_end:'17:00',working_days:[1,2,3,4,5],timezone:'America/Denver',use_saved_memories:true}}});window.aiCalls=[];window.fakeAI=async (name,body)=>{
   aiCalls.push({name,body});
   if(window.failAI)return {error:{message:'offline'}};
   if(body.use_google_calendar&&!window.oldServer)return {data:{answer:'CALENDAR_SECRET <img src=x onerror=alert(1)>',source:'google_calendar',ephemeral:true,actions:[]}};
-  return {data:{answer:'General answer',actions:[]}};
+  return {data:{answer:'General answer',context_version:'a'.repeat(64),actions:[]}};
  };''')
  url=f'http://127.0.0.1:{server.server_port}/openbrain-oauth-ui/dashboard/'
  page.goto(url)
@@ -54,20 +54,20 @@ with sync_playwright() as p:
  assert '<img' in page.locator('#aiMessages').inner_text()
  assert page.locator('#aiMessages img').count()==0
  assert page.locator('#aiMessages [data-ai-action-index]').count()==0
- assert 'CALENDAR_SECRET' not in page.evaluate('sessionStorage.getItem("open-brain-ai-chat:fixture")')
+ assert 'CALENDAR_SECRET' not in page.evaluate('sessionStorage.getItem("open-brain-ai-chat:fixture:"+"a".repeat(64))')
  page.locator('#aiInput').fill('What should I focus on?')
  page.locator('#sendAiMessage').click()
  page.wait_for_function('aiCalls.length===2&&!calendarQuestionTest.state.aiBusy')
  assert page.evaluate('aiCalls[1].body.use_google_calendar') is False
  assert 'CALENDAR_SECRET' not in page.evaluate('JSON.stringify(aiCalls[1])')
  assert 'calendar tomorrow' not in page.evaluate('JSON.stringify(aiCalls[1].body.history)')
- assert 'General answer' in page.evaluate('sessionStorage.getItem("open-brain-ai-chat:fixture")')
+ assert 'General answer' in page.evaluate('sessionStorage.getItem("open-brain-ai-chat:fixture:"+"a".repeat(64))')
  # Deployment mismatch cannot render a normal AI answer as a Calendar check.
  page.evaluate('window.oldServer=true')
  page.locator('#aiUseCalendar').check();page.locator('#aiInput').fill('Am I free Thursday afternoon?');page.locator('#sendAiMessage').click()
  page.wait_for_function('aiCalls.length===3&&!calendarQuestionTest.state.aiBusy')
  assert "haven't confirmed your availability" in page.locator('#aiMessages').inner_text()
- assert 'CALENDAR_SECRET' not in page.evaluate('sessionStorage.getItem("open-brain-ai-chat:fixture")')
+ assert 'CALENDAR_SECRET' not in page.evaluate('sessionStorage.getItem("open-brain-ai-chat:fixture:"+"a".repeat(64))')
  for width,height in [(1280,900),(390,844),(320,568)]:
   page.set_viewport_size({'width':width,'height':height})
   assert page.locator('#aiUseCalendar').is_visible()
@@ -76,7 +76,7 @@ with sync_playwright() as p:
  page.locator('#aiUseCalendar').check();page.locator('#closeAiPanel').click()
  assert not page.locator('#aiUseCalendar').is_checked()
  page.reload();page.wait_for_function('window.calendarQuestionTest')
- page.evaluate('''()=>{calendarQuestionTest.state.user={id:'fixture'};calendarQuestionTest.loadAiChatSession()}''')
+ page.evaluate('''async()=>{calendarQuestionTest.state.user={id:'fixture'};calendarQuestionTest.openAiPanel()}''')
  assert 'CALENDAR_SECRET' not in page.evaluate('JSON.stringify(calendarQuestionTest.state.aiMessages)')
  assert not page.locator('#aiUseCalendar').is_checked()
  assert not errors,errors

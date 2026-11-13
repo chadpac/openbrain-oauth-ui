@@ -122,11 +122,13 @@
     .list-empty{padding:28px 20px;text-align:center;color:var(--muted)}.list-header-meta{font-size:12px;color:var(--muted);margin-top:4px}.list-actions{display:flex;gap:6px;flex-wrap:wrap}
     .lists-panel.shopping-mode .list-sidebar{display:none}.lists-panel.shopping-mode .lists-layout{grid-template-columns:1fr}.lists-panel.shopping-mode .list-item-row{grid-template-columns:auto minmax(0,1fr);padding:15px 18px}.lists-panel.shopping-mode .list-check{width:42px;height:42px;border-radius:12px;font-size:18px}.lists-panel.shopping-mode .list-item-name{font-size:17px}.lists-panel.shopping-mode [data-list-item-edit]{display:none}.lists-panel.shopping-mode .list-workspace-head{position:sticky;top:0;z-index:5;background:#fff}.lists-panel.shopping-mode .list-quickadd{position:sticky;top:70px;z-index:4;background:#fff;box-shadow:0 5px 12px rgba(30,55,58,.06)}
     @media(max-width:850px){.lists-layout{grid-template-columns:1fr}.list-sidebar{border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:8px;padding:10px 12px}.list-selector{min-width:170px;flex:0 0 auto}.list-quickadd{grid-template-columns:minmax(0,1fr) 76px auto;padding:10px 12px}.list-toolbar,.list-suggestions{padding-left:12px;padding-right:12px}.list-workspace-head{padding:14px 12px}.list-item-row{padding:13px 12px}.list-check{width:36px;height:36px}.lists-panel.shopping-mode .list-quickadd{top:62px}}
+    .assistant-settings-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding:20px}.assistant-preferences-form{display:grid;gap:14px;min-width:0}.assistant-working-fields{display:grid;gap:10px}.assistant-work-days{border:1px solid var(--line);border-radius:10px;display:flex;gap:10px;flex-wrap:wrap;padding:10px}.assistant-work-days legend{font-size:13px;font-weight:700}.assistant-work-days label{display:flex;gap:4px;align-items:center;font-size:12px;margin:0}.assistant-work-days input{width:auto}.assistant-memory-section{border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}.assistant-memory-section>summary{cursor:pointer;font-weight:800}.assistant-memory-search{display:grid;gap:6px;margin:12px 0}.assistant-memory-list{display:grid;gap:10px;margin:12px 0;max-height:650px;overflow:auto}.assistant-memory-list .memory-card{min-width:0}.assistant-memory-text{white-space:pre-wrap;overflow-wrap:anywhere;max-height:200px;overflow:auto;font-size:13px;line-height:1.5;margin:10px 0}
+    @media(max-width:1050px){.assistant-settings-grid{grid-template-columns:1fr}}@media(max-width:700px){.assistant-settings-grid{padding:12px}.assistant-preferences-form .grid2{grid-template-columns:1fr}}
     .quiet-hours-form{display:grid;gap:10px;margin-top:12px}.quiet-hours-toggle{display:flex;gap:8px;align-items:center}.quiet-hours-toggle input{width:18px;height:18px;margin:0}.quiet-hours-times{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}.quiet-hours-times label,.quiet-hours-form>label{min-width:0}.quiet-hours-actions{display:flex;flex-wrap:wrap;gap:8px}.quiet-hours-form input{max-width:100%;min-width:0}
     .ai-launcher{position:fixed;right:22px;bottom:22px;z-index:850;border:0;border-radius:999px;background:var(--navy);color:#fff;padding:12px 16px;box-shadow:0 12px 28px rgba(47,82,84,.28);display:flex;align-items:center;gap:8px;font-weight:850;cursor:pointer}
-    .ai-launcher .ai-star{font-size:17px}.ai-backdrop{position:fixed;inset:0;background:rgba(28,42,43,.28);z-index:899}.ai-panel{position:fixed;top:14px;right:14px;bottom:14px;width:min(430px,calc(100vw - 28px));z-index:900;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 22px 60px rgba(28,42,43,.24);display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+    .ai-launcher{max-width:calc(100vw - 44px)}#assistantLauncherLabel{min-width:0;overflow-wrap:anywhere}.ai-launcher .ai-star{font-size:17px}.ai-backdrop{position:fixed;inset:0;background:rgba(28,42,43,.28);z-index:899}.ai-panel{position:fixed;top:14px;right:14px;bottom:14px;width:min(430px,calc(100vw - 28px));z-index:900;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 22px 60px rgba(28,42,43,.24);display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
     .ai-panel.hidden,.ai-backdrop.hidden{display:none}.ai-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 16px 13px;border-bottom:1px solid var(--line);background:linear-gradient(145deg,#fff,#f2f8f7)}
-    .ai-head-title{font-weight:900;font-size:17px}.ai-head-note{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.35}.ai-head-actions{display:flex;gap:6px}
+    .ai-head{flex-wrap:wrap}.ai-head>div:first-child{flex:1 1 150px;min-width:0}.ai-head-title{overflow-wrap:anywhere;font-weight:900;font-size:17px}.ai-head-note{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.35}.ai-head-actions{display:flex;gap:6px;flex-shrink:0}
     .ai-messages{min-height:0;overflow:auto;overscroll-behavior:contain;padding:16px;scroll-padding-bottom:28px;display:grid;align-content:start;gap:11px;background:#fbfcfc}.ai-empty{display:grid;gap:12px;padding:4px 0}.ai-empty-title{font-weight:860;font-size:16px}.ai-empty-text{font-size:13px;color:var(--muted);line-height:1.5}
     .ai-suggestions{display:flex;gap:7px;flex-wrap:wrap}.ai-suggestion{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 10px;font-size:12px;font-weight:740;text-align:left}
     .ai-msg{display:grid;gap:5px;max-width:88%}.ai-msg.user{justify-self:end}.ai-msg.assistant{justify-self:start}.ai-bubble{overflow-wrap:anywhere;padding:10px 12px;border-radius:15px;font-size:13px;line-height:1.48;white-space:pre-wrap}
@@ -297,6 +299,7 @@
         <button class="navitem" data-scroll="listsPanel">Lists & Shopping</button>
         <button class="navitem" data-scroll="healthPanel">Health & Wellbeing</button>
         <button class="navitem" data-scroll="remindersPanel">Reminders & Tasks</button>
+        <button class="navitem" data-scroll="assistantSettings">Assistant</button>
         <button class="navitem" data-scroll="familyPanel">Family</button>
         <button class="navitem" data-scroll="familySettings">Settings</button>
       </nav>
@@ -590,6 +593,41 @@
         <div class="stat"><div class="label">Family</div><div id="statFamily" class="num">—</div><div class="hint">Open Brain household members</div></div>
       </section>
 
+      <section id="assistantSettings" class="panel">
+        <div class="panelhead"><div><h3>Your assistant</h3><div class="subtitle">Personal preferences and memory controls, private to your account.</div></div></div>
+        <div class="assistant-settings-grid">
+          <form id="assistantPreferencesForm" class="assistant-preferences-form">
+            <div id="assistantPreferencesStatus" class="setting-note" role="status">Loading your assistant settings…</div>
+            <div><label for="assistantName">Assistant name</label><input id="assistantName" maxlength="40" required value="Open Brain" disabled></div>
+            <div class="grid2"><div><label for="assistantTone">Tone</label><select id="assistantTone" disabled><option value="warm">Warm and practical</option><option value="direct">Direct</option><option value="neutral">Neutral</option></select></div><div><label for="assistantResponseLength">Response length</label><select id="assistantResponseLength" disabled><option value="concise">Concise</option><option value="balanced" selected>Balanced</option><option value="detailed">Detailed</option></select></div></div>
+            <label class="quiet-hours-toggle"><input id="assistantWorkingEnabled" type="checkbox" disabled> Use my usual working hours when planning</label>
+            <div id="assistantWorkingFields" class="assistant-working-fields">
+              <div class="grid2"><div><label for="assistantWorkStart">Start</label><input id="assistantWorkStart" type="time" value="09:00" required disabled></div><div><label for="assistantWorkEnd">End</label><input id="assistantWorkEnd" type="time" value="17:00" required disabled></div></div>
+              <fieldset class="assistant-work-days"><legend>Working days</legend><label><input type="checkbox" data-assistant-day="1" checked disabled>Mon</label><label><input type="checkbox" data-assistant-day="2" checked disabled>Tue</label><label><input type="checkbox" data-assistant-day="3" checked disabled>Wed</label><label><input type="checkbox" data-assistant-day="4" checked disabled>Thu</label><label><input type="checkbox" data-assistant-day="5" checked disabled>Fri</label><label><input type="checkbox" data-assistant-day="6" disabled>Sat</label><label><input type="checkbox" data-assistant-day="7" disabled>Sun</label></fieldset>
+              <div><label for="assistantTimezone">Working-hours time zone</label><input id="assistantTimezone" maxlength="80" value="America/Denver" required disabled></div>
+              <div class="setting-note">These guide planning answers. An end earlier than the start means an overnight shift starting on the selected days.</div>
+            </div>
+            <div><label for="assistantPlanningNotes">Planning preferences</label><textarea id="assistantPlanningNotes" maxlength="1500" placeholder="For example: suggest one realistic priority at a time, and keep Fridays light." disabled></textarea></div>
+            <label class="quiet-hours-toggle"><input id="assistantUseMemories" type="checkbox" checked disabled> Use saved memories in answers and briefs</label>
+            <div class="setting-note">Memory proposals are reviewed before saving. Health check-ins stay private and excluded from general AI.</div>
+            <div id="assistantPreferencesError" class="message err hidden" role="alert"></div>
+            <div class="controls"><button id="saveAssistantPreferences" class="primary" type="submit" disabled>Save assistant settings</button><button id="resetAssistantPreferences" class="ghost" type="button" disabled>Use defaults</button><button id="retryAssistantPreferences" class="ghost hidden" type="button">Retry loading</button></div>
+          </form>
+          <div>
+            <details id="assistantMemorySection" class="assistant-memory-section">
+              <summary>Review saved memories</summary>
+              <p class="history-private-note">Browse the saved memories your account can access. Edit or remove memories you created; shared memories from other people are read only. Archived memories are excluded from assistant answers.</p>
+              <div class="controls"><button id="addAssistantMemory" class="ghost" type="button">+ Memory</button><button id="refreshAssistantMemories" class="ghost" type="button">Refresh</button></div>
+              <form id="assistantMemorySearchForm" class="assistant-memory-search"><label for="assistantMemorySearch">Search saved text</label><input id="assistantMemorySearch" maxlength="200" placeholder="Find a preference, person, or remembered detail"><button class="ghost" type="submit">Search</button></form>
+              <label class="quiet-hours-toggle"><input id="assistantMemoryArchived" type="checkbox"> Include archived memories</label>
+              <div id="assistantMemoryStatus" class="setting-note" role="status">Open to load saved memories.</div><div id="assistantMemoryError" class="message err hidden" role="alert"></div>
+              <div id="assistantMemoryList" class="assistant-memory-list" aria-busy="false"></div><button id="moreAssistantMemories" class="ghost hidden" type="button">Load more memories</button>
+              <p class="history-private-note">Removing a saved memory resets the assistant conversation and briefs when devices next refresh. Information also saved in tasks, notes, or other sources is managed in those places.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
       <section id="familyPanel" class="panel">
         <div class="panelhead">
           <div>
@@ -606,7 +644,7 @@
           </div>
           <div id="familySettings" class="family-settings">
             <div class="family-settings-head">
-              <h4>Household settings</h4>
+              <h4>Household settings</h4><button class="ghost smallbtn" type="button" data-scroll="assistantSettings">Assistant preferences</button>
               <button id="editHouseholdSettings" class="ghost hidden" type="button">Edit</button>
             </div>
             <div class="setting-row">
@@ -725,6 +763,7 @@
           <button type="button" data-scroll="memoriesPanel">🧠 Memories</button>
           <button type="button" data-scroll="healthPanel">❤️ Health</button>
           <button type="button" data-scroll="familyPanel">👨‍👩‍👧‍👦 Family</button>
+          <button type="button" data-scroll="assistantSettings">✦ Assistant</button>
           <button type="button" data-scroll="familySettings">⚙️ Settings</button>
           <button id="mobileInstallApp" type="button">📲 Install app</button>
         </div>
@@ -1312,15 +1351,16 @@
     <div class="modalfoot"><button id="dismissInstallApp" class="primary" type="button">Got it</button></div>
   </dialog>
 
-  <button id="aiLauncher" class="ai-launcher" type="button" aria-label="Ask Open Brain AI"><span class="ai-star">✦</span><span>Ask Open Brain</span></button>
+  <button id="aiLauncher" class="ai-launcher" type="button" aria-label="Ask Open Brain AI"><span class="ai-star">✦</span><span id="assistantLauncherLabel">Ask Open Brain</span></button>
   <div id="aiBackdrop" class="ai-backdrop hidden"></div>
   <section id="aiPanel" class="ai-panel hidden" role="dialog" aria-modal="true" aria-label="Open Brain AI">
     <div class="ai-head">
       <div>
-        <div class="ai-head-title">✦ Open Brain AI</div>
+        <div id="assistantPanelTitle" class="ai-head-title">✦ Open Brain AI</div>
         <div class="ai-head-note">Uses only Open Brain information this signed-in account can access. Changes always require review.</div>
       </div>
       <div class="ai-head-actions">
+        <button id="openAssistantSettings" class="ghost smallbtn" type="button">Settings</button>
         <button id="clearAiChat" class="ghost smallbtn" type="button">Clear</button>
         <button id="closeAiPanel" class="ghost smallbtn" type="button">Close</button>
       </div>
@@ -1347,7 +1387,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], notificationPreferences:null,quietHoursLoaded:false,googleCalendarStatus:null, googleCalendars:[], googleEvents:[], googleCalendarBusy:false, goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], healthCheckins:[], healthCheckinPrefs:null, healthHistory:null, healthTrends:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], notificationPreferences:null,quietHoursLoaded:false,assistantPreferences:null,assistantPreferencesSaving:false,assistantMemoryRemoving:null,assistantPreferencesLoaded:false,assistantPreferencesDirty:false,assistantContextVersion:"",assistantMemoryControls:null,googleCalendarStatus:null, googleCalendars:[], googleEvents:[], googleCalendarBusy:false, goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], healthCheckins:[], healthCheckinPrefs:null, healthHistory:null, healthTrends:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
     let deferredInstallPrompt=null;
     let listRealtimeChannel=null;
     let listRealtimeTimer=null;
@@ -1425,6 +1465,175 @@
       if(!pushSupported())return null;
       const registration=await navigator.serviceWorker.ready;
       return registration.pushManager.getSubscription();
+    }
+
+    let assistantPreferencesRequest=0,assistantPreferencesPending=null,assistantContextEpoch=0,assistantMemoryRequest=0;
+    function assistantName(){return state.assistantPreferences?.assistant_name||"Open Brain";}
+    function assistantDefaults(){return {assistant_name:"Open Brain",tone:"warm",response_length:"balanced",planning_notes:"",working_hours_enabled:false,work_start:"09:00",work_end:"17:00",working_days:[1,2,3,4,5],timezone:state.household?.timezone||"America/Denver",use_saved_memories:true};}
+    function renderAssistantIdentity(){
+      const name=assistantName();
+      $("assistantLauncherLabel").textContent="Ask "+name;
+      $("aiLauncher").setAttribute("aria-label","Ask "+name);
+      $("assistantPanelTitle").textContent="✦ "+name;
+      $("aiPanel").setAttribute("aria-label",name+" assistant");
+    }
+    function assistantPreferenceControls(ready){
+      ready=ready&&!state.assistantPreferencesSaving;
+      $("assistantPreferencesForm").querySelectorAll("input,select,textarea,button").forEach(el=>el.disabled=!ready);
+      $("retryAssistantPreferences").disabled=false;
+      const working=ready&&$("assistantWorkingEnabled").checked;
+      $("assistantWorkingFields").querySelectorAll("input").forEach(el=>el.disabled=!working);
+    }
+    function fillAssistantPreferences(p){
+      $("assistantName").value=p.assistant_name;$("assistantTone").value=p.tone;$("assistantResponseLength").value=p.response_length;
+      $("assistantPlanningNotes").value=p.planning_notes;$("assistantWorkingEnabled").checked=p.working_hours_enabled;
+      $("assistantWorkStart").value=p.work_start;$("assistantWorkEnd").value=p.work_end;$("assistantTimezone").value=p.timezone;
+      document.querySelectorAll("[data-assistant-day]").forEach(el=>el.checked=p.working_days.includes(Number(el.dataset.assistantDay)));
+      $("assistantUseMemories").checked=p.use_saved_memories;
+    }
+    function pruneAssistantCaches(owner,version=null){
+      try{
+        const prefixes=["open-brain-ai-chat:"+owner,"open-brain-ai-today:"+owner,"open-brain-ai-week:"+owner];
+        for(const key of Object.keys(sessionStorage))if(prefixes.some(prefix=>key===prefix||key.startsWith(prefix+":")) && (!version||!key.endsWith(":"+version)))sessionStorage.removeItem(key);
+      }catch(_){}
+    }
+    function changeAssistantContext(version){
+      assistantContextEpoch++;
+      state.assistantContextVersion=version;
+      state.aiMessages=[];state.aiTodayBrief=null;state.aiWeekBrief=null;state.aiBusy=false;state.aiBriefBusy={today:false,week:false};$("aiUseCalendar").disabled=false;
+      pruneAssistantCaches(state.user.id,version);
+      renderAiMessages();renderAiBriefs();
+    }
+    function resetAssistantPersonalization(){
+      assistantPreferencesRequest++;assistantMemoryRequest++;assistantContextEpoch++;assistantPreferencesPending=null;
+      state.assistantPreferences=null;state.assistantPreferencesSaving=false;state.assistantMemoryRemoving=null;state.assistantPreferencesLoaded=false;state.assistantPreferencesDirty=false;state.assistantContextVersion="";state.assistantMemoryControls=null;
+      state.aiMessages=[];state.aiTodayBrief=null;state.aiWeekBrief=null;state.aiBusy=false;state.aiBriefBusy={today:false,week:false};
+      $("aiUseCalendar").disabled=false;$("assistantPreferencesForm").reset();assistantPreferenceControls(false);$("assistantMemorySection").open=false;$("assistantMemorySearchForm").reset();$("assistantMemoryArchived").checked=false;
+      $("assistantPreferencesStatus").textContent="Loading your assistant settings…";
+      $("assistantPreferencesError").textContent="";$("assistantPreferencesError").classList.add("hidden");$("retryAssistantPreferences").classList.add("hidden");
+      if($("memoryEditor").open)$("memoryEditor").close();
+      renderAssistantIdentity();renderAssistantMemories();renderAiMessages();renderAiBriefs();
+    }
+    function validAssistantProfile(p){
+      return p&&typeof p.assistant_name==="string"&&p.assistant_name.trim().length>0&&p.assistant_name.length<=40
+        &&["warm","direct","neutral"].includes(p.tone)&&["concise","balanced","detailed"].includes(p.response_length)
+        &&typeof p.planning_notes==="string"&&p.planning_notes.length<=1500&&typeof p.working_hours_enabled==="boolean"&&typeof p.use_saved_memories==="boolean"
+        &&Array.isArray(p.working_days)&&p.working_days.length>0&&p.working_days.length<=7&&new Set(p.working_days).size===p.working_days.length&&p.working_days.every(day=>Number.isInteger(day)&&day>=1&&day<=7)
+        &&/^([01]\d|2[0-3]):[0-5]\d$/.test(p.work_start||"")&&/^([01]\d|2[0-3]):[0-5]\d$/.test(p.work_end||"")
+        &&typeof p.timezone==="string"&&p.timezone.length>0&&p.timezone.length<=80;
+    }
+    async function loadAssistantPreferences(options={}){
+      const owner=state.user?.id;if(!owner)return false;
+      if(state.assistantPreferencesSaving&&!options.afterSave)return false;
+      if(assistantPreferencesPending)return assistantPreferencesPending;
+      const request=++assistantPreferencesRequest;
+      assistantPreferencesPending=(async()=>{
+        try{
+          const {data,error}=await sb.rpc("get_open_brain_assistant_preferences");
+          if(request!==assistantPreferencesRequest||state.user?.id!==owner)return false;
+          if(error||data?.owner_user_id!==owner||!/^[a-f0-9]{64}$/.test(data?.context_version||"")||!validAssistantProfile(data.profile))throw new Error("Settings could not be verified.");
+          if(state.assistantContextVersion!==data.context_version)changeAssistantContext(data.context_version);
+          state.assistantPreferences=data.profile;state.assistantPreferencesLoaded=true;
+          if(options.fillForm!==false || !state.assistantPreferencesDirty){fillAssistantPreferences(data.profile);state.assistantPreferencesDirty=false;}
+          $("assistantPreferencesStatus").textContent=state.assistantPreferencesDirty?"Unsaved changes—Save to apply them.":"Saved for your account · Saved memories "+(data.profile.use_saved_memories?"on":"paused");
+          $("assistantPreferencesError").classList.add("hidden");$("retryAssistantPreferences").classList.add("hidden");
+          assistantPreferenceControls(true);renderAssistantIdentity();return true;
+        }catch(_){
+          if(request!==assistantPreferencesRequest||state.user?.id!==owner)return false;
+          state.assistantPreferencesLoaded=false;changeAssistantContext("");assistantPreferenceControls(false);
+          $("assistantPreferencesStatus").textContent="Assistant settings could not be loaded.";
+          $("assistantPreferencesError").textContent="Your saved settings have not been replaced. Retry loading before making changes.";
+          $("assistantPreferencesError").classList.remove("hidden");$("retryAssistantPreferences").classList.remove("hidden");return false;
+        }finally{if(request===assistantPreferencesRequest)assistantPreferencesPending=null;}
+      })();
+      return assistantPreferencesPending;
+    }
+    async function initializeAssistantSettings(){
+      const owner=state.user?.id;
+      if(!await loadAssistantPreferences()||state.user?.id!==owner)return;
+      loadAiChatSession();renderAiMessages();
+      await initializeAiBriefs();
+    }
+    async function saveAssistantPreferences(event){
+      event.preventDefault();if(!state.assistantPreferencesLoaded||state.assistantPreferencesSaving)return;
+      const owner=state.user.id;
+      state.assistantPreferencesSaving=true;assistantPreferenceControls(false);
+      if(assistantPreferencesPending)await assistantPreferencesPending;
+      if(state.user?.id!==owner)return;
+      $("assistantPreferencesError").classList.add("hidden");
+      try{
+        const name=$("assistantName").value.trim(),enabled=$("assistantWorkingEnabled").checked;
+        const days=[...document.querySelectorAll("[data-assistant-day]:checked")].map(el=>Number(el.dataset.assistantDay));
+        const start=$("assistantWorkStart").value||"09:00",end=$("assistantWorkEnd").value||"17:00";
+        let timezone=$("assistantTimezone").value.trim()||"America/Denver";
+        if(!name||name.length>40)throw new Error("Choose an assistant name from 1 to 40 characters.");
+        if(enabled&&(!days.length||start===end))throw new Error("Choose working days and different start/end times.");
+        try{timezone=new Intl.DateTimeFormat(undefined,{timeZone:timezone}).resolvedOptions().timeZone;}catch{throw new Error("Choose a valid time zone, such as America/Denver.");}
+        const payload={owner_user_id:owner,assistant_name:name,tone:$("assistantTone").value,response_length:$("assistantResponseLength").value,planning_notes:$("assistantPlanningNotes").value.trim(),working_hours_enabled:enabled,work_start:start,work_end:end,working_days:days.length?days:[1,2,3,4,5],timezone,use_saved_memories:$("assistantUseMemories").checked};
+        assistantPreferenceControls(false);
+        const {data,error}=await sb.from("assistant_preferences").upsert(payload,{onConflict:"owner_user_id"}).select("owner_user_id").single();
+        if(state.user?.id!==owner)return;
+        if(error||data?.owner_user_id!==owner)throw new Error(error?.message||"The saved settings could not be confirmed.");
+        state.assistantPreferencesDirty=false;
+        if(!await loadAssistantPreferences({afterSave:true})){$("assistantPreferencesError").textContent="Settings were saved, but the assistant could not refresh them. Retry loading before continuing.";return;}
+        toast("Assistant settings saved. Your conversation and briefs now use the current settings.");
+      }catch(err){
+        if(state.user?.id!==owner)return;
+        $("assistantPreferencesError").textContent=err?.message||"Assistant settings could not be saved. Your entries are still here.";$("assistantPreferencesError").classList.remove("hidden");
+      }finally{if(state.user?.id===owner){state.assistantPreferencesSaving=false;assistantPreferenceControls(state.assistantPreferencesLoaded);}}
+    }
+    function renderAssistantMemories(){
+      const h=state.assistantMemoryControls;
+      $("assistantMemoryList").setAttribute("aria-busy",String(!!h?.loading));
+      $("assistantMemorySearchForm").querySelectorAll("input,button").forEach(el=>el.disabled=!!h?.loading);
+      $("assistantMemoryArchived").disabled=!!h?.loading;$("refreshAssistantMemories").disabled=!!h?.loading;$("moreAssistantMemories").disabled=!!h?.loading;
+      $("moreAssistantMemories").classList.toggle("hidden",!h?.hasMore);
+      $("assistantMemoryError").textContent=h?.error||"";$("assistantMemoryError").classList.toggle("hidden",!h?.error);
+      $("assistantMemoryStatus").textContent=h?.loading?"Loading saved memories…":h?.error?"Could not load memories. Use Refresh to retry.":!h?.loaded?"Open to load saved memories.":h.rows.length?"Showing "+h.rows.length+" accessible saved memories"+(h.hasMore?". More are available.":"."):"No saved memories match these choices.";
+      $("assistantMemoryList").innerHTML=(h?.rows||[]).map(memory=>{
+        const mine=memory.created_by===state.user.id;
+        return '<article class="memory-card"><div><span class="memory-chip '+esc(memory.visibility)+'">'+esc(memory.visibility)+'</span>'+(memory.archived_at?' <span class="memory-chip archived">Archived · not used</span>':"")+'</div><div class="memory-date">'+esc(memoryOwnerName(memory.created_by))+'</div><div class="assistant-memory-text" tabindex="0">'+esc(memory.content)+'</div>'+(mine?'<div class="controls"><button class="ghost smallbtn" type="button" data-assistant-memory-edit="'+esc(memory.id)+'">Edit</button><button class="ghost smallbtn" type="button" data-assistant-memory-remove="'+esc(memory.id)+'">Remove saved memory</button></div>':'<div class="setting-note">Shared by another person · read only</div>')+'</article>';
+      }).join("");
+    }
+    async function loadAssistantMemories(reset=true){
+      const owner=state.user?.id;if(!owner)return;
+      if(!state.assistantMemoryControls||state.assistantMemoryControls.owner!==owner)state.assistantMemoryControls={owner,rows:[],cursor:null,loaded:false,loading:false,hasMore:false,error:""};
+      const h=state.assistantMemoryControls;if(h.loading&&!reset)return;
+      if(reset){h.rows=[];h.cursor=null;h.hasMore=false;h.loaded=false;h.search=$("assistantMemorySearch").value.trim();h.includeArchived=$("assistantMemoryArchived").checked;}
+      const request=++assistantMemoryRequest;h.loading=true;h.error="";renderAssistantMemories();
+      try{
+        let query=sb.from("thoughts").select("id,content,metadata,visibility,created_by,created_at,updated_at,archived_at").eq("household_id",state.member.household_id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(21);
+        if(!h.includeArchived)query=query.is("archived_at",null);
+        const search=h.search;if(search)query=query.ilike("content","%"+search.replace(/[\\%_]/g,"\\$&")+"%");
+        if(h.cursor)query=query.or("created_at.lt."+h.cursor.created_at+",and(created_at.eq."+h.cursor.created_at+",id.lt."+h.cursor.id+")");
+        const {data,error}=await query;
+        if(request!==assistantMemoryRequest||state.user?.id!==owner||state.assistantMemoryControls!==h)return;
+        if(error||!Array.isArray(data))throw new Error("Memory read failed");
+        const page=data.slice(0,20);h.rows=[...h.rows,...page.filter(row=>!h.rows.some(old=>old.id===row.id))];h.cursor=page.at(-1)||h.cursor;h.hasMore=data.length>20;h.loaded=true;
+      }catch(_){if(request===assistantMemoryRequest&&state.user?.id===owner)h.error="Saved memories could not be loaded. Your records have not changed.";}
+      finally{if(request===assistantMemoryRequest&&state.user?.id===owner&&state.assistantMemoryControls===h){h.loading=false;renderAssistantMemories();}}
+    }
+    async function afterMemoryMutation(){
+      const owner=state.user?.id;
+      pruneAssistantCaches(owner);assistantContextEpoch++;state.aiMessages=[];state.aiTodayBrief=null;state.aiWeekBrief=null;state.aiBusy=false;state.aiBriefBusy={today:false,week:false};$("aiUseCalendar").disabled=false;renderAiMessages();renderAiBriefs();
+      await loadAssistantPreferences({fillForm:false});
+      if(state.user?.id===owner&&$("assistantMemorySection").open)await loadAssistantMemories(true);
+    }
+    async function removeAssistantMemory(id){
+      const owner=state.user?.id,memory=state.assistantMemoryControls?.rows.find(row=>row.id===id);
+      if(!memory||memory.created_by!==owner||state.assistantMemoryRemoving)return;
+      if(!confirm("Remove this saved memory? This also resets assistant conversation and brief caches when your devices refresh. Other source records are managed separately."))return;
+      state.assistantMemoryRemoving=id;
+      $("assistantMemoryList").querySelectorAll("button").forEach(button=>button.disabled=true);
+      try{
+        const {data,error}=await sb.from("thoughts").delete().eq("id",id).eq("created_by",owner).select("id").single();
+        if(state.user?.id!==owner)return;
+        if(error||data?.id!==id)throw new Error(error?.message||"The memory removal could not be confirmed.");
+        state.semanticMemories=null;await afterMemoryMutation();
+        if(state.user?.id!==owner)return;
+        await loadData();if(state.user?.id!==owner)return;renderAll();toast("Saved memory removed.");
+      }catch(err){if(state.user?.id===owner)toast(err?.message||"Unable to remove the saved memory.",true);}
+      finally{if(state.user?.id===owner){state.assistantMemoryRemoving=null;renderAssistantMemories();}}
     }
 
     function quietHoursControls(loaded){
@@ -1810,7 +2019,6 @@
       $("roleText").textContent=roleLabel(state.member.role);
       $("avatar").textContent=initials(state.member.display_name);
       $("timezoneNote").textContent="Times shown in "+Intl.DateTimeFormat().resolvedOptions().timeZone+".";
-      loadAiChatSession();
       renderAll();
       renderAiMessages();
       renderAiBriefs();
@@ -1820,7 +2028,7 @@
       handleGoogleCalendarReturn();
       loadGoogleCalendarIntegration().catch(err=>console.warn("Google Calendar initialization failed:",err));
       loadQuietHoursPreferences();
-      initializeAiBriefs().catch(err=>console.warn("AI brief initialization failed:",err));
+      initializeAssistantSettings().catch(()=>{});
     }
 
     async function loadData(){
@@ -2105,11 +2313,11 @@
     }
 
     function aiBriefStorageKey(kind){
-      if(!state.user?.id)return "";
+      if(!state.user?.id||!state.assistantContextVersion)return "";
       const now=new Date();
       const dateKey=localDayKey(now);
       const weekKey=dateOnlyLocal(startOfWeek(now));
-      return "open-brain-ai-"+kind+":"+state.user.id+":"+(kind==="today"?dateKey:weekKey);
+      return "open-brain-ai-"+kind+":"+state.user.id+":"+(kind==="today"?dateKey:weekKey)+":"+state.assistantContextVersion;
     }
 
     function loadAiBriefCache(kind){
@@ -2148,39 +2356,25 @@
 
     async function generateAiBrief(kind,force=false){
       if(!["today","week"].includes(kind)||state.aiBriefBusy[kind])return;
-      if(!force){
-        const cached=loadAiBriefCache(kind);
-        if(cached){
-          if(kind==="today")state.aiTodayBrief=cached;else state.aiWeekBrief=cached;
-          renderAiBriefs();return;
-        }
-      }
-
+      const owner=state.user?.id;if(!owner)return;
+      if(!await loadAssistantPreferences({fillForm:false})||state.user?.id!==owner)return;
+      const epoch=assistantContextEpoch,version=state.assistantContextVersion;
+      if(!force){const cached=loadAiBriefCache(kind);if(cached){if(kind==="today")state.aiTodayBrief=cached;else state.aiWeekBrief=cached;renderAiBriefs();return;}}
       const prompt=kind==="today"
         ?"Create my concise Open Brain brief for today. In 3 to 5 short lines, tell me what matters most from my tasks, overdue items, family events, habits, weekly priorities, and active goal. Be practical and calm. This is a summary only: return no proposed actions."
         :"Create a concise Open Brain planning perspective for this week. In 4 to 6 short lines, summarize my weekly priorities, task load, overdue items, family events, habits or goal anchor, and one realistic focus suggestion. This is a summary only: return no proposed actions.";
-
       state.aiBriefBusy[kind]=true;renderAiBriefs();
       try{
-        const {data,error}=await sb.functions.invoke("open-brain-assistant",{body:{
-          message:prompt,
-          history:[],
-          page_context:{section_id:kind==="today"?"todayHome":"week",section_label:kind==="today"?"Today brief":"Weekly perspective",summary_kind:kind},
-          skip_memory_search:true
-        }});
-        if(error)throw error;
-        if(data?.error)throw new Error(data.error);
+        const data=await assistantRequest({message:prompt,history:[],context_version:version,page_context:{section_id:kind==="today"?"todayHome":"week",section_label:kind==="today"?"Today brief":"Weekly perspective",summary_kind:kind},skip_memory_search:true});
+        if(state.user?.id!==owner||epoch!==assistantContextEpoch)return;
+        if(data?.context_version!==version){await loadAssistantPreferences({fillForm:false});return;}
         const result={text:String(data?.answer||"").trim(),generated_at:new Date().toISOString()};
-        if(!result.text)throw new Error("Open Brain returned an empty brief.");
-        if(kind==="today")state.aiTodayBrief=result;else state.aiWeekBrief=result;
-        saveAiBriefCache(kind,result);
-      }catch(err){
-        console.warn("Open Brain AI brief failed:",err);
-        const fallback={text:"I couldn't prepare this AI summary right now. You can refresh it anytime.",generated_at:null};
-        if(kind==="today")state.aiTodayBrief=fallback;else state.aiWeekBrief=fallback;
-      }finally{
-        state.aiBriefBusy[kind]=false;renderAiBriefs();
-      }
+        if(!result.text)throw new Error("Empty brief");
+        if(kind==="today")state.aiTodayBrief=result;else state.aiWeekBrief=result;saveAiBriefCache(kind,result);
+      }catch(_){
+        if(state.user?.id!==owner||epoch!==assistantContextEpoch)return;
+        const fallback={text:"I couldn't prepare this summary right now. You can refresh it anytime.",generated_at:null};if(kind==="today")state.aiTodayBrief=fallback;else state.aiWeekBrief=fallback;
+      }finally{if(state.user?.id===owner&&epoch===assistantContextEpoch){state.aiBriefBusy[kind]=false;renderAiBriefs();}}
     }
 
     async function initializeAiBriefs(){
@@ -2223,7 +2417,7 @@
     }
 
     function aiChatStorageKey(){
-      return state.user?.id ? "open-brain-ai-chat:"+state.user.id : "";
+      return state.user?.id&&state.assistantContextVersion ? "open-brain-ai-chat:"+state.user.id+":"+state.assistantContextVersion : "";
     }
 
     function saveAiChatSession(){
@@ -2331,13 +2525,14 @@
         return '<div class="ai-msg '+(m.role==="user"?"user":"assistant")+'"><div class="ai-bubble">'+esc(m.content)+'</div>'+calendarNote+proposalNote+actionHtml+'</div>';
       }).join("");
       if(state.aiBusy){
-        html+='<div class="ai-thinking"><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span><span>Open Brain is thinking…</span></div>';
+        html+='<div class="ai-thinking"><span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span><span>'+esc(assistantName())+' is thinking…</span></div>';
       }
       box.innerHTML=html;
       scrollAiToBottom();
     }
 
     function openAiPanel(){
+      const owner=state.user?.id;loadAssistantPreferences({fillForm:false}).then(ready=>{if(ready&&state.user?.id===owner&&!state.aiBusy&&!state.aiMessages.length){loadAiChatSession();renderAiMessages();}});
       $("aiPanel").classList.remove("hidden");
       $("aiBackdrop").classList.remove("hidden");
       renderAiMessages();
@@ -2368,63 +2563,44 @@
       return false;
     }
 
+    async function assistantRequest(body){
+      const {data,error}=await sb.functions.invoke("open-brain-assistant",{body});
+      if(error){
+        let details=null;try{details=await error.context?.json?.();}catch(_){}
+        if(details?.context_reset)await loadAssistantPreferences({fillForm:false});
+        throw new Error(details?.error||error.message||"Assistant request failed.");
+      }
+      if(data?.error)throw new Error(data.error);
+      return data;
+    }
     async function sendAiMessage(textOverride=null){
       if(state.aiBusy)return;
-      const input=$("aiInput");
-      const message=String(textOverride??input.value).trim();
-      if(!message)return;
-
-      const useCalendar=$("aiUseCalendar").checked===true;
-      $("aiUseCalendar").checked=false;
-      $("aiUseCalendar").disabled=true;
-      const history=state.aiMessages.filter(m=>m.source!=="google_calendar").slice(-10).map(m=>({
-        role:m.role,
-        content:m.content,
-        actions:Array.isArray(m.actions)?m.actions:(m.action?[m.action]:[])
-      }));
-      state.aiMessages.push({role:"user",content:message,actions:[],source:useCalendar?"google_calendar":"openbrain"});
-      saveAiChatSession();
-      input.value="";
-      state.aiBusy=true;
-      renderAiMessages();
-
+      const input=$("aiInput"),message=String(textOverride??input.value).trim(),owner=state.user?.id;
+      if(!message||!owner)return;
+      const useCalendar=$("aiUseCalendar").checked===true;$("aiUseCalendar").checked=false;$("aiUseCalendar").disabled=true;
+      state.aiBusy=true;renderAiMessages();
+      let epoch=assistantContextEpoch;
       try{
-        const {data,error}=await sb.functions.invoke("open-brain-assistant",{body:{
-          message,
-          history:useCalendar?[]:history,
-          use_google_calendar:useCalendar,
-          page_context:aiPageContext()
-        }});
-        if(error)throw error;
-        if(data?.error)throw new Error(data.error);
+        if(!await loadAssistantPreferences({fillForm:false})||state.user?.id!==owner)throw new Error("Assistant settings are not ready. Please retry loading them.");
+        epoch=assistantContextEpoch;const version=state.assistantContextVersion;state.aiBusy=true;
+        const history=state.aiMessages.filter(m=>m.source!=="google_calendar").slice(-10).map(m=>({role:m.role,content:m.content,actions:Array.isArray(m.actions)?m.actions:(m.action?[m.action]:[])}));
+        state.aiMessages.push({role:"user",content:message,actions:[],source:useCalendar?"google_calendar":"openbrain"});saveAiChatSession();input.value="";renderAiMessages();
+        const data=await assistantRequest({message,history:useCalendar?[]:history,use_google_calendar:useCalendar,context_version:version,page_context:aiPageContext()});
+        if(state.user?.id!==owner||epoch!==assistantContextEpoch)return;
         if(useCalendar&&data?.source!=="google_calendar")throw new Error("Calendar questions are not available on this server version yet.");
-        const responseActions=useCalendar?[]:normalizeAiActionsForDisplay(
-          Array.isArray(data?.actions)?data.actions:(data?.action?[data.action]:[])
-        );
-        const revised=data?.replace_previous_actions===true&&responseActions.length>0;
-        if(revised)retireLastAiProposal();
-        state.aiMessages.push({
-          role:"assistant",
-          content:data?.answer||"I couldn't form an answer.",
-          actions:responseActions,
-          proposalUpdated:revised,
-          proposalSuperseded:false,
-          source:useCalendar?"google_calendar":"openbrain"
-        });
-        saveAiChatSession();
+        if(!useCalendar && data?.context_version!==version){
+          if(!await loadAssistantPreferences({fillForm:false})||state.assistantContextVersion!==data?.context_version)throw new Error("Assistant context changed. Please ask again.");
+          epoch=assistantContextEpoch;
+          state.aiMessages=[{role:"user",content:message,actions:[],source:"openbrain"}];
+        }
+        const responseActions=useCalendar?[]:normalizeAiActionsForDisplay(Array.isArray(data?.actions)?data.actions:(data?.action?[data.action]:[]));
+        const revised=data?.replace_previous_actions===true&&responseActions.length>0;if(revised)retireLastAiProposal();
+        state.aiMessages.push({role:"assistant",content:data?.answer||"I couldn't form an answer.",actions:responseActions,proposalUpdated:revised,proposalSuperseded:false,source:useCalendar?"google_calendar":"openbrain"});saveAiChatSession();
       }catch(err){
-        state.aiMessages.push({
-          role:"assistant",
-          content:useCalendar?"I couldn't check your calendar just now. I haven't confirmed your availability.":"I couldn't reach Open Brain AI just now. Your Open Brain data was not changed.",
-          actions:[],source:useCalendar?"google_calendar":"openbrain"
-        });
-        saveAiChatSession();
-        console.warn("Open Brain AI request failed:",err);
-      }finally{
-        state.aiBusy=false;
-        $("aiUseCalendar").disabled=false;
-        renderAiMessages();
-      }
+        if(state.user?.id!==owner)return;
+        if(epoch!==assistantContextEpoch){input.value=message;toast("Assistant settings or memories changed. Please send your question again.",true);return;}
+        state.aiMessages.push({role:"assistant",content:useCalendar?"I couldn't check your calendar just now. I haven't confirmed your availability.":"I couldn't reach your assistant with verified settings. Retry loading settings or send your question again.",actions:[],source:useCalendar?"google_calendar":"openbrain"});saveAiChatSession();
+      }finally{if(state.user?.id===owner&&epoch===assistantContextEpoch){state.aiBusy=false;$("aiUseCalendar").disabled=false;renderAiMessages();}}
     }
 
     function aiSetTaskProposal(payload){
@@ -2571,6 +2747,7 @@
       $("statRecurring").textContent=active.filter(t=>t.recurrence_rule).length;
       $("statPaused").textContent=state.tasks.filter(t=>t.status==="paused").length;
       $("statFamily").textContent=state.members.length;
+      renderAssistantIdentity();
       renderToday();
       renderHabits();
       renderMemories();
@@ -3124,7 +3301,7 @@
     }
 
     let healthTrendsRequest=0,taskSlotsRequest=0,taskSlotDraft=null;
-    function clearPrivateViews(){resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
+    function clearPrivateViews(){resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
     function resetHealthTrends(){
       healthTrendsRequest++;state.healthTrends=null;
       $("healthTrendsSection").open=false;$("healthTrendPeriod").value="7";
@@ -4167,7 +4344,7 @@
         state.semanticMemories=null;
         state.memorySearch="";
         $("memorySearch").value="";
-        await loadData();renderAll();toast(id?"Memory updated.":"Memory saved.");
+        await loadData();renderAll();await afterMemoryMutation();toast(id?"Memory updated.":"Memory saved.");
       }catch(err){toast(err?.message||"Unable to save memory.",true);}
     }
 
@@ -4191,22 +4368,26 @@
     }
 
     async function setMemoryArchived(id,archived){
-      const {error}=await sb.from("thoughts").update({archived_at:archived?new Date().toISOString():null,updated_at:new Date().toISOString()}).eq("id",id);
-      if(error){toast(error.message,true);return;}
+      const owner=state.user.id;
+      const {data,error}=await sb.from("thoughts").update({archived_at:archived?new Date().toISOString():null,updated_at:new Date().toISOString()}).eq("id",id).eq("created_by",owner).select("id").single();
+      if(state.user?.id!==owner)return;
+      if(error||data?.id!==id){toast(error?.message||"The memory change could not be confirmed.",true);return;}
       state.semanticMemories=null;
-      await loadData();renderAll();toast(archived?"Memory archived.":"Memory restored.");
+      await loadData();renderAll();await afterMemoryMutation();toast(archived?"Memory archived.":"Memory restored.");
     }
 
     async function deleteCurrentMemory(){
       const id=$("memoryId").value;if(!id)return;
-      const memory=state.memories.find(m=>m.id===id);
+      const memory=state.memories.find(m=>m.id===id)||state.assistantMemoryControls?.rows.find(m=>m.id===id);
       if(!memory||memory.created_by!==state.user.id)return;
       if(!confirm("Permanently delete this memory? This cannot be undone."))return;
-      const {error}=await sb.from("thoughts").delete().eq("id",id);
-      if(error){toast(error.message,true);return;}
+      const owner=state.user.id;
+      const {data,error}=await sb.from("thoughts").delete().eq("id",id).eq("created_by",owner).select("id").single();
+      if(state.user?.id!==owner)return;
+      if(error||data?.id!==id){toast(error?.message||"The memory removal could not be confirmed.",true);return;}
       $("memoryEditor").close();
       state.semanticMemories=null;
-      await loadData();renderAll();toast("Memory deleted.");
+      await loadData();renderAll();await afterMemoryMutation();toast("Memory deleted.");
     }
 
     function householdDateKey(date=new Date()){
@@ -4676,7 +4857,7 @@
         const {data,error}=await sb.functions.invoke("capture-inbox-memory",{body:{content:item.content}});
         if(error) throw error;
         await finishInbox(item,"memory",data?.id||null);
-        toast("Saved as a private searchable Open Brain memory.");
+        await afterMemoryMutation();toast("Saved as a private searchable Open Brain memory.");
       }catch(err){toast(err?.message||"Unable to save memory.",true);}
     }
 
@@ -5243,6 +5424,19 @@
     $("refreshAiWeekBrief").addEventListener("click",()=>generateAiBrief("week",true));
     $("closeAiPanel").addEventListener("click",closeAiPanel);
     $("aiBackdrop").addEventListener("click",closeAiPanel);
+    $("openAssistantSettings").addEventListener("click",()=>{closeAiPanel();$("assistantSettings").scrollIntoView({behavior:"smooth",block:"start"});});
+    $("assistantPreferencesForm").addEventListener("submit",saveAssistantPreferences);
+    $("assistantPreferencesForm").addEventListener("input",()=>{state.assistantPreferencesDirty=true;$("assistantPreferencesStatus").textContent="Unsaved changes—Save to apply them.";assistantPreferenceControls(state.assistantPreferencesLoaded);});
+    $("retryAssistantPreferences").addEventListener("click",()=>loadAssistantPreferences());
+    $("resetAssistantPreferences").addEventListener("click",()=>{fillAssistantPreferences(assistantDefaults());state.assistantPreferencesDirty=true;assistantPreferenceControls(true);$("assistantPreferencesStatus").textContent="Default choices are ready. Save to apply them.";});
+    $("assistantMemorySection").addEventListener("toggle",()=>{if($("assistantMemorySection").open&&!state.assistantMemoryControls?.loaded)loadAssistantMemories(true);});
+    $("assistantMemorySearchForm").addEventListener("submit",e=>{e.preventDefault();loadAssistantMemories(true);});
+    $("assistantMemoryArchived").addEventListener("change",()=>loadAssistantMemories(true));
+    $("refreshAssistantMemories").addEventListener("click",()=>loadAssistantMemories(true));
+    $("moreAssistantMemories").addEventListener("click",()=>loadAssistantMemories(false));
+    $("addAssistantMemory").addEventListener("click",()=>openMemoryEditor());
+    $("assistantMemoryList").addEventListener("click",e=>{const edit=e.target.closest("[data-assistant-memory-edit]"),remove=e.target.closest("[data-assistant-memory-remove]");if(edit){const memory=state.assistantMemoryControls?.rows.find(m=>m.id===edit.dataset.assistantMemoryEdit);if(memory?.created_by===state.user.id)openMemoryEditor(memory);}if(remove)removeAssistantMemory(remove.dataset.assistantMemoryRemove);});
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden&&state.user&&state.assistantPreferencesLoaded&&!state.aiBusy)loadAssistantPreferences({fillForm:false});});
     $("clearAiChat").addEventListener("click",()=>{clearAiChatSession();$("aiInput").focus();});
     $("aiForm").addEventListener("submit",e=>{e.preventDefault();sendAiMessage();});
     $("aiInput").addEventListener("keydown",e=>{
@@ -5543,7 +5737,7 @@
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=24-recent-entries",
+          "/openbrain-oauth-ui/sw.js?v=25-assistant-preferences",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

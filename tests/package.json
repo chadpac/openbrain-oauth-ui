@@ -1,5 +1,5 @@
 {
   "private": true,
-  "scripts": {"test:planning": "node --test planning.test.cjs", "test:reminders": "node --test reminder-reliability.test.cjs quiet-hours.test.cjs"},
+  "scripts": {"test:assistant": "node --test assistant-preferences.test.cjs calendar-questions.test.cjs", "test:planning": "node --test planning.test.cjs", "test:reminders": "node --test reminder-reliability.test.cjs quiet-hours.test.cjs"},
   "devDependencies": {"@electric-sql/pglite": "0.5.16"}
 }

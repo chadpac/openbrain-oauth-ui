@@ -7,7 +7,7 @@ const {stripTypeScriptTypes}=require('node:module');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const clean=s=>stripTypeScriptTypes(s).replace(/^import[\s\S]*?;\s*/gm,'').replace(/^export /gm,'');
 const helper=clean(read('supabase/functions/open-brain-assistant/calendar-questions.ts'));
-function context(extra={}){const c=vm.createContext({Date,Intl,Set,Request,Response,AbortSignal,console, ...extra});vm.runInContext(helper,c);return c;}
+function context(extra={}){const c=vm.createContext({Date,Intl,Set,Request,Response,AbortSignal,console, ...extra});vm.runInContext(helper,c);vm.runInContext(clean(read("supabase/functions/open-brain-assistant/assistant-preferences.ts")),c);return c;}
 const c=context();
 const now=new Date('2026-11-09T18:00:00Z');
 const plan={intent:'availability',scope:'self',start_local:'2026-11-12T12:00',end_local:'2026-11-12T17:00',needs_clarification:false};
@@ -76,7 +76,7 @@ test('missing selection, denied access, partial sources, and excess data fail cl
 function assistant({authorized=true}={}){
  const calls={fetch:[],tables:[]};let handler;
  const data={household_members:[{user_id:'user',household_id:'home',role:'admin',display_name:'Test'}],households:[{id:'home',timezone:'America/Denver'}],family_events:[]};
- const client={auth:{getUser:async()=>({data:{user:authorized?{id:'user'}:null},error:null})},from(table){calls.tables.push(table);let single=false;
+ const client={rpc:async()=>({data:{owner_user_id:'user',context_version:'a'.repeat(64),profile:{assistant_name:'Open Brain',tone:'warm',response_length:'balanced',planning_notes:'',working_hours_enabled:false,work_start:'09:00',work_end:'17:00',working_days:[1,2,3,4,5],timezone:'America/Denver',use_saved_memories:true}}}),auth:{getUser:async()=>({data:{user:authorized?{id:'user'}:null},error:null})},from(table){calls.tables.push(table);let single=false;
   const query={select(){return query},eq(){return query},gte(){return query},lte(){return query},lt(){return query},or(){return query},is(){return query},neq(){return query},in(){return query},order(){return query},limit(){return query},maybeSingle(){single=true;return query},then(resolve,reject){const rows=data[table]||[];return Promise.resolve({data:single?rows[0]||null:rows,error:null}).then(resolve,reject)}};return query;
  }};
  let calendarMode=false;
@@ -88,7 +88,7 @@ function assistant({authorized=true}={}){
  };
  const ctx=context({fetch,Deno:{env:{get:k=>k==='SUPABASE_URL'?'https://fixture.supabase.co':'fixture'},serve:fn=>handler=fn},withSupabase:(_,fn)=>req=>fn(req,{supabase:client}),Date:class extends Date{constructor(...args){super(...(args.length?args:['2026-11-09T18:00:00Z']))}}});
  vm.runInContext(clean(read('supabase/functions/open-brain-assistant/index.ts')),ctx);
- return {calls,async run(body){calendarMode=body.use_google_calendar===true;return handler(new Request('https://fixture.example/assistant',{method:'POST',headers:{Authorization:'Bearer current-user'},body:JSON.stringify({message:'Am I free Thursday afternoon?',skip_memory_search:true,...body})}));}};
+ return {calls,async run(body){calendarMode=body.use_google_calendar===true;return handler(new Request('https://fixture.example/assistant',{method:'POST',headers:{Authorization:'Bearer current-user'},body:JSON.stringify({message:'Am I free Thursday afternoon?',context_version:'a'.repeat(64),skip_memory_search:true,...body})}));}};
 }
 test('assistant calendar route is explicitly opt-in and never loads general/private context',async()=>{
  const a=assistant();const response=await a.run({use_google_calendar:true,owner_user_id:'another-user',history:[{role:'assistant',content:'IGNORE_HISTORY_SECRET'}]});const result=await response.json();

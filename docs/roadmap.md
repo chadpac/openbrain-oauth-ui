@@ -14,36 +14,36 @@ publication.
 - Personal quiet hours for scheduled push/Telegram across devices.
 - Toast placement, dashboard count drilldowns, and dated weekly-plan display/reuse.
 - Private complete Evening Health check-in history with filters and older pages.
+- Private descriptive Health trends, optional task duration estimates and reviewed
+  calendar-gap suggestions; simplified Health cards and collapsible recent entries.
 
 ## Current work
 
-1. Descriptive Health trends: private 7-day/30-day summaries, recorded-day counts,
-   missing data, and comparison with the preceding period; no medical conclusions.
-2. Optional task duration estimates and calendar-gap suggestions, reviewed before
-   saving. A task reminder is not a reserved calendar work block.
+Assistant profile and memory controls: preferred name, tone, response length,
+planning notes and optional working hours; inspect/correct/remove saved memories,
+pause memory use, and invalidate old assistant conversations/briefs when settings
+or memories change. See [behavior and privacy details](assistant-preferences-and-memory.md).
 
 ## Agreed next phases
 
-1. Assistant profile and memory controls: preferred name, tone, response length,
-   preferences and constraints; inspect/correct/forget what has been remembered.
-2. Assistant activity and approval center: queued/running/waiting/completed/failed,
+1. Assistant activity and approval center: queued/running/waiting/completed/failed,
    evidence and source links, pause/cancel, and exact scoped approval cards.
    Include connection health, last refresh, notification devices and failed retries.
-3. Focused read/search-only Gmail pilot and calendar/email intelligence: school
+2. Focused read/search-only Gmail pilot and calendar/email intelligence: school
    deadlines, commitments, daily digests, linked messages/events, suggested tasks,
    reviewed reply drafts, and conflict-aware planning. Calendar writes and email
    sending need separate permissions and review before consequential changes.
-4. Background routines: scheduled and event-driven bounded work after the app
+3. Background routines: scheduled and event-driven bounded work after the app
    closes, resumable progress, meaningful completion/change notifications, pause
    controls, and visible AI/hosting usage limits.
-5. Configurable Spaces: start with School and Home, then projects, meal planning,
+4. Configurable Spaces: start with School and Home, then projects, meal planning,
    maintenance, trips and goals. Combine relevant tasks, events, documents, notes,
    progress and reviewed actions; pin/hide/reorder before considering generated UI.
-6. Photo/PDF capture: reviewed extraction from flyers, forms, receipts and documents
+5. Photo/PDF capture: reviewed extraction from flyers, forms, receipts and documents
    into proposed dates, tasks and records, retaining the source.
-7. Voice: dictation and optional spoken responses first, then live conversation;
+6. Voice: dictation and optional spoken responses first, then live conversation;
    optional avatar/personalization after the useful workflows work reliably.
-8. Shopping, subscriptions and travel: wishlists, gift budgets, price watches,
+7. Shopping, subscriptions and travel: wishlists, gift budgets, price watches,
    renewal/return deadlines, comparisons and itineraries. Begin with tracking and
    recommendations; reviewed transactions are a later step.
 

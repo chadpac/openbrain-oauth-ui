@@ -147,6 +147,8 @@
     #healthHistoryDetail{max-height:calc(100dvh - 28px)}#healthHistoryDetail[open]{display:flex;flex-direction:column}#healthHistoryDetail .modalbody{overflow:auto;min-height:0}#healthHistoryDetail .modalhead{flex-shrink:0;gap:12px}#healthHistoryDetailTitle{font-size:17px}
     .history-answers{margin:0;display:grid;gap:12px}.history-answer{border:1px solid var(--line);border-radius:12px;padding:12px;overflow-wrap:anywhere}.history-answer dt{font-size:13px;font-weight:800;color:var(--muted);margin-bottom:6px}.history-answer dd{margin:0;white-space:pre-wrap;line-height:1.5}.history-answer .history-notes{margin-top:6px;font-size:13px;color:var(--muted)}
     @media(max-width:700px){.checkin-history{margin:12px}.history-row{align-items:flex-start}.history-filters .controls{flex:1 1 100%}}
+    .health-trend-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.health-trend-card{padding:13px;border:1px solid var(--line);border-radius:12px;min-width:0;background:#fafcfc}.health-trend-card h4{margin:0 0 8px;font-size:14px}.health-trend-value{font-size:22px;font-weight:850;color:var(--navy)}.health-trend-value.choice{font-size:14px}.health-trend-card p{font-size:12px;color:var(--muted);line-height:1.5;margin:6px 0}.health-trend-chart{width:100%;height:64px;color:var(--navy);margin-top:8px}.health-trend-chart polyline{fill:none;stroke:currentColor;stroke-width:2}.health-trend-chart circle{fill:currentColor}.trend-table-wrap{overflow:auto;max-width:100%;margin-top:10px}.trend-table{border-collapse:collapse;font-size:12px;width:100%;white-space:nowrap}.trend-table th,.trend-table td{border-bottom:1px solid var(--line);padding:8px;text-align:left}.trend-table caption{text-align:left;padding:8px 0;color:var(--muted)}.task-planning{padding:13px;border:1px solid var(--line);border-radius:12px;background:#f6faf9}.task-slot-list{display:grid;gap:8px;margin-top:10px}.task-slot-list button{text-align:left;white-space:normal}.task-planning .helper{line-height:1.5}.duration-presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+    @media(max-width:700px){.health-trend-grid{grid-template-columns:1fr}.task-planning .grid2{grid-template-columns:1fr}}
     .health-panel{margin-bottom:18px}.health-private{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;background:var(--peach-soft);color:#7f5a47;font-size:12px;font-weight:800}
     .health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px 20px}.health-card{border:1px solid var(--line);border-radius:15px;background:#fff;padding:15px;display:grid;gap:10px}
     .health-card.inactive{opacity:.6;background:#fafafa}.health-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.health-title{font-weight:820}.health-cat{font-size:11px;color:var(--muted);text-transform:capitalize;margin-top:3px}
@@ -534,6 +536,15 @@
           </div>
           <button id="openHealthCheckin" class="primary" type="button">Start check-in</button>
         </div>
+        <details id="healthTrendsSection" class="checkin-history">
+          <summary>Health trends</summary>
+          <p class="history-private-note">Private summaries of your saved check-in answers. Missing days stay missing. These describe your records; they do not make medical conclusions or use AI.</p>
+          <div class="controls"><div><label for="healthTrendPeriod">Period, including today</label><select id="healthTrendPeriod"><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select></div><button id="refreshHealthTrends" class="ghost" type="button">Refresh trends</button></div>
+          <div id="healthTrendsError" class="message err hidden" role="alert"></div>
+          <div id="healthTrendsStatus" class="history-status" role="status">Open trends to load your saved check-ins.</div>
+          <div id="healthTrendGrid" class="health-trend-grid" aria-busy="false"></div>
+          <details id="healthTrendDaily" class="hidden"><summary>View daily values</summary><div id="healthTrendTable" class="trend-table-wrap" tabindex="0" role="region" aria-label="Daily health values, scroll to see all measures"></div></details>
+        </details>
         <details id="healthHistorySection" class="checkin-history">
           <summary>Check-in history</summary>
           <p class="history-private-note">Your saved Evening Health &amp; Wellbeing check-ins, including all answers and notes. Private to you; excluded from Ask Open Brain and AI summaries.</p>
@@ -741,6 +752,7 @@
           <label for="taskDescription">Details (optional)</label>
           <textarea id="taskDescription" placeholder="Anything helpful to include in the Telegram reminder"></textarea>
         </div>
+        <div><label for="taskEstimate">Estimated time (optional, minutes)</label><input id="taskEstimate" type="number" min="1" max="480" step="1" placeholder="e.g. 30" /><div class="duration-presets"><button type="button" class="ghost smallbtn" data-duration="15">15 min</button><button type="button" class="ghost smallbtn" data-duration="30">30 min</button><button type="button" class="ghost smallbtn" data-duration="60">1 hour</button></div></div>
         <div class="grid2">
           <div>
             <label for="taskMember">Assigned to</label>
@@ -794,6 +806,13 @@
           </div>
         </div>
       </div>
+      <div class="modalbody"><div class="task-planning">
+        <strong>Find time for my task</strong>
+        <p class="helper">Check gaps in your selected Google calendars and visible family events. Choosing a time fills in this reminder for review; saving does not reserve calendar time.</p>
+        <div class="grid2"><div><label for="taskSlotDay">Day</label><input id="taskSlotDay" type="date" /></div><div><label for="taskSlotFrom">From</label><input id="taskSlotFrom" type="time" value="08:00" /></div><div><label for="taskSlotTo">Through</label><input id="taskSlotTo" type="time" value="18:00" /></div></div>
+        <button id="findTaskSlots" class="ghost" type="button">Find available times</button>
+        <div id="taskSlotStatus" class="helper" role="status"></div><div id="taskSlotError" class="message err hidden" role="alert"></div><div id="taskSlotList" class="task-slot-list"></div>
+      </div></div>
       <div class="modalfoot"><button id="cancelEdit" class="ghost" type="button">Cancel</button><button id="saveTask" class="primary" type="submit">Save reminder</button></div>
     </form>
   </dialog>
@@ -1327,7 +1346,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     const $ = (id) => document.getElementById(id);
-    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], notificationPreferences:null,quietHoursLoaded:false,googleCalendarStatus:null, googleCalendars:[], googleEvents:[], googleCalendarBusy:false, goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], healthCheckins:[], healthCheckinPrefs:null, healthHistory:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
+    const state = { user:null, member:null, household:null, members:[], memberAuth:{}, tasks:[], events:[], eventNotifications:[], notificationPreferences:null,quietHoursLoaded:false,googleCalendarStatus:null, googleCalendars:[], googleEvents:[], googleCalendarBusy:false, goals:[], habits:[], habitCompletions:[], memories:[], semanticMemories:null, memorySearch:"", lists:[], listItems:[], activeListId:null, listShoppingMode:false, healthTrackers:[], healthEntries:[], healthCheckins:[], healthCheckinPrefs:null, healthHistory:null, healthTrends:null, weeklyPlans:[], inbox:[], pendingInboxProcess:null, filter:"active", search:"", memberFilter:"", taskScope:"", eventScope:"", aiMessages:[], aiBusy:false, aiTodayBrief:null, aiWeekBrief:null, aiBriefBusy:{today:false,week:false} };
     let deferredInstallPrompt=null;
     let listRealtimeChannel=null;
     let listRealtimeTimer=null;
@@ -1775,7 +1794,7 @@
     }
 
     function showLogin(message="",isError=false){
-      resetHealthHistory();
+      clearPrivateViews();
       $("app").classList.add("hidden"); $("loginScreen").classList.remove("hidden");
       const box=$("loginMessage"); box.innerHTML="";
       if(message){
@@ -1784,7 +1803,7 @@
     }
 
     function showApp(){
-      if(state.healthHistory?.owner!==state.user.id)resetHealthHistory();
+      if(state.healthHistory?.owner!==state.user.id || state.healthTrends?.owner!==state.user.id)clearPrivateViews();
       $("loginScreen").classList.add("hidden"); $("app").classList.remove("hidden");
       $("displayName").textContent=state.member.display_name;
       $("roleText").textContent=roleLabel(state.member.role);
@@ -2414,6 +2433,7 @@
       $("taskTitle").value=payload?.title||"";
       $("taskDescription").value=payload?.description||"";
       $("taskPriority").value=["low","normal","high","urgent"].includes(payload?.priority)?payload.priority:"normal";
+      $("taskEstimate").value=Number.isInteger(payload?.estimated_minutes)&&payload.estimated_minutes>=1&&payload.estimated_minutes<=480?payload.estimated_minutes:"";
       if(isAdmin()&&payload?.assigned_to_user_id&&state.members.some(m=>m.user_id===payload.assigned_to_user_id)){
         $("taskMember").value=payload.assigned_to_user_id;
       }else{
@@ -2812,9 +2832,117 @@
       box.innerHTML=display.map(t=>{
         const isOverdue=t.remind_at && new Date(t.remind_at)<now && localDayKey(t.remind_at)!==todayKey;
         const when=t.remind_at?formatDate(t.remind_at):(t.due_at?formatDate(t.due_at):"No time");
-        return '<div class="today-task"><div><div class="today-task-title">'+esc(t.title)+'</div><div class="today-task-meta '+(isOverdue?"today-overdue":"")+'">'+(isOverdue?"Overdue · ":"")+esc(when)+'</div></div><button class="smallbtn" data-today-done="'+t.id+'">Done</button></div>';
+        return '<div class="today-task"><div><div class="today-task-title">'+esc(t.title)+'</div><div class="today-task-meta '+(isOverdue?"today-overdue":"")+'">'+(isOverdue?"Overdue · ":"")+esc(when)+(t.estimated_minutes?" · "+esc(formatTaskMinutes(t.estimated_minutes)):"")+'</div></div><button class="smallbtn" data-today-done="'+t.id+'">Done</button></div>';
       }).join("");
     }
+
+    // BEGIN PLANNING CALCULATIONS
+    function shiftPlanningDate(key,offset){
+      const d=new Date(key+"T12:00:00");d.setDate(d.getDate()+offset);
+      return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+    }
+    function aggregateHealthTrends(rows,days,today){
+      if(![7,30].includes(days))throw new Error("Choose 7 or 30 days.");
+      const start=shiftPlanningDate(today,1-days),previousStart=shiftPlanningDate(today,1-days*2);
+      const keys=Array.from({length:days},(_,i)=>shiftPlanningDate(start,i));
+      const previousKeys=Array.from({length:days},(_,i)=>shiftPlanningDate(previousStart,i));
+      const byDate=new Map();
+      for(const row of rows){if(byDate.has(row.checkin_date))throw new Error("Duplicate check-in date");byDate.set(row.checkin_date,row);}
+      const metrics=[
+        {key:"water",label:"Water",kind:"number",unit:"oz"},{key:"sleep",label:"Sleep",kind:"number",unit:"hours"},
+        {key:"hunger",label:"Hunger",kind:"rating",unit:"/ 5"},{key:"energy",label:"Energy",kind:"rating",unit:"/ 5"},{key:"mood",label:"Mood",kind:"rating",unit:"/ 5"},
+        {key:"workout",label:"Walk or workout",kind:"choice",choices:["yes","no"]},
+        {key:"planned_meals",label:"Planned meals",kind:"choice",choices:["yes","mostly","no"]},
+        {key:"vegetables_fiber",label:"Vegetables & fiber",kind:"choice",choices:["yes","partly","no"]},
+        {key:"protein_target",label:"Protein target",kind:"choice",choices:["yes","no","unsure"]}
+      ];
+      for(const metric of metrics){
+        metric.excluded=0;
+        const valuesFor=(dateKeys)=>dateKeys.map(date=>{
+          const entries=(byDate.get(date)?.entries||[]).filter(e=>e.tracker?.checkin_key===metric.key);
+          if(entries.length>1){metric.excluded++;return null;}
+          const e=entries[0];if(!e)return null;
+          if(metric.kind==="choice")return metric.choices.includes(e.value_text)?e.value_text:null;
+          const raw=metric.kind==="rating"?e.rating:e.value_number;
+          if(raw==null || raw==="")return null;
+          const value=Number(raw);
+          return Number.isFinite(value) && value>=0 && (metric.kind!=="rating" || (value>=1&&value<=5))?value:null;
+        });
+        metric.values=valuesFor(keys);metric.previousValues=valuesFor(previousKeys);
+        metric.recorded=metric.values.filter(v=>v!==null).length;
+        metric.previousRecorded=metric.previousValues.filter(v=>v!==null).length;
+        if(metric.kind!=="choice"){
+          const mean=values=>{const recorded=values.filter(v=>v!==null);return recorded.length?recorded.reduce((a,b)=>a+b,0)/recorded.length:null;};
+          metric.average=mean(metric.values);metric.previousAverage=mean(metric.previousValues);
+          metric.change=metric.recorded>=2&&metric.previousRecorded>=2?metric.average-metric.previousAverage:null;
+        }else{
+          metric.counts=Object.fromEntries(metric.choices.map(choice=>[choice,metric.values.filter(v=>v===choice).length]));
+          metric.previousCounts=Object.fromEntries(metric.choices.map(choice=>[choice,metric.previousValues.filter(v=>v===choice).length]));
+        }
+      }
+      const recorded=keys.filter(key=>(byDate.get(key)?.entries||[]).some(e=>e.rating!=null || e.value_number!=null || String(e.value_text||"").trim())).length;
+      return {days,start,end:today,previousStart,previousEnd:shiftPlanningDate(start,-1),keys,recorded,metrics};
+    }
+    function parsePlanningTime(day,time){
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!/^\d{2}:\d{2}$/.test(time))throw new Error("Choose a valid date and time window.");
+      const d=new Date(day+"T"+time+":00");
+      const matches=value=>{
+        const key=[value.getFullYear(),String(value.getMonth()+1).padStart(2,"0"),String(value.getDate()).padStart(2,"0")].join("-");
+        return key===day && String(value.getHours()).padStart(2,"0")+":"+String(value.getMinutes()).padStart(2,"0")===time;
+      };
+      if(!Number.isFinite(d.getTime())||!matches(d))throw new Error("That local time does not exist. Choose a different window.");
+      for(const offset of [-120,-90,-60,-30,30,60,90,120])if(matches(new Date(d.getTime()+offset*60000)))throw new Error("That local time occurs twice. Choose a different window.");
+      return d.getTime();
+    }
+    function taskCalendarSlots(events,start,end,minutes,now=Date.now()){
+      if(!Number.isInteger(minutes)||minutes<1||minutes>480)throw new Error("Enter a whole-minute estimate from 1 to 480.");
+      if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start||end-start>26*3600000)throw new Error("Choose a valid time window within one day.");
+      const floor=Math.max(start,now),busy=[];
+      if(!Array.isArray(events)||events.length>1000)throw new Error("Too many events to check. Choose a shorter window.");
+      for(const event of events){
+        if(event.busy===false)continue;
+        let from=new Date(event.starts_at).getTime(),to=event.ends_at?new Date(event.ends_at).getTime():NaN;
+        if(!Number.isFinite(from))throw new Error("An event has no reliable end time. Update its end time before checking gaps.");
+        if(event.all_day){
+          if(event.source==="google"){
+            const first=String(event.starts_at).slice(0,10),last=String(event.ends_at||"").slice(0,10);
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(last)||last<=first)throw new Error("An all-day event has no reliable end time. Update it before checking gaps.");
+            from=parsePlanningTime(first,"00:00");to=parsePlanningTime(last,"00:00");
+          }else{
+            const first=new Date(from);first.setHours(0,0,0,0);from=first.getTime();
+            const last=Number.isFinite(to)?new Date(to):new Date(first);
+            if(!Number.isFinite(to)||last.getHours()||last.getMinutes()||last.getSeconds()||last.getMilliseconds())last.setDate(last.getDate()+1);
+            last.setHours(0,0,0,0);to=last.getTime();
+            if(to<=from)throw new Error("An all-day event has no reliable end time. Update it before checking gaps.");
+          }
+        }
+        if(!Number.isFinite(to)||to<=from){
+          const dayStart=new Date(start);dayStart.setHours(0,0,0,0);
+          const dayEnd=new Date(dayStart);dayEnd.setDate(dayEnd.getDate()+1);
+          if(from<dayStart.getTime()||from>=dayEnd.getTime())continue;
+          throw new Error("An event has no reliable end time. Update its end time before checking gaps.");
+        }
+        if(from<end&&to>floor)busy.push([Math.max(from,floor),Math.min(to,end)]);
+      }
+      busy.sort((a,b)=>a[0]-b[0]);
+      const merged=[];
+      for(const interval of busy){const last=merged.at(-1);if(last&&interval[0]<=last[1])last[1]=Math.max(last[1],interval[1]);else merged.push([...interval]);}
+      const gaps=[];let cursor=floor;
+      for(const [a,b] of merged){if(a>cursor)gaps.push([cursor,a]);cursor=Math.max(cursor,b);}
+      if(cursor<end)gaps.push([cursor,end]);
+      const result=[],duration=minutes*60000;
+      for(const [a,b] of gaps){
+        let candidate=Math.ceil(a/(15*60000))*(15*60000);
+        while(candidate+duration<=b&&result.length<3){result.push({start:candidate,end:candidate+duration});candidate+=Math.max(duration,60*60000);}
+        if(result.length===3)break;
+      }
+      return result;
+    }
+    function formatTaskMinutes(value){
+      if(!Number.isInteger(value)||value<1)return "";
+      return value<60?value+" min":Math.floor(value/60)+" hr"+(value%60?" "+value%60+" min":"");
+    }
+    // END PLANNING CALCULATIONS
 
     function quickText(){
       return $("quickCapture").value.trim();
@@ -2971,6 +3099,7 @@
     }
 
     function invalidateHealthHistory(){
+      invalidateHealthTrends();
       if(!state.healthHistory)return;
       state.healthHistory.stale=true;
       $("healthHistoryDetail").close();
@@ -2991,6 +3120,124 @@
       }
       $("healthHistoryAnswers").innerHTML=fields.join("");
       $("healthHistoryDetail").showModal();
+    }
+
+    let healthTrendsRequest=0,taskSlotsRequest=0,taskSlotDraft=null;
+    function clearPrivateViews(){resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
+    function resetHealthTrends(){
+      healthTrendsRequest++;state.healthTrends=null;
+      $("healthTrendsSection").open=false;$("healthTrendPeriod").value="7";
+      $("healthTrendDaily").open=false;renderHealthTrends();
+    }
+    function invalidateHealthTrends(){
+      if(!state.healthTrends)return;
+      state.healthTrends.stale=true;
+      if($("healthTrendsSection").open)loadHealthTrends();
+    }
+    function trendNumber(value){return Number(value).toLocaleString(undefined,{maximumFractionDigits:1});}
+    function trendChart(values){
+      const recorded=values.filter(v=>v!==null);if(!recorded.length)return "";
+      const min=Math.min(...recorded),span=Math.max(...recorded)-min||1;
+      const point=(value,index)=>[6+index*268/Math.max(values.length-1,1),56-(value-min)*46/span];
+      let html="",run=[];
+      const finish=()=>{if(run.length>1)html+='<polyline points="'+run.join(" ")+'"/>';run=[];};
+      values.forEach((value,index)=>{if(value===null){finish();return;}const [x,y]=point(value,index);run.push(x+","+y);html+='<circle cx="'+x+'" cy="'+y+'" r="2.5"/>';});finish();
+      return '<svg class="health-trend-chart" viewBox="0 0 280 64" aria-hidden="true">'+html+'</svg>';
+    }
+    function renderHealthTrends(){
+      const h=state.healthTrends;
+      $("healthTrendPeriod").disabled=!!h?.loading;$("refreshHealthTrends").disabled=!!h?.loading;
+      $("healthTrendsError").textContent=h?.error||"";$("healthTrendsError").classList.toggle("hidden",!h?.error);
+      $("healthTrendGrid").setAttribute("aria-busy",String(!!h?.loading));
+      $("healthTrendGrid").innerHTML="";$("healthTrendTable").textContent="";
+      $("healthTrendDaily").classList.toggle("hidden",!h?.summary);
+      if(!h?.summary){$("healthTrendsStatus").textContent=h?.loading?"Loading private trends…":h?.error?"Trends could not be loaded. Use Refresh trends to retry.":"Open trends to load your saved check-ins.";return;}
+      const summary=h.summary;
+      $("healthTrendsStatus").textContent=healthHistoryDate(summary.start)+" – "+healthHistoryDate(summary.end)+" · "+summary.recorded+" of "+summary.days+" days with saved answers. Averages use only days recorded for each measure. Compared with "+healthHistoryDate(summary.previousStart)+" – "+healthHistoryDate(summary.previousEnd)+".";
+      const label=value=>({yes:"Yes",no:"No",mostly:"Mostly",partly:"Partly",unsure:"Unsure"})[value]||value;
+      $("healthTrendGrid").innerHTML=summary.metrics.map(metric=>{
+        const numeric=metric.kind!=="choice";
+        const value=numeric?(metric.average===null?"Not recorded":trendNumber(metric.average)+" "+metric.unit):metric.recorded?Object.entries(metric.counts).filter(([,count])=>count).map(([key,count])=>label(key)+": "+count).join(" · "):"Not recorded";
+        let comparison="";
+        if(numeric){
+          comparison=metric.change===null?"At least two recorded days in each period are needed for comparison.":Math.abs(metric.change)<0.05?"No change at the displayed precision.":(metric.change>0?"↑ ":"↓ ")+trendNumber(Math.abs(metric.change))+" "+(metric.kind==="rating"?"points":metric.unit)+" from the previous period ("+metric.previousRecorded+" days recorded).";
+        }else comparison=metric.previousRecorded?"Previous period: "+Object.entries(metric.previousCounts).filter(([,count])=>count).map(([key,count])=>label(key)+": "+count).join(" · ")+" ("+metric.previousRecorded+" days recorded).":"Previous period: no recorded answers.";
+        return '<article class="health-trend-card"><h4>'+esc(metric.label)+'</h4><div class="health-trend-value '+(numeric?"":"choice")+'">'+esc(value)+'</div><p>'+(numeric?"Average · ":"")+metric.recorded+' of '+summary.days+' days recorded</p>'+(numeric?trendChart(metric.values):"")+'<p>'+esc(comparison)+'</p>'+(metric.excluded?'<p>Multiple saved answers on '+metric.excluded+' day(s) across these periods; those values are excluded. Review them in Check-in history.</p>':"")+'</article>';
+      }).join("");
+      const headers=summary.metrics.map(m=>'<th scope="col">'+esc(m.label)+(m.unit?' ('+esc(m.unit)+')':"")+'</th>').join("");
+      const rows=summary.keys.map((date,index)=>'<tr><th scope="row">'+esc(healthHistoryDate(date))+'</th>'+summary.metrics.map(m=>'<td>'+esc(m.values[index]===null?"Not recorded":m.kind==="choice"?label(m.values[index]):trendNumber(m.values[index]))+'</td>').join("")+'</tr>').join("");
+      $("healthTrendTable").innerHTML='<table class="trend-table"><caption>Daily values. Missing and ambiguous answers are not included in averages. Scroll to see all measures.</caption><thead><tr><th scope="col">Day</th>'+headers+'</tr></thead><tbody>'+rows+'</tbody></table>';
+    }
+    async function loadHealthTrends(){
+      const owner=state.user?.id;if(!owner)return;
+      const days=Number($("healthTrendPeriod").value),today=localDayKey(new Date());
+      if(![7,30].includes(days))return;
+      const request=++healthTrendsRequest;
+      const h={owner,loading:true,loaded:false,error:"",summary:null,stale:false};state.healthTrends=h;renderHealthTrends();
+      try{
+        const {data,error}=await sb.from("health_checkins")
+          .select("id,owner_user_id,checkin_date,entries:health_entries(owner_user_id,value_number,value_text,rating,tracker:health_trackers(checkin_key))")
+          .eq("owner_user_id",owner).eq("entries.owner_user_id",owner)
+          .gte("checkin_date",shiftPlanningDate(today,1-days*2)).lte("checkin_date",today)
+          .order("checkin_date",{ascending:false}).limit(days*2+1);
+        if(request!==healthTrendsRequest || state.user?.id!==owner || state.healthTrends!==h)return;
+        if(error)throw error;
+        if(!Array.isArray(data)||data.length>days*2||data.some(row=>row.owner_user_id!==owner || !/^\d{4}-\d{2}-\d{2}$/.test(row.checkin_date) || row.checkin_date<shiftPlanningDate(today,1-days*2) || row.checkin_date>today || !Array.isArray(row.entries) || row.entries.some(e=>e.owner_user_id!==owner)))throw new Error("Invalid trend response");
+        h.summary=aggregateHealthTrends(data,days,today);h.loaded=true;
+      }catch(_){
+        if(request!==healthTrendsRequest || state.user?.id!==owner || state.healthTrends!==h)return;
+        h.error="Could not load Health trends. Your saved check-ins have not changed.";
+      }finally{if(request===healthTrendsRequest && state.user?.id===owner && state.healthTrends===h){h.loading=false;renderHealthTrends();}}
+    }
+    function resetTaskSuggestions(){
+      taskSlotsRequest++;taskSlotDraft=null;
+      $("taskSlotList").textContent="";$("taskSlotStatus").textContent="";
+      $("taskSlotError").textContent="";$("taskSlotError").classList.add("hidden");
+      $("findTaskSlots").disabled=false;
+    }
+    async function findTaskSlots(){
+      resetTaskSuggestions();
+      const owner=state.user?.id,request=taskSlotsRequest;
+      try{
+        if(!owner || $("taskMember").value!==owner)throw new Error("Calendar suggestions are available only for tasks assigned to you.");
+        const minutes=Number($("taskEstimate").value);
+        if(!$("taskEstimate").value || !Number.isInteger(minutes)||minutes<1||minutes>480)throw new Error("Add an estimate from 1 to 480 minutes first.");
+        const day=$("taskSlotDay").value;
+        if(day<localDayKey(new Date()) || day>shiftPlanningDate(localDayKey(new Date()),60))throw new Error("Choose today or a day within the next 60 days.");
+        const start=parsePlanningTime(day,$("taskSlotFrom").value);
+        let end=parsePlanningTime(day,$("taskSlotTo").value);
+        const due=toIsoOrNull($("taskDue").value);if(due)end=Math.min(end,new Date(due).getTime());
+        if(end<=start || end<=Date.now())throw new Error("Choose a future window ending after its start and before the task's due time.");
+        const dayStart=parsePlanningTime(day,"00:00"),dayEnd=parsePlanningTime(shiftPlanningDate(day,1),"00:00");
+        $("findTaskSlots").disabled=true;$("taskSlotStatus").textContent="Checking your selected calendars and family events…";
+        const [google,status,family]=await Promise.all([
+          invokeGoogleCalendar("events",{time_min:new Date(dayStart-86400000).toISOString(),time_max:new Date(dayEnd+86400000).toISOString()}),
+          invokeGoogleCalendar("status"),
+          sb.from("family_events").select("id,starts_at,ends_at,all_day").eq("household_id",state.member.household_id)
+            .lt("starts_at",new Date(dayEnd).toISOString())
+            .or("ends_at.gt."+new Date(dayStart).toISOString()+",and(ends_at.is.null,starts_at.gte."+new Date(dayStart).toISOString()+")")
+            .order("starts_at").limit(251)
+        ]);
+        if(request!==taskSlotsRequest || state.user?.id!==owner || !$("editor").open)return;
+        if(family.error)throw new Error("Family events could not be read. Availability has not been confirmed.");
+        if(!Array.isArray(google.events)||!Number.isInteger(google.calendar_count)||google.calendar_count<1)throw new Error("Connect Google Calendar and choose at least one calendar before checking gaps.");
+        if(status.connected!==true || status.selected_count!==google.calendar_count)throw new Error("A selected Google calendar could not be checked. Review calendar selections in Settings and try again.");
+        if(!Array.isArray(family.data)||family.data.length>250)throw new Error("Too many family events to check. Choose a shorter window.");
+        const slots=taskCalendarSlots([...google.events.map(e=>({...e,source:"google"})),...family.data.map(e=>({...e,source:"openbrain",busy:true}))],start,end,minutes);
+        taskSlotDraft={owner,minutes,slots};
+        $("taskSlotStatus").textContent=slots.length?"Possible gaps in the calendars checked. Other task reminders are not reserved work time. Choose one to fill in your reminder, then review and save.":"No gap long enough was found in this window. Try another day or window.";
+        $("taskSlotList").innerHTML=slots.map((slot,index)=>'<button type="button" class="ghost" data-task-slot="'+index+'">'+esc(formatDate(slot.start))+" – "+esc(new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(new Date(slot.end)))+" · "+esc(formatTaskMinutes(minutes))+" · Use this time</button>").join("");
+      }catch(err){
+        if(request!==taskSlotsRequest || state.user?.id!==owner)return;
+        $("taskSlotStatus").textContent="";$("taskSlotError").textContent=err?.message||"Calendar gaps could not be checked. Please retry.";$("taskSlotError").classList.remove("hidden");
+      }finally{if(request===taskSlotsRequest)$("findTaskSlots").disabled=false;}
+    }
+    function useTaskSlot(index){
+      const draft=taskSlotDraft,slot=draft?.slots[index];
+      if(!slot || draft.owner!==state.user?.id || $("taskMember").value!==draft.owner || Number($("taskEstimate").value)!==draft.minutes)return;
+      if(slot.start<Date.now()){resetTaskSuggestions();$("taskSlotError").textContent="That time has passed. Find available times again.";$("taskSlotError").classList.remove("hidden");return;}
+      $("taskReminder").value=toLocalInput(new Date(slot.start));
+      $("taskSlotStatus").textContent="Reminder time filled in. Review the task and choose Save to keep it. Calendar time has not been reserved.";
     }
 
     function checkinTracker(key){
@@ -4765,6 +5012,7 @@
       }
       list.innerHTML=rows.map(t=>{
         const recurring=t.recurrence_rule?'<span class="badge b-recurring">↻ '+esc(recurrenceLabel(t.recurrence_rule))+'</span>':"";
+        const duration=t.estimated_minutes?'<span class="badge">'+esc(formatTaskMinutes(t.estimated_minutes))+'</span>':"";
         const priority=t.priority && t.priority!=="normal"?'<span class="badge b-priority">'+esc(t.priority)+'</span>':"";
         let buttons="";
         if(canManageTask(t)){
@@ -4784,7 +5032,7 @@
         }
         return '<article class="task">'+
           '<div><div class="title">'+esc(t.title)+'</div>'+(t.description?'<div class="desc">'+esc(t.description)+'</div>':'')+
-          '<div class="badges"><span class="badge '+statusClass(t.status)+'">'+esc(statusLabel(t.status))+'</span>'+recurring+priority+'</div></div>'+
+          '<div class="badges"><span class="badge '+statusClass(t.status)+'">'+esc(statusLabel(t.status))+'</span>'+recurring+priority+duration+'</div></div>'+
           '<div class="meta"><strong>'+esc(t.assigned_to||"Unassigned")+'</strong>'+esc(t.category||"household")+'</div>'+
           '<div class="meta"><strong>'+esc(formatDate(t.remind_at))+'</strong>'+esc(t.recurrence_rule?"Repeats "+recurrenceLabel(t.recurrence_rule):"One-time reminder")+'</div>'+
           '<div class="actions">'+buttons+'</div>'+
@@ -4825,6 +5073,9 @@
       $("editorTitle").textContent=task?"Edit reminder":"New reminder";
       $("taskTitle").value=task?.title||""; $("taskDescription").value=task?.description||"";
       $("taskPriority").value=task?.priority||"normal";
+      $("taskEstimate").value=task?.estimated_minutes??"";
+      $("taskSlotDay").value=localDayKey(new Date());
+      resetTaskSuggestions();
       $("taskMember").value=isAdmin()?(task?.assigned_to_user_id||state.member.user_id):state.user.id;
       $("taskMember").disabled=!isAdmin();
       $("taskReminder").value=task?.remind_at?toLocalInput(task.remind_at):toLocalInput(new Date(Date.now()+60*60*1000));
@@ -4850,7 +5101,10 @@
         const repeat=$("taskRepeat").value==="__custom"?$("taskRepeatCustom").value.trim():$("taskRepeat").value;
         const remindAt=toIsoOrNull($("taskReminder").value);
         const dueAt=toIsoOrNull($("taskDue").value);
+        const estimate=$("taskEstimate").value===""?null:Number($("taskEstimate").value);
+        if(estimate!==null && (!Number.isInteger(estimate)||estimate<1||estimate>480))throw new Error("Enter a whole-minute estimate from 1 to 480.");
         const payload={
+          estimated_minutes:estimate,
           title:$("taskTitle").value.trim(),
           description:$("taskDescription").value.trim()||null,
           assigned_to:member.display_name,
@@ -4869,10 +5123,11 @@
         if(id){
           const original=state.tasks.find(t=>t.id===id);
           if(!original || !canManageTask(original)) throw new Error("You do not have permission to edit this reminder.");
+          payload.visibility=original.visibility;payload.category=original.category;
           if(original?.remind_at!==remindAt){
             payload.reminder_sent_at=null; payload.reminder_error=null;
           }
-          const {error}=await sb.from("family_tasks").update(payload).eq("id",id);
+          const {error}=await sb.from("family_tasks").update(payload).eq("id",id).select("id,estimated_minutes").single();
           if(error) throw error;
           toast("Reminder updated.");
         }else{
@@ -5006,7 +5261,7 @@
       });
     }
 
-    $("signOut").addEventListener("click",async()=>{stopListRealtime();resetHealthHistory();await sb.auth.signOut();location.reload();});
+    $("signOut").addEventListener("click",async()=>{stopListRealtime();clearPrivateViews();await sb.auth.signOut();location.reload();});
     $("installOpenBrain").addEventListener("click",installOpenBrain);
     $("mobileInstallApp").addEventListener("click",()=>{ $("mobileMoreMenu").classList.add("hidden"); installOpenBrain(); });
     $("mobileMoreButton").addEventListener("click",()=>{
@@ -5079,6 +5334,9 @@
       if(e.target.closest("#saveGoogleCalendars")){await saveGoogleCalendarSelection();return;}
       if(e.target.closest("#cancelGoogleCalendars"))$("googleCalendarPicker").classList.add("hidden");
     });
+    $("healthTrendsSection").addEventListener("toggle",()=>{const h=state.healthTrends;if($("healthTrendsSection").open && (!h || (!h.loaded&&!h.loading&&!h.error) || h.stale))loadHealthTrends();});
+    $("healthTrendPeriod").addEventListener("change",loadHealthTrends);
+    $("refreshHealthTrends").addEventListener("click",loadHealthTrends);
     $("healthHistorySection").addEventListener("toggle",()=>{
       const h=state.healthHistory;
       if($("healthHistorySection").open && (!h || (!h.loaded&&!h.loading&&!h.error) || h.stale))loadHealthHistory(true);
@@ -5214,6 +5472,11 @@
     $("closeEditor").addEventListener("click",()=>{state.pendingInboxProcess=null;$("editor").close();});
     $("cancelEdit").addEventListener("click",()=>{state.pendingInboxProcess=null;$("editor").close();});
     $("taskForm").addEventListener("submit",saveTask);
+    $("editor").addEventListener("close",resetTaskSuggestions);
+    $("findTaskSlots").addEventListener("click",findTaskSlots);
+    ["taskEstimate","taskMember","taskSlotDay","taskSlotFrom","taskSlotTo","taskDue"].forEach(id=>$(id).addEventListener("input",resetTaskSuggestions));
+    document.querySelectorAll("[data-duration]").forEach(btn=>btn.addEventListener("click",()=>{$("taskEstimate").value=btn.dataset.duration;resetTaskSuggestions();}));
+    $("taskSlotList").addEventListener("click",e=>{const btn=e.target.closest("[data-task-slot]");if(btn)useTaskSlot(Number(btn.dataset.taskSlot));});
     $("taskRepeat").addEventListener("change",()=>$("customRepeatWrap").classList.toggle("hidden",$("taskRepeat").value!=="__custom"));
     document.querySelectorAll("[data-glance]").forEach(btn=>btn.addEventListener("click",()=>openDashboardSummary(btn.dataset.glance)));
     document.querySelectorAll("[data-week-glance]").forEach(btn=>btn.addEventListener("click",()=>openDashboardSummary(btn.dataset.weekGlance,"week")));
@@ -5271,14 +5534,14 @@
     });
 
     sb.auth.onAuthStateChange((event)=>{
-      if(event==="SIGNED_OUT"){resetHealthHistory();location.reload();}
+      if(event==="SIGNED_OUT"){clearPrivateViews();resetTaskSuggestions();location.reload();}
     });
 
     async function ensureOpenBrainServiceWorker(){
       if(!("serviceWorker" in navigator))return null;
       try{
         const registration=await navigator.serviceWorker.register(
-          "/openbrain-oauth-ui/sw.js?v=21-health-history",
+          "/openbrain-oauth-ui/sw.js?v=22-trends-duration",
           {scope:"/openbrain-oauth-ui/"}
         );
         await registration.update().catch(()=>{});

@@ -98,6 +98,7 @@ function enrichTasks(rows:any[]|null,timeZone:string,now:Date){
       priority:row.priority||"normal",
       status:row.status,
       recurrence_rule:row.recurrence_rule||null,
+      estimated_minutes:row.estimated_minutes??null,
       visibility:row.visibility||null,
       remind_at_local:zonedDisplay(row.remind_at,timeZone),
       remind_date_local:row.remind_at?zonedDateKey(row.remind_at,timeZone):null,
@@ -314,7 +315,7 @@ const handler=withSupabase({auth:"user"},async(req,ctx)=>{
       ctx.supabase.from("households").select("id,name,timezone").eq("id",householdId).maybeSingle(),
       ctx.supabase.from("household_members").select("user_id,display_name,role").eq("household_id",householdId).order("display_name"),
       ctx.supabase.from("family_tasks")
-        .select("id,title,description,assigned_to,assigned_to_user_id,priority,status,due_at,remind_at,recurrence_rule,visibility,created_at,completed_at,updated_at")
+        .select("id,title,description,assigned_to,assigned_to_user_id,priority,status,due_at,remind_at,recurrence_rule,estimated_minutes,visibility,created_at,completed_at,updated_at")
         .eq("household_id",householdId)
         .order("updated_at",{ascending:false}).limit(100),
       ctx.supabase.from("family_events")
@@ -396,6 +397,8 @@ const handler=withSupabase({auth:"user"},async(req,ctx)=>{
 
 You receive APP_CONTEXT containing only records this signed-in user is authorized to read through database row-level security. Treat APP_CONTEXT as private. Never infer or reveal records that are not present.
 
+Task duration estimates are optional minutes. A null estimate means unknown; never treat it as zero or invent a saved estimate. A reminder time does not reserve calendar work time. For a new proposal, leave the estimate null unless the user specified a duration or explicitly asked you to estimate one.
+
 Your job:
 1. Answer questions about tasks, family events, goals, habits, weekly planning, lists, and memories using APP_CONTEXT.
 2. Help organize and summarize. Be concise, friendly, and concrete.
@@ -442,7 +445,8 @@ task: {
   "remind_at": string|null,
   "due_at": string|null,
   "priority": "low"|"normal"|"high"|"urgent",
-  "recurrence_rule": string|null
+  "recurrence_rule": string|null,
+  "estimated_minutes": integer 1..480|null
 }
 event: {
   "title": string,

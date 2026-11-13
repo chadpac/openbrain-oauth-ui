@@ -1,54 +1,96 @@
 # Open Brain priorities
 
-This records the priorities agreed with the household owner. Each feature should
-extend the existing app, preserve its privacy boundaries, and be reviewable
-before publication.
+These priorities were agreed with the household owner. Extend the existing app,
+preserve private and household boundaries, and prepare reviewable changes before
+publication.
 
 ## Completed
 
-- Google Calendar phase one: read-only OAuth, encrypted server-side refresh
-  token, calendar selection, Today/This Week/Upcoming display, refresh and revoke.
-  Google Cloud publishing status was moved to Production and the user reconnected.
-- Reminder reliability: authenticated scheduling, overlap protection, retry
-  recovery, safer notification actions, recurrence validation, and private Health
-  delivery. The user confirmed real-device push delivery, Done, and creation of
-  the next daily occurrence. Snooze has automated coverage; manual device testing
-  remains optional.
-- Read-only Calendar questions with explicit per-question opt-in. The user
-  confirmed live schedule lookup and availability checks against Google Calendar.
-- Notification message placement above the Ask Open Brain launcher.
-- Personal quiet hours for scheduled push and Telegram reminders.
-- Dashboard count drilldowns and dated weekly-plan display/reuse.
+- Google Calendar phase one: read-only OAuth, encrypted refresh tokens, calendar
+  selection, Today/This Week/Upcoming, refresh and revoke; Google Production setup.
+- Reliable reminders: authenticated scheduling, overlap/retry protection, safer
+  notification actions, recurrence validation, and private Health delivery.
+- Read-only Calendar questions with explicit per-question opt-in.
+- Personal quiet hours for scheduled push/Telegram across devices.
+- Toast placement, dashboard count drilldowns, and dated weekly-plan display/reuse.
+- Private complete Evening Health check-in history with filters and older pages.
 
-## Near-term sequence
+## Current work
 
-1. Complete Evening Health & Wellbeing check-in history (this change): private,
-   dated complete answers, date filters, and older pages; then descriptive trends.
-2. Task duration estimates and suggested time slots, reviewed by the user.
-3. A focused read/search-only Gmail pilot, such as school deadlines or follow-ups.
-4. A Connections & delivery status view showing last successful refresh,
-   connections needing attention, notification device state, and exhausted retries.
+1. Descriptive Health trends: private 7-day/30-day summaries, recorded-day counts,
+   missing data, and comparison with the preceding period; no medical conclusions.
+2. Optional task duration estimates and calendar-gap suggestions, reviewed before
+   saving. A task reminder is not a reserved calendar work block.
 
-## Later ideas to retain
+## Agreed next phases
 
-- Optional per-device quiet-hour overrides.
-- Calendar writes with additional permissions and review before every change.
-- Explicitly shared family free/busy availability, with event details private by
-  default; refine household, parents-only, and personal permissions first.
-- Email/calendar links, proposed follow-up tasks, and reviewed reply drafts.
-- Drive document search and links to tasks/events/memories.
-- Goal milestones, check-ins, and links to tasks, habits, and weekly plans.
-- Household chores, meal planning, maintenance, and more useful member dashboards.
-- Optional task import/sync only when needed; keep one primary task system and
-  plan duplicate/conflict handling first.
-- Business integrations separated from household/private records.
-- Synology/NAS search, historical personal timeline imports, local processing,
-  optional location-aware errands, and reviewed browser actions.
-- Home Assistant, person/project pages, and dedicated mobile experiences after
-  the core workflows are reliable and used regularly.
+1. Assistant profile and memory controls: preferred name, tone, response length,
+   preferences and constraints; inspect/correct/forget what has been remembered.
+2. Assistant activity and approval center: queued/running/waiting/completed/failed,
+   evidence and source links, pause/cancel, and exact scoped approval cards.
+   Include connection health, last refresh, notification devices and failed retries.
+3. Focused read/search-only Gmail pilot and calendar/email intelligence: school
+   deadlines, commitments, daily digests, linked messages/events, suggested tasks,
+   reviewed reply drafts, and conflict-aware planning. Calendar writes and email
+   sending need separate permissions and review before consequential changes.
+4. Background routines: scheduled and event-driven bounded work after the app
+   closes, resumable progress, meaningful completion/change notifications, pause
+   controls, and visible AI/hosting usage limits.
+5. Configurable Spaces: start with School and Home, then projects, meal planning,
+   maintenance, trips and goals. Combine relevant tasks, events, documents, notes,
+   progress and reviewed actions; pin/hide/reorder before considering generated UI.
+6. Photo/PDF capture: reviewed extraction from flyers, forms, receipts and documents
+   into proposed dates, tasks and records, retaining the source.
+7. Voice: dictation and optional spoken responses first, then live conversation;
+   optional avatar/personalization after the useful workflows work reliably.
+8. Shopping, subscriptions and travel: wishlists, gift budgets, price watches,
+   renewal/return deadlines, comparisons and itineraries. Begin with tracking and
+   recommendations; reviewed transactions are a later step.
 
-Health stays private to the signed-in user and excluded from general AI context.
-Any future Health AI opt-in must be separate and explicit. Health summaries should
-be descriptive and avoid treating correlations as medical conclusions. Integrations
-and AI context should have visible scope and permissions, with no automatic
-purchase, submission, email sending, or other consequential action.
+## Cross-cutting additions accepted after the Muse review
+
+- Explicit watch rules for useful changes (deadline updates, replies, price
+  thresholds, conflicts), with interruption controls beyond fixed reminders.
+- Sourced web research and reusable comparisons, checklists, documents and
+  itineraries linked to tasks/projects instead of losing results in chat.
+- Goals broken into milestones and dependencies, next actions, periodic check-ins,
+  progress and stalled-work signals, linked to calendar time, habits and week plans.
+- Granular connector permissions and memory/data export and deletion controls as
+  the assistant grows. Avoid duplicate transactions and claim success only after
+  the provider confirms the result.
+
+## Later ideas retained
+
+- Optional per-device quiet hours; more household chores and responsibilities.
+- Explicit family free/busy sharing, refined parents-only/household/private access,
+  and individual dashboards without revealing another person's private details.
+- Drive search; optional Tasks/Todoist import/sync with duplicate handling.
+- Business projects/inventory/integrations separated from household/private data.
+- Synology/NAS and historical Gmail/chat/notes/Takeout imports into a searchable
+  personal timeline; local processing where it improves privacy, cost or reliability.
+- Optional location-aware errands, Home Assistant, richer people/project pages,
+  dedicated mobile experiences, and reviewed browser/online actions.
+
+## Product and privacy boundaries
+
+Health stays private to its owner and excluded from general AI context and briefs.
+A future Health AI opt-in must be separate and explicit. Trends are descriptive;
+missing data is not zero and correlations are not medical conclusions. Connected
+email, Calendar and other sources must have visible scope and permissions.
+Sending, purchasing, submitting and other consequential actions require the
+relevant approval. Routine work should not create repeated unnecessary prompts.
+
+## Research behind the November 12, 2026 additions
+
+These are Open Brain roadmap decisions inspired by documented Muse capabilities,
+not a dependency on Meta's models or a promise of feature parity.
+
+- [Muse product design: background work, goals, activity, memory, artifacts](https://muse.ai/blog/how-we-designed-muse)
+- [Spaces: custom project dashboards and background updates](https://about.fb.com/news/2026/11/introducing-spaces-customize-muse-app/)
+- [Voice and optional expressive avatars](https://about.fb.com/news/2026/11/introducing-muse-ai-voice-expressive-avatars/)
+- [Memory and connector controls](https://muse.ai/security-and-privacy)
+- [Connector approval and confirmed-result requirements](https://platform.muse.ai/docs)
+
+Photo/PDF capture is our additional product recommendation. Meta describes sharing
+Spaces as a direction being explored; Open Brain's own household roles and private
+Health boundaries remain requirements throughout these phases.

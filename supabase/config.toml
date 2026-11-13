@@ -24,3 +24,7 @@ verify_jwt = true
 
 [functions.open-brain-activity]
 verify_jwt = true
+
+# Every POST validates its bearer with auth.getUser; GET config contains no secrets.
+[functions.google-gmail]
+verify_jwt = false

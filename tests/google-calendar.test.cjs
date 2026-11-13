@@ -54,8 +54,8 @@ function backend({connection=null,states=[],revokeStatus=200,scopes,tokenRefresh
     if(String(url).includes('/events'))return Response.json({items:eventItems??[{id:'e',summary:'Appointment',start:{date:'2026-11-09'},end:{date:'2026-11-11'}}]});
     throw Error('Unexpected URL '+url);
   };
-  let source=fs.readFileSync('supabase/functions/google-calendar-oauth/index.ts','utf8').replace(/import \{ createClient \} from [^;]+;/,'');
-  const context=vm.createContext({createClient:()=>admin,Deno:{env:{get:k=>({SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-key',GOOGLE_CALENDAR_CLIENT_ID:'client',GOOGLE_CALENDAR_CLIENT_SECRET:'secret'})[k]},serve:fn=>handler=fn},crypto:globalThis.crypto,fetch,Response,Request,URL,URLSearchParams,TextEncoder,Uint8Array,btoa,console:{error(){},warn(){}}});
+  let source=fs.readFileSync('supabase/functions/google-calendar-oauth/index.ts','utf8').replace(/^import[^\n]*\n/gm,'');
+  const context=vm.createContext({createGmailService:()=>({callback:async()=>Response.json({gmail_routed:true})}),createClient:()=>admin,Deno:{env:{get:k=>({SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-key',GOOGLE_CALENDAR_CLIENT_ID:'client',GOOGLE_CALENDAR_CLIENT_SECRET:'secret'})[k]},serve:fn=>handler=fn},crypto:globalThis.crypto,fetch,Response,Request,URL,URLSearchParams,TextEncoder,Uint8Array,btoa,console:{error(){},warn(){}}});
   vm.runInContext(stripTypeScriptTypes(source),context);
   return {db,calls,request:(action,payload={},auth='valid')=>handler(new Request('https://example.supabase.co/functions/v1/google-calendar-oauth',{method:'POST',headers:auth?{Authorization:'Bearer '+auth}:{},body:JSON.stringify({action,...payload})})),callback:params=>handler(new Request('https://example.supabase.co/functions/v1/google-calendar-oauth?action=callback&'+new URLSearchParams(params)))};
 }
@@ -124,3 +124,5 @@ test('Google availability flags respect free events and the calendar self attend
  const b=backend({connection,eventItems:[event,{...event,transparency:'transparent'},{...event,attendees:[{self:true,responseStatus:'declined'}]},{...event,attendees:[{self:false,responseStatus:'declined'}]}]});
  const data=await (await b.request('events')).json();assert.deepEqual(data.events.map(e=>e.busy),[true,false,false,true]);
 });
+
+test('Gmail callback routing is separate from Calendar state consumption',async()=>{const b=backend({states:[{...state}]});const r=await b.callback({state:'gmail.test',code:'code'});assert.equal((await r.json()).gmail_routed,true);assert.equal(b.db.google_oauth_states.length,1);assert.equal(b.calls.length,0);});

@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v26";
-const SW_VERSION = "v26-assistant-activity";
+const CACHE_NAME = "open-brain-pwa-v27";
+const SW_VERSION = "v27-gmail-pilot";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",

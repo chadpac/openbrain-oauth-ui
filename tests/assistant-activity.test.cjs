@@ -32,6 +32,8 @@ before(async()=>{
  await db.exec(read('supabase/migrations/20261113043720_assistant_preferences_memory_controls.sql'));
  const recurring=read('supabase/migrations/20261109232415_reminder_delivery_reliability.sql');await db.exec(recurring.slice(recurring.indexOf('CREATE OR REPLACE FUNCTION public.next_recurring_time'))+';');
  await db.exec(read('supabase/migrations/20261113162753_assistant_activity_approvals.sql'));
+ await db.exec(read('supabase/migrations/20261113210622_gmail_readonly_pilot.sql'));
+ await db.exec('grant select on household_members to service_role');
 });
 after(async()=>db.close());
 async function asUser(user,fn){await db.exec('set role authenticated');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user]);try{return await fn();}finally{await db.exec('reset role');}}
@@ -171,4 +173,31 @@ test('tracked assistant finalizes canonical scopes and filters unsupported/nonvi
 test('a paused request or a context change cannot return actionable tracked proposals',async()=>{
  const paused=trackedAssistantFixture({paused:true});const r=await paused.run();assert.equal(r.status,500);assert.equal((await r.json()).actions,undefined);
  const changed=trackedAssistantFixture({contextChanged:true});assert.equal((await changed.run()).status,409);assert(!changed.calls.commands.some(c=>c.command==='finish'));assert(changed.calls.commands.some(c=>c.command==='fail'));
+});
+
+async function gmailRpc(name,args){await db.exec('set role service_role');try{return await db.query('select '+name+'('+args.map((_,i)=>'$'+(i+1)).join(',')+') as v',args);}finally{await db.exec('reset role');}}
+async function connectGmail(owner=ids.a){const gen=crypto.randomUUID();await gmailRpc('save_open_brain_gmail_connection',[owner,ids.home,gen,'fixture@example.com',new Uint8Array([0]),['https://www.googleapis.com/auth/gmail.readonly']]);return gen;}
+async function gmailProposal(gen){
+ const context=await asUser(ids.a,async()=>(await db.query('select get_open_brain_assistant_preferences() as v')).rows[0].v.context_version);
+ const id=crypto.randomUUID(),action={...task(),gmail_source:{connection_id:gen,message_id:'abc123'},payload:{...task().payload,visibility:'private'}};
+ const args=[ids.a,ids.home,gen,id,context,JSON.stringify(action)];await gmailRpc('create_open_brain_gmail_proposal',args);await gmailRpc('create_open_brain_gmail_proposal',args);
+ return (await db.query('select * from assistant_activity where id=$1',[id])).rows[0];
+}
+test('Gmail credentials and state are server-only; account labels are owner-only and immutable to clients',async()=>{
+ await connectGmail();
+ await asUser(ids.b,async()=>{assert.equal((await db.query('select * from google_gmail_accounts')).rows.length,0);for(const table of ['google_gmail_connections','google_gmail_oauth_states'])await assert.rejects(db.query('select * from '+table),e=>e.code==='42501');});
+ await asUser(ids.a,async()=>{assert.equal((await db.query('select * from google_gmail_accounts')).rows.length,1);await assert.rejects(db.query('update google_gmail_accounts set connected=false'),e=>e.code==='42501');});
+});
+test('Gmail task approval retains private scope and reuses a receipt; disconnect rolls back stale domain writes',async()=>{
+ const gen=await connectGmail(),row=await gmailProposal(gen);const receipt=await approve(row);assert.equal(receipt.result_ids.length,1);
+ const saved=(await db.query('select visibility,assigned_to_user_id from family_tasks where id=$1',[receipt.result_ids[0]])).rows[0];assert.equal(saved.visibility,'private');assert.equal(saved.assigned_to_user_id,ids.a);
+ const pending=await gmailProposal(gen);await gmailRpc('clear_open_brain_gmail_connection',[ids.a,gen]);const before=(await db.query('select count(*)::int as n from family_tasks')).rows[0].n;
+ await assert.rejects(approve(pending),/Gmail connection changed/);assert.equal((await db.query('select count(*)::int as n from family_tasks')).rows[0].n,before);
+ assert.deepEqual(await approve(row),receipt);
+});
+test('Gmail account replacement invalidates old proposals and cannot be undone by an old disconnect',async()=>{
+ const old=await connectGmail(),row=await gmailProposal(old),next=await connectGmail();
+ await assert.rejects(approve(row),/Gmail connection changed/);await assert.rejects(gmailRpc('clear_open_brain_gmail_connection',[ids.a,old]),/connection changed/);
+ assert.equal((await db.query('select connection_id from google_gmail_accounts where owner_user_id=$1',[ids.a])).rows[0].connection_id,next);
+ await approve(await gmailProposal(next));
 });

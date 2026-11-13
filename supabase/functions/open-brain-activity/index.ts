@@ -40,12 +40,13 @@ export async function handleActivity(req:Request){
       }
       const rows=await checked(query),profile=await checked(client.rpc("get_open_brain_assistant_preferences"));
       const page=rows.slice(0,20);
+      const gmail=page.some((r:any)=>r.kind==="gmail")?await checked(client.from("google_gmail_accounts").select("connection_id,connected").eq("owner_user_id",user.id).maybeSingle()):null;
       for(let i=0;i<page.length;i++){
         let row=page[i];
         if(["queued","running"].includes(row.status)&&Date.parse(row.updated_at)<Date.now()-300000){
           try{row=await activityCommand(user.id,row.id,"fail",row.version,{error_code:"interrupted"});}catch(_){}
         }
-        const stale=row.context_version!==profile?.context_version;
+        const stale=row.context_version!==profile?.context_version||(row.kind==="gmail"&&(!gmail?.connected||row.actions?.[0]?.gmail_source?.connection_id!==gmail.connection_id));
         page[i]={...row,actions:stale?[]:row.actions,sources:stale?[]:row.sources,stale,expired:Date.parse(row.expires_at)<=Date.now()};
         delete page[i].context_version;
       }

@@ -1,5 +1,6 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.119.0";
+import { createGmailService } from "../_shared/gmail.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -198,6 +199,7 @@ async function listEventsForCalendar(accessToken:string,calendar:any,timeMin:str
 
 async function handleCallback(url:URL){
   const state=url.searchParams.get("state")||"";
+  if(state.startsWith("gmail."))return await createGmailService(admin,{supabaseUrl:SUPABASE_URL,clientId:GOOGLE_CLIENT_ID,clientSecret:GOOGLE_CLIENT_SECRET}).callback(url);
   const code=url.searchParams.get("code")||"";
   const oauthError=url.searchParams.get("error")||"";
 

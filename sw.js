@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v19";
-const SW_VERSION = "v19-quiet-hours";
+const CACHE_NAME = "open-brain-pwa-v20";
+const SW_VERSION = "v20-dashboard-details";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",

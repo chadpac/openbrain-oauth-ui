@@ -17,19 +17,21 @@ publication.
 - Private descriptive Health trends, optional task duration estimates and reviewed
   calendar-gap suggestions; simplified Health cards and collapsible recent entries.
 - Private assistant preferences and saved-memory controls, with context-aware
-  conversation/brief invalidation (merged; deployment verification required).
+  conversation/brief invalidation.
+- Private activity and scoped approvals, sources, durable pause/cancel and
+  connection/device/delivery status (deployed November 13).
 
 ## Current work
 
-Assistant activity and approval center: private request states, model-selected
-source links, scoped one-proposal approvals, durable pause/cancel, Calendar/device
-status and task/event delivery retries. See [behavior, boundaries and deployment](assistant-activity-and-approvals.md).
+Read-only Gmail pilot: account connection, bounded search, on-demand email review,
+source-linked possible deadlines/commitments and reviewed private reminder
+proposals. [Behavior and required Google setup](gmail-readonly-pilot.md).
 
 ## Agreed next phases
 
-1. Focused read/search-only Gmail pilot and calendar/email intelligence: school
-   deadlines, commitments, daily digests, linked messages/events, suggested tasks,
-   reviewed reply drafts, and conflict-aware planning. Calendar writes and email
+1. Extend email/calendar intelligence after the pilot: explicit reviewed analysis,
+   richer deadline extraction, linked events, reviewed reply drafts and
+   conflict-aware planning. Calendar writes and email
    sending need separate permissions and review before consequential changes.
 2. Background routines: scheduled and event-driven bounded work after the app
    closes, resumable progress, meaningful completion/change notifications, pause

@@ -300,6 +300,7 @@
         <button class="navitem" data-scroll="listsPanel">Lists & Shopping</button>
         <button class="navitem" data-scroll="healthPanel">Health & Wellbeing</button>
         <button class="navitem" data-scroll="remindersPanel">Reminders & Tasks</button>
+        <button class="navitem" data-scroll="gmailPanel">Email review</button>
         <button class="navitem" data-scroll="assistantSettings">Assistant</button>
         <button class="navitem" data-scroll="assistantActivity">Activity & approvals</button>
         <button class="navitem" data-scroll="familyPanel">Family</button>
@@ -595,6 +596,19 @@
         <div class="stat"><div class="label">Family</div><div id="statFamily" class="num">—</div><div class="hint">Open Brain household members</div></div>
       </section>
 
+      <section id="gmailPanel" class="panel" aria-labelledby="gmailHeading">
+        <div class="panelhead"><div><h3 id="gmailHeading">Email review</h3><div class="subtitle">A read-only Gmail pilot, private to your account.</div></div><button id="refreshGmailStatus" class="ghost" type="button">Check connection</button></div>
+        <div style="padding:20px">
+          <div id="gmailConnectionStatus" class="activity-status" role="status">Open Email review to check your connection.</div>
+          <div class="controls"><button id="connectGmail" class="primary" type="button">Connect Gmail · read only</button><button id="disconnectGmail" class="ghost hidden" type="button">Disconnect Gmail</button></div>
+          <details style="margin:14px 0"><summary>What this pilot reads and saves</summary><p class="history-private-note">Search reads up to 20 message headers and short excerpts at a time, only when you ask. It does not read attachments, mark messages read, change labels or send email. Excerpts stay in this browser view and are cleared on reload or sign-out; they are not sent to the general assistant. Deadline and commitment flags are keyword hints, not confirmed dates. A task you approve stores its subject, sender and source link; saved tasks may be used by your assistant.</p><p class="history-private-note">Google Cloud must have Gmail API enabled and the gmail.readonly scope configured. This is a restricted Google scope; your Google project may need test-user or verification setup. <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noopener noreferrer">Google Cloud setup</a>.</p></details>
+          <form id="gmailSearchForm" class="activity-toolbar"><label for="gmailQuery">Search mail<input id="gmailQuery" maxlength="200" placeholder="For example: school permission slip" disabled></label><label for="gmailDays">Received within<select id="gmailDays" disabled><option value="1">Last 24 hours</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option></select></label><button id="searchGmail" class="primary" type="submit" disabled>Read & review</button></form>
+          <div id="gmailError" class="message err hidden" role="alert"></div>
+          <p id="gmailDigest" class="activity-status" role="status">Connect Gmail, then run a search to prepare your email review.</p>
+          <div id="gmailMessages" class="activity-list" aria-busy="false"></div><button id="moreGmail" class="ghost hidden" type="button">Load more messages</button>
+          <p class="history-private-note">This is an on-demand review of the loaded messages, not a background inbox monitor or scheduled digest. No reminder time is inferred from an excerpt.</p>
+        </div>
+      </section>
       <section id="assistantActivity" class="panel" aria-labelledby="activityHeading">
         <div class="panelhead"><div><h3 id="activityHeading">Activity & approvals</h3><div class="subtitle">Your assistant’s progress. Your decisions before anything is saved.</div></div><button id="refreshActivity" class="ghost" type="button">Refresh</button></div>
         <div class="activity-layout">
@@ -785,6 +799,7 @@
           <button type="button" data-scroll="healthPanel">❤️ Health</button>
           <button type="button" data-scroll="familyPanel">👨‍👩‍👧‍👦 Family</button>
           <button type="button" data-scroll="assistantSettings">✦ Assistant</button>
+          <button type="button" data-scroll="gmailPanel">✉ Email review</button>
           <button type="button" data-scroll="assistantActivity">◷ Activity & approvals</button>
           <button type="button" data-scroll="familySettings">⚙️ Settings</button>
           <button id="mobileInstallApp" type="button">📲 Install app</button>
@@ -1373,6 +1388,7 @@
     <div class="modalfoot"><button id="dismissInstallApp" class="primary" type="button">Got it</button></div>
   </dialog>
 
+  <dialog id="gmailTaskDialog"><form id="gmailTaskForm"><div class="modalhead"><h3>Prepare an email reminder</h3><button id="closeGmailTask" class="ghost" type="button">Close</button></div><div class="modalbody"><p id="gmailTaskSource" class="history-private-note"></p><label for="gmailTaskTitle">Private reminder title</label><input id="gmailTaskTitle" maxlength="180" required><label for="gmailTaskReminder">Reminder time</label><input id="gmailTaskReminder" type="datetime-local" required><p class="history-private-note">Uses this device’s local time. You choose the time; it is not inferred from the email. The proposal is assigned to you and private. It stores the subject, sender and Gmail link. Review the exact proposal in Activity before approving the save.</p><div id="gmailTaskError" class="message err hidden" role="alert"></div></div><div class="modalfoot"><button id="prepareGmailTask" class="primary" type="submit">Prepare for approval</button></div></form></dialog>
   <dialog id="activitySourceDialog" class="modal"><div class="modalhead"><h3>Source record</h3><button id="closeActivitySource" class="ghost" type="button">Close</button></div><div id="activitySourceContent" class="activity-source-content" style="padding:20px"></div></dialog>
   <button id="aiLauncher" class="ai-launcher" type="button" aria-label="Ask Open Brain AI"><span class="ai-star">✦</span><span id="assistantLauncherLabel">Ask Open Brain</span></button>
   <div id="aiBackdrop" class="ai-backdrop hidden"></div>
@@ -2050,7 +2066,7 @@
       startListRealtime();
       openTaskDeepLink();
       openHealthCheckinDeepLink();
-      handleGoogleCalendarReturn();
+      handleGoogleCalendarReturn();handleGmailReturn();
       loadGoogleCalendarIntegration().catch(err=>console.warn("Google Calendar initialization failed:",err));
       loadQuietHoursPreferences();
       initializeAssistantSettings().catch(()=>{});
@@ -2588,11 +2604,93 @@
       return false;
     }
 
+    // BEGIN GMAIL PILOT
+    let gmailEpoch=0,gmailRequest=0;
+    let gmailView={owner:null,account:null,loaded:false,busy:false,rows:[],next:null,query:"",days:7,unavailable:0,error:"",draft:null,prepared:{}};
+    async function invokeGmail(body){
+      const {data,error}=await sb.functions.invoke("google-gmail",{body});
+      if(error||data?.error){let details=null;try{details=await error?.context?.json?.();}catch(_){}throw new Error(details?.error||data?.error||error?.message||"Gmail request failed. Refresh the connection before retrying.");}
+      return data;
+    }
+    function resetGmail(){
+      gmailEpoch++;gmailRequest++;
+      gmailView={owner:null,account:null,loaded:false,busy:false,rows:[],next:null,query:"",days:7,unavailable:0,error:"",draft:null,prepared:{}};
+      $("gmailQuery").value="";$("gmailDays").value="7";$("gmailTaskForm").reset();$("gmailTaskSource").textContent="";$("gmailTaskError").textContent="";$("gmailTaskError").classList.add("hidden");if($("gmailTaskDialog").open)$("gmailTaskDialog").close();renderGmail();
+    }
+    function renderGmail(){
+      const v=gmailView,connected=!!v.account?.connected;
+      $("gmailConnectionStatus").textContent=v.account?connected?"Connected · "+v.account.email+" · Gmail read only"+(v.account.checked_at?" · Last read "+activityTime(v.account.checked_at):""):"Gmail is disconnected.":v.loaded?"Gmail is not connected.":"Open Email review to check your connection.";
+      $("connectGmail").classList.toggle("hidden",connected);$("disconnectGmail").classList.toggle("hidden",!connected);
+      for(const id of ["gmailQuery","gmailDays","searchGmail"])$(id).disabled=!connected||v.busy;
+      for(const id of ["connectGmail","disconnectGmail","refreshGmailStatus","moreGmail","prepareGmailTask"])$(id).disabled=v.busy;
+      $("gmailError").textContent=v.error;$("gmailError").classList.toggle("hidden",!v.error);$("gmailMessages").setAttribute("aria-busy",String(v.busy));$("moreGmail").classList.toggle("hidden",!v.next);
+      $("gmailDigest").textContent=v.busy?"Working on your request…":v.error?"The read was not confirmed. Check the connection and try again.":v.rows.length?"Loaded "+v.rows.length+" messages · "+v.rows.filter(m=>m.signals?.includes("Possible deadline")).length+" possible deadlines · "+v.rows.filter(m=>m.signals?.includes("Possible commitment")).length+" possible commitments"+(v.unavailable?" · "+v.unavailable+" messages unavailable or outside this window":"")+(v.next?" · More are available.":""):v.loaded&&connected?"Run a search to review recent mail. An empty result does not confirm there are no deadlines.":"Connect Gmail, then run a search to prepare your email review.";
+      $("gmailMessages").innerHTML=v.rows.map(m=>'<article class="activity-card"><h4>'+esc(m.subject)+'</h4><p class="activity-meta">'+esc(m.from)+' · '+esc(activityTime(m.received_at))+'</p><p style="white-space:pre-wrap;font-size:13px;line-height:1.6;overflow-wrap:anywhere">'+esc(m.snippet)+'</p><div class="activity-meta">'+esc((m.signals||[]).join(" · "))+'</div><div class="activity-actions"><a class="ghost smallbtn" href="'+esc("https://mail.google.com/mail/?authuser="+encodeURIComponent(v.account?.email||"")+"#all/"+encodeURIComponent(m.id))+'" target="_blank" rel="noopener noreferrer">Open in Gmail</a><button class="ghost smallbtn" type="button" data-gmail-task="'+esc(m.id)+'" '+(v.busy||v.prepared[m.id]?"disabled":"")+'>'+(v.prepared[m.id]?"Proposal prepared":"Prepare private reminder")+'</button></div></article>').join("");
+    }
+    async function loadGmailStatus(){
+      const owner=state.user?.id;if(!owner||gmailView.busy)return;
+      if(gmailView.owner!==owner){resetGmail();gmailView.owner=owner;}
+      const epoch=gmailEpoch,request=++gmailRequest;gmailView.busy=true;gmailView.error="";renderGmail();
+      try{
+        const data=await invokeGmail({action:"status"});if(state.user?.id!==owner||epoch!==gmailEpoch||request!==gmailRequest)return;
+        if(gmailView.account?.connection_id!==data.account?.connection_id||!data.account?.connected){gmailView.rows=[];gmailView.next=null;gmailView.draft=null;gmailView.prepared={};if($("gmailTaskDialog").open)$("gmailTaskDialog").close();}
+        gmailView.account=data.account||null;gmailView.loaded=true;
+        if(data.configured===false)gmailView.error="Google OAuth setup is required before connecting Gmail.";
+      }catch(error){if(state.user?.id===owner&&epoch===gmailEpoch&&request===gmailRequest){gmailView.error=error.message;gmailView.account=null;gmailView.rows=[];gmailView.next=null;}}
+      finally{if(state.user?.id===owner&&epoch===gmailEpoch&&request===gmailRequest){gmailView.busy=false;renderGmail();}}
+    }
+    async function searchGmail(append=false){
+      const owner=state.user?.id,account=gmailView.account;if(!owner||!account?.connected||gmailView.busy)return;
+      const epoch=gmailEpoch,request=++gmailRequest;
+      if(!append){gmailView.query=$("gmailQuery").value.trim();gmailView.days=Number($("gmailDays").value);gmailView.rows=[];gmailView.next=null;gmailView.unavailable=0;}
+      gmailView.busy=true;gmailView.error="";renderGmail();
+      try{
+        const data=await invokeGmail({action:"search",connection_id:account.connection_id,query:gmailView.query,days:gmailView.days,page_token:append?gmailView.next:null});
+        if(state.user?.id!==owner||epoch!==gmailEpoch||request!==gmailRequest||gmailView.account?.connection_id!==account.connection_id)return;
+        if(data.connection_id!==account.connection_id)throw new Error("Gmail connection changed. Check the connection first.");
+        const rows=Array.isArray(data.messages)?data.messages:[];gmailView.rows=append?[...gmailView.rows,...rows.filter(m=>!gmailView.rows.some(r=>r.id===m.id))]:rows;gmailView.next=data.next_page_token||null;gmailView.unavailable+=data.unavailable||0;gmailView.account.checked_at=data.checked_at;
+      }catch(error){if(state.user?.id===owner&&epoch===gmailEpoch&&request===gmailRequest){gmailView.error=error.message;gmailView.rows=[];gmailView.next=null;}}
+      finally{if(state.user?.id===owner&&epoch===gmailEpoch&&request===gmailRequest){gmailView.busy=false;renderGmail();}}
+    }
+    function openGmailTask(id){
+      if(gmailView.busy)return;const mail=gmailView.rows.find(m=>m.id===id);if(!mail||!gmailView.account?.connected)return;
+      gmailView.draft={mail,connection_id:gmailView.account.connection_id,request_id:crypto.randomUUID()};
+      $("gmailTaskForm").reset();$("gmailTaskTitle").value=("Review email: "+mail.subject).slice(0,180);$("gmailTaskSource").textContent=mail.subject+" · "+mail.from;$("gmailTaskError").classList.add("hidden");$("gmailTaskDialog").showModal();
+    }
+    async function prepareGmailTask(event){
+      event.preventDefault();const owner=state.user?.id,epoch=gmailEpoch,draft=gmailView.draft;if(!owner||!draft||gmailView.busy)return;
+      const time=$("gmailTaskReminder").value,title=$("gmailTaskTitle").value.trim();if(!time||!title||!Number.isFinite(new Date(time).getTime())||new Date(time).getTime()<=Date.now()){ $("gmailTaskError").textContent="Choose a title and future reminder time.";$("gmailTaskError").classList.remove("hidden");return;}
+      let remindAt;try{const [day,clock]=time.split("T");remindAt=new Date(parsePlanningTime(day,clock)).toISOString();}catch(error){$("gmailTaskError").textContent=error.message;$("gmailTaskError").classList.remove("hidden");return;}
+      gmailView.busy=true;renderGmail();
+      try{
+        const data=await invokeGmail({action:"propose",connection_id:draft.connection_id,message_id:draft.mail.id,fingerprint:draft.mail.fingerprint,request_id:draft.request_id,title,remind_at:remindAt});
+        if(state.user?.id!==owner||epoch!==gmailEpoch||gmailView.draft!==draft)return;
+        if(!data.activity_id)throw new Error("No proposal was confirmed. Check Activity before retrying.");
+        gmailView.prepared[draft.mail.id]=data.activity_id;gmailView.draft=null;$("gmailTaskDialog").close();toast("Proposal prepared. Review it in Activity before saving.");openActivity();
+      }catch(error){if(state.user?.id===owner&&epoch===gmailEpoch){$("gmailTaskError").textContent=error.message+" Check Activity before retrying if the result is uncertain.";$("gmailTaskError").classList.remove("hidden");}}
+      finally{if(state.user?.id===owner&&epoch===gmailEpoch){gmailView.busy=false;renderGmail();}}
+    }
+    async function openGmailSource(id,connectionId){
+      const owner=state.user?.id,epoch=gmailEpoch,request=++activitySourceRequest;if(!owner||!connectionId)return;
+      $("activitySourceContent").textContent="Loading the current email excerpt…";if(!$("activitySourceDialog").open)$("activitySourceDialog").showModal();
+      try{const data=await invokeGmail({action:"message",connection_id:connectionId,message_id:id});if(state.user?.id!==owner||epoch!==gmailEpoch||request!==activitySourceRequest)return;$("activitySourceContent").textContent=data.message.subject+"\n\n"+data.message.from+"\n\n"+data.message.snippet;}
+      catch(error){if(state.user?.id===owner&&epoch===gmailEpoch&&request===activitySourceRequest)$("activitySourceContent").textContent=error.message;}
+    }
+    $("refreshGmailStatus").addEventListener("click",loadGmailStatus);
+    $("gmailSearchForm").addEventListener("submit",event=>{event.preventDefault();searchGmail();});$("moreGmail").addEventListener("click",()=>searchGmail(true));
+    $("gmailMessages").addEventListener("click",event=>{const button=event.target.closest("[data-gmail-task]");if(button)openGmailTask(button.dataset.gmailTask);});
+    $("gmailTaskForm").addEventListener("submit",prepareGmailTask);$("closeGmailTask").addEventListener("click",()=>{if(!gmailView.busy){gmailView.draft=null;$("gmailTaskDialog").close();}});
+    $("connectGmail").addEventListener("click",async()=>{const owner=state.user?.id,epoch=gmailEpoch;if(!owner||gmailView.busy)return;gmailView.busy=true;renderGmail();try{const data=await invokeGmail({action:"start"});if(state.user?.id!==owner||epoch!==gmailEpoch)return;const url=new URL(data.auth_url);if(url.origin!=="https://accounts.google.com"||url.pathname!=="/o/oauth2/v2/auth")throw new Error("Google authorization URL was invalid.");location.assign(url.toString());}catch(error){if(state.user?.id===owner&&epoch===gmailEpoch)gmailView.error=error.message;}finally{if(state.user?.id===owner&&epoch===gmailEpoch){gmailView.busy=false;renderGmail();}}});
+    $("disconnectGmail").addEventListener("click",async()=>{const owner=state.user?.id,epoch=gmailEpoch,account=gmailView.account;if(!owner||!account||gmailView.busy||!confirm("Disconnect Gmail and revoke this app’s Google grant? Google may also require you to reconnect Calendar. Pending Gmail approvals will stop working; previously saved tasks remain."))return;gmailView.busy=true;renderGmail();try{await invokeGmail({action:"disconnect",connection_id:account.connection_id});if(state.user?.id!==owner||epoch!==gmailEpoch)return;resetGmail();gmailView.owner=owner;await loadGmailStatus();state.googleEvents=[];state.googleCalendars=[];state.googleCalendarRefreshedAt=null;if(state.googleCalendarStatus?.connected){state.googleCalendarStatus.error="Google access changed. Refresh Calendar or reconnect.";renderGoogleCalendarSettings();renderToday();renderWeek();renderOverview();}invalidateActivity();loadActivity();}catch(error){if(state.user?.id===owner&&epoch===gmailEpoch){gmailView.busy=false;gmailView.error=error.message;renderGmail();}}});
+    function handleGmailReturn(){const p=new URLSearchParams(location.search);if(!p.has("gmail"))return;const success=p.get("gmail")==="connected";p.delete("gmail");p.delete("reason");history.replaceState({},document.title,location.pathname+(p.toString()?"?"+p:"")+location.hash);loadGmailStatus();toast(success?"Gmail connected. Run a search when you are ready.":"Gmail was not connected. Check Google Cloud Gmail API/scope setup and reconnect.",!success);$("gmailPanel").scrollIntoView({block:"start"});}
+    const gmailObserver=new IntersectionObserver(entries=>{if(state.user&&!gmailView.loaded&&entries.some(e=>e.isIntersecting))loadGmailStatus();},{threshold:0.05});gmailObserver.observe($("gmailPanel"));
+    // END GMAIL PILOT
+
     // BEGIN ASSISTANT ACTIVITY
     let activityEpoch=0,activityRequest=0,activitySourceRequest=0;
     let activityView={owner:null,rows:[],receipts:[],loaded:false,loading:false,more:false,busy:null,error:"",filter:"all"};
     const activityLabels={queued:"Queued",running:"Running",waiting:"Needs approval",paused:"Paused",completed:"Completed",failed:"Failed",cancelled:"Cancelled"};
-    const activityKinds={question:"Assistant question",today:"Today brief",week:"Weekly perspective",calendar:"Calendar check"};
+    const activityKinds={gmail:"Gmail task review",question:"Assistant question",today:"Today brief",week:"Weekly perspective",calendar:"Calendar check"};
     async function invokeActivity(body){
       const {data,error}=await sb.functions.invoke("open-brain-activity",{body});
       if(error||data?.error){let detail=null;try{detail=await error?.context?.json?.();}catch(_){}throw new Error(detail?.error||data?.error||"Activity could not be confirmed. Refresh before trying again.");}
@@ -2631,7 +2729,7 @@
       }
       return '<dl class="activity-fields">'+rows.join("")+'</dl>';
     }
-    function activitySourceButton(kind,id,label){return '<button class="ghost smallbtn" type="button" data-activity-source-kind="'+esc(kind)+'" data-activity-source-id="'+esc(id)+'">'+esc(label)+'</button>';}
+    function activitySourceButton(kind,id,label,connectionId=""){return '<button class="ghost smallbtn" type="button" data-activity-source-connection="'+esc(connectionId)+'" data-activity-source-kind="'+esc(kind)+'" data-activity-source-id="'+esc(id)+'">'+esc(label)+'</button>';}
     function renderActivity(){
       const v=activityView,busy=!!v.busy;
       $("activityList").setAttribute("aria-busy",String(v.loading));$("refreshActivity").disabled=v.loading||busy;$("moreActivity").disabled=v.loading||busy;
@@ -2654,8 +2752,8 @@
           const links=receipt?.decision==="saved"&&!unavailable?(receipt.result_ids||[]).map((id,i)=>activitySourceButton(a.type==="list_items"?"list_item":a.type,id,"Open saved record"+(receipt.result_ids.length>1?" "+(i+1):""))).join(""):"";
           return '<div class="activity-approval"><h5>'+esc(a.type==="list_items"?"Add list items":a.type==="task"?"Create a reminder":a.type==="event"?"Create a family event":"Save a memory")+'</h5>'+approvalFields(a)+'<div class="activity-meta">'+esc(outcome)+'</div><div class="activity-actions">'+(canApprove?'<button class="primary smallbtn" data-activity-command="approve" data-run="'+esc(row.id)+'" data-index="'+index+'"'+disabled+'>Approve & save</button>':"")+(!receipt&&row.status==="waiting"&&!unavailable?'<button class="ghost smallbtn" data-activity-command="dismiss" data-run="'+esc(row.id)+'" data-index="'+index+'"'+disabled+'>Dismiss</button>':"")+links+'</div></div>';
         }).join("");
-        const sources=!unavailable?(row.sources||[]).map(s=>activitySourceButton(s.kind,s.id,"View "+s.kind+" source")).join(""):"";
-        const note=row.stale?"Settings or saved memories changed. Ask again for current proposals.":row.expired&&row.status==="waiting"?"Approval window expired. Ask again before saving.":row.status==="failed"?"No result was confirmed. Ask again; nothing was automatically retried.":row.status==="paused"?"Pending work is held. A request paused before its result must be asked again.":row.status==="cancelled"?"Pending work cancelled. Earlier confirmed saves remain in their own screens.":"";
+        const sources=!unavailable?(row.sources||[]).map(s=>activitySourceButton(s.kind,s.id,"View "+s.kind+" source",row.actions?.[0]?.gmail_source?.connection_id||"")).join(""):"";
+        const note=row.stale?"Settings, saved memories or a connection changed. Prepare a current proposal.":row.expired&&row.status==="waiting"?"Approval window expired. Ask again before saving.":row.status==="failed"?"No result was confirmed. Ask again; nothing was automatically retried.":row.status==="paused"?"Pending work is held. A request paused before its result must be asked again.":row.status==="cancelled"?"Pending work cancelled. Earlier confirmed saves remain in their own screens.":"";
         return '<article class="activity-card"><div class="activity-card-head"><h4>'+esc(activityKinds[row.kind]||"Assistant request")+'</h4><span class="activity-state '+esc(row.status)+'">'+esc(activityLabels[row.status]||row.status)+'</span></div><div class="activity-meta">'+esc(activityTime(row.created_at))+' · private · '+esc(row.id.slice(-6))+'</div>'+(note?'<p class="activity-meta">'+esc(note)+'</p>':"")+actions+(sources?'<div class="activity-meta">Sources cited by the assistant · checked again when opened</div><div class="activity-actions">'+sources+'</div>':"")+'<div class="activity-actions">'+controls+'</div></article>';
       }).join("")||'<div class="activity-list-empty">'+(v.loaded?"No requests match this view. Ask your assistant to start something new.":"Your recent requests and approvals will appear here.")+'</div>';
     }
@@ -2708,7 +2806,8 @@
       }catch(err){if(state.user?.id===owner&&epoch===activityEpoch){activityView.error=err.message;toast(err.message,true);}}
       finally{if(state.user?.id===owner&&epoch===activityEpoch){activityView.busy=null;renderActivity();if(!activityView.error)loadActivity();}}
     }
-    async function openActivitySource(kind,id){
+    async function openActivitySource(kind,id,connectionId=null){
+      if(kind==="gmail"){await openGmailSource(id,connectionId);return;}
       const sources={task:["family_tasks","title,description,remind_at,due_at,visibility"],event:["family_events","title,description,starts_at,ends_at,location"],goal:["family_goals","title,description,next_action"],list:["lists","name,visibility"],list_item:["list_items","content,quantity,notes,list_name,visibility"],memory:["thoughts","content,visibility,archived_at"]};
       if(!sources[kind]||!id)return;
       const owner=state.user?.id,epoch=activityEpoch,request=++activitySourceRequest;
@@ -2728,7 +2827,7 @@
     $("closeActivitySource").addEventListener("click",()=>{activitySourceRequest++;$("activitySourceDialog").close();$("activitySourceContent").textContent="";});
     $("assistantActivity").addEventListener("click",event=>{
       const cmd=event.target.closest("[data-activity-command]");if(cmd){activityDecision(cmd.dataset.activityCommand,cmd.dataset.run,cmd.dataset.index);return;}
-      const source=event.target.closest("[data-activity-source-kind]");if(source){openActivitySource(source.dataset.activitySourceKind,source.dataset.activitySourceId);return;}
+      const source=event.target.closest("[data-activity-source-kind]");if(source){openActivitySource(source.dataset.activitySourceKind,source.dataset.activitySourceId,source.dataset.activitySourceConnection);return;}
       if(event.target.closest("[data-activity-ask]"))openAiPanel();
     });
     const activityObserver=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)&&state.user&&!activityView.loaded){if(activityView.owner!==state.user.id){resetActivity();activityView.owner=state.user.id;}loadActivity();loadActivityHealth();}},{threshold:0.05});activityObserver.observe($("assistantActivity"));
@@ -3482,7 +3581,7 @@
     }
 
     let healthTrendsRequest=0,taskSlotsRequest=0,taskSlotDraft=null;
-    function clearPrivateViews(){state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
+    function clearPrivateViews(){resetGmail();state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
     function resetHealthTrends(){
       healthTrendsRequest++;state.healthTrends=null;
       $("healthTrendsSection").open=false;$("healthTrendPeriod").value="7";

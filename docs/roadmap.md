@@ -20,17 +20,20 @@ publication.
   conversation/brief invalidation.
 - Private activity and scoped approvals, sources, durable pause/cancel and
   connection/device/delivery status (deployed November 13).
+- Read-only Gmail connection/search, source-linked private reminder proposals,
+  reviewed date evidence, optional due times and work estimates, deliberate event
+  references and calendar-gap snapshots. [Behavior and Google setup](gmail-readonly-pilot.md).
 
 ## Current work
 
-Read-only Gmail pilot: account connection, bounded search, on-demand email review,
-source-linked possible deadlines/commitments and reviewed private reminder
-proposals. [Behavior and required Google setup](gmail-readonly-pilot.md).
+Email/calendar intelligence: reviewed date candidates, selected event references
+and optional calendar-gap checks are implemented. Verify the published flow with
+the connected account before extending to richer analysis or reply drafts.
 
 ## Agreed next phases
 
 1. Extend email/calendar intelligence after the pilot: explicit reviewed analysis,
-   richer deadline extraction, linked events, reviewed reply drafts and
+   broader date/language support, reviewed reply drafts and longer-horizon
    conflict-aware planning. Calendar writes and email
    sending need separate permissions and review before consequential changes.
 2. Background routines: scheduled and event-driven bounded work after the app

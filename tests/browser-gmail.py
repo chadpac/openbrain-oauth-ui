@@ -21,6 +21,8 @@ window.fakeGmail=async(name,body)=>{
  if(name==='open-brain-activity')return {data:{rows:[],receipts:[]}};
  if(name!=='google-gmail')throw Error('Unexpected service');
  if(body.action==='status')return window.failStatus?{error:{message:'offline'}}:{data:{configured:true,account:{connection_id:gen,email:owner+'@example.com',connected}}};
+ if(body.action==='review'){const data={message:mail.find(m=>m.id===body.message_id),connection_id:gen,timezone:'America/Denver',dates:window.richReview?[{text:'Deadline <img src=x>',date:new Date(Date.now()+3*86400000).toISOString().slice(0,10),note:'Unconfirmed date; no time inferred.',evidence:'Submit by this date <script>bad</script>'}]:[]};if(window.holdReview)await new Promise(resolve=>window.releaseReview=resolve);return {data};}
+ if(body.action==='plan'){const from=new Date(body.start_local).getTime();const data={connection_id:gen,timezone:'America/Denver',checked_at:new Date().toISOString(),plan_token:'signed-fixture',event_count:1,events:[{id:'event1',title:'School <meeting>',source:'google',starts_at:new Date(from+3600000).toISOString(),ends_at:new Date(from+7200000).toISOString(),matches:['school']}],slots:[{start:new Date(from).toISOString(),end:new Date(from+body.minutes*60000).toISOString()}]};if(window.holdPlan)await new Promise(resolve=>window.releasePlan=resolve);return {data};}
  if(body.action==='search'){
   const data={connection_id:gen,messages:structuredClone(body.page_token?mail.slice(20):mail.slice(0,20)),next_page_token:body.page_token?null:'next',checked_at:'2026-11-13T19:00:00Z'};
   if(window.holdSearch)await new Promise(resolve=>window.releaseSearch=resolve);
@@ -57,11 +59,43 @@ with sync_playwright() as p:
   page.set_viewport_size({'width':width,'height':height});page.evaluate('document.getElementById("gmailPanel").scrollIntoView({block:"start",behavior:"instant"})');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
   if os.environ.get('GMAIL_SCREENSHOT_DIR'):
    out=Path(os.environ['GMAIL_SCREENSHOT_DIR']);out.mkdir(parents=True,exist_ok=True);page.screenshot(path=str(out/f'gmail-{width}.png'))
- page.locator('[data-gmail-task]').first.click();assert page.locator('#gmailTaskDialog').is_visible();assert 'School <img' in page.locator('#gmailTaskTitle').input_value();assert page.locator('#gmailTaskReminder').input_value()==''
+ page.locator('[data-gmail-task]').first.click();page.wait_for_function('gmailTest.view.draft?.reviewReady&&!gmailTest.view.busy');assert page.locator('#gmailTaskDialog').is_visible();assert 'School <img' in page.locator('#gmailTaskTitle').input_value();assert page.locator('#gmailTaskReminder').input_value()==''
  page.locator('#gmailTaskReminder').fill('2099-11-15T09:00');page.evaluate('window.holdProposal=true');page.locator('#prepareGmailTask').click();page.wait_for_function('!!window.releaseProposal');assert page.locator('#prepareGmailTask').is_disabled();assert page.evaluate('proposals.length')==1
  assert page.evaluate('proposals[0].fingerprint')=='fingerprint-0';assert page.evaluate('proposals[0].visibility') is None
  page.evaluate('window.holdProposal=false;releaseProposal()');page.wait_for_function('!gmailTest.view.busy');assert page.locator('#gmailTaskDialog').is_hidden();assert page.evaluate('gmailTest.view.prepared[mail[0].id]') is not None
  assert 'Permission slip' not in page.evaluate('JSON.stringify({localStorage,sessionStorage})')
+ # Rich date/event/gap review remains explicit, editable and source-bound.
+ page.evaluate('window.richReview=true');page.locator('[data-gmail-task]').nth(1).click();page.wait_for_function('gmailTest.view.draft?.reviewReady&&!gmailTest.view.busy')
+ assert page.locator('#gmailTaskDueDate').input_value()=='' and page.locator('#gmailTaskDueTime').input_value()==''
+ page.locator('#gmailDatesSection>summary').click();assert page.locator('#gmailDateCandidates img').count()==0
+ page.locator('[data-gmail-date]').click();assert page.locator('#gmailTaskDueDate').input_value()!='';assert page.locator('#gmailTaskDueTime').input_value()==''
+ page.locator('#gmailTaskDueTime').fill('12:00');page.locator('#gmailTaskEstimate').fill('30');page.locator('#gmailPlanningSection>summary').click()
+ day=page.evaluate('new Date(Date.now()+2*86400000).toISOString().slice(0,10)');page.locator('#gmailPlanDay').fill(day)
+ assert page.evaluate('calls.filter(c=>c.body.action==="plan").length')==0
+ page.locator('#gmailCheckCalendars').click();page.wait_for_function('gmailTest.view.draft?.plan&&!gmailTest.view.busy')
+ assert page.locator('#gmailRelatedEvents img').count()==0
+ page.locator('[data-gmail-event]').click();page.locator('[data-gmail-gap]').click();assert page.locator('#gmailTaskReminder').input_value()!=''
+ page.locator('#gmailTaskDueTime').fill('13:00');assert page.locator('#gmailTaskReminder').input_value()=='';assert page.locator('#gmailRelatedEvents').inner_text()==''
+ page.locator('#gmailCheckCalendars').click();page.wait_for_function('gmailTest.view.draft?.plan&&!gmailTest.view.busy');page.locator('[data-gmail-event]').click();page.locator('[data-gmail-gap]').click()
+ if os.environ.get('GMAIL_SCREENSHOT_DIR'):
+  for width,height in [(1280,900),(390,844),(320,568)]:
+   page.set_viewport_size({'width':width,'height':height});assert page.locator('#gmailTaskDialog').evaluate('(el)=>el.scrollWidth<=el.clientWidth');page.screenshot(path=str(Path(os.environ['GMAIL_SCREENSHOT_DIR'])/f'email-planning-{width}.png'))
+ page.locator('#prepareGmailTask').click();page.wait_for_function('!gmailTest.view.busy&&gmailTest.view.draft===null')
+ assert page.evaluate('proposals[1].due_local.endsWith("T13:00")')
+ assert page.evaluate('proposals[1].estimated_minutes')==30
+ assert page.evaluate('proposals[1].event_index')==0 and page.evaluate('proposals[1].slot_index')==0
+ assert page.evaluate('proposals[1].plan_token')=='signed-fixture'
+ # Late date and Calendar reviews cannot repopulate a cleared private view.
+ page.evaluate('window.holdReview=true');page.locator('[data-gmail-task]').nth(2).click();page.wait_for_function('!!window.releaseReview')
+ assert page.locator('#prepareGmailTask').is_disabled()
+ page.evaluate('gmailTest.clearPrivateViews();window.holdReview=false;releaseReview()');page.wait_for_timeout(50)
+ assert page.locator('#gmailTaskDialog').is_hidden();assert page.locator('#gmailDateCandidates').inner_text()==''
+ page.evaluate('gmailTest.loadGmailStatus()');page.wait_for_function('gmailTest.view.loaded&&!gmailTest.view.busy');page.evaluate('gmailTest.searchGmail()');page.wait_for_function('gmailTest.view.rows.length===20&&!gmailTest.view.busy')
+ page.locator('[data-gmail-task]').nth(2).click();page.wait_for_function('gmailTest.view.draft?.reviewReady&&!gmailTest.view.busy');page.locator('#gmailPlanningSection>summary').click();page.locator('#gmailPlanDay').fill(day);page.locator('#gmailTaskEstimate').fill('30')
+ page.evaluate('window.holdPlan=true');page.locator('#gmailCheckCalendars').click();page.wait_for_function('!!window.releasePlan')
+ page.evaluate('gmailTest.clearPrivateViews();window.holdPlan=false;releasePlan()');page.wait_for_timeout(50)
+ assert page.locator('#gmailTaskDialog').is_hidden();assert page.locator('#gmailRelatedEvents').inner_text()=='';assert page.locator('#gmailCalendarGaps').inner_text()==''
+ page.evaluate('gmailTest.loadGmailStatus()');page.wait_for_function('gmailTest.view.loaded&&!gmailTest.view.busy')
  # Sources are current-account bound, plain text, and cleared on account changes.
  page.evaluate('gmailTest.openGmailSource(mail[0].id,gen)');page.wait_for_function('document.getElementById("activitySourceContent").textContent.includes("Permission slip")');assert page.locator('#activitySourceDialog img').count()==0;page.locator('#closeActivitySource').click()
  page.evaluate('()=>{window.holdSearch=true;gmailTest.searchGmail()}');page.wait_for_function('!!window.releaseSearch')
@@ -75,4 +109,4 @@ with sync_playwright() as p:
  assert not errors,errors
  browser.close()
 server.shutdown()
-print('Gmail UI passed: explicit reads, bounded pages, escaped excerpts, safe source links, manual reminder time, approval handoff, duplicate clicks, stale accounts/connections, errors, disconnect and 320/390/1280px layouts.')
+print('Gmail UI passed: date evidence/manual times, related-event selection, gap selection/invalidation, explicit reads, bounded pages, escaped excerpts, safe source links, manual reminder time, approval handoff, duplicate clicks, stale accounts/connections, errors, disconnect and 320/390/1280px layouts.')

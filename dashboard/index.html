@@ -1388,7 +1388,30 @@
     <div class="modalfoot"><button id="dismissInstallApp" class="primary" type="button">Got it</button></div>
   </dialog>
 
-  <dialog id="gmailTaskDialog"><form id="gmailTaskForm"><div class="modalhead"><h3>Prepare an email reminder</h3><button id="closeGmailTask" class="ghost" type="button">Close</button></div><div class="modalbody"><p id="gmailTaskSource" class="history-private-note"></p><label for="gmailTaskTitle">Private reminder title</label><input id="gmailTaskTitle" maxlength="180" required><label for="gmailTaskReminder">Reminder time</label><input id="gmailTaskReminder" type="datetime-local" required><p class="history-private-note">Uses this device’s local time. You choose the time; it is not inferred from the email. The proposal is assigned to you and private. It stores the subject, sender and Gmail link. Review the exact proposal in Activity before approving the save.</p><div id="gmailTaskError" class="message err hidden" role="alert"></div></div><div class="modalfoot"><button id="prepareGmailTask" class="primary" type="submit">Prepare for approval</button></div></form></dialog>
+  <dialog id="gmailTaskDialog"><form id="gmailTaskForm">
+    <div class="modalhead"><h3>Review email & plan a reminder</h3><button id="closeGmailTask" class="ghost" type="button">Close</button></div>
+    <div class="modalbody">
+      <p id="gmailTaskSource" class="history-private-note"></p>
+      <p id="gmailReviewStatus" class="setting-note" role="status"></p>
+      <details id="gmailDatesSection"><summary>Dates mentioned in this excerpt</summary><p class="history-private-note">These are unconfirmed date suggestions, not established deadlines. Open the email to confirm the date, year and intended timezone. No due time is inferred.</p><div id="gmailDateCandidates" class="activity-list"></div></details>
+      <label for="gmailTaskTitle">Private reminder title</label><input id="gmailTaskTitle" maxlength="180" required>
+      <div class="grid2"><div><label for="gmailTaskDueDate">Due date (optional)</label><input id="gmailTaskDueDate" type="date"></div><div><label for="gmailTaskDueTime">Due time (required with a date)</label><input id="gmailTaskDueTime" type="time"></div></div>
+      <p id="gmailReviewTimezone" class="history-private-note"></p>
+      <label for="gmailTaskEstimate">Estimated work time (optional minutes)</label><input id="gmailTaskEstimate" type="number" min="1" max="480" step="1" placeholder="For example: 30">
+      <details id="gmailPlanningSection"><summary>Find related events and possible work gaps</summary><p class="history-private-note">Check calendars reads your selected Google calendars and visible Open Brain family events for this date. Calendar data stays in this review. Suggestions include only the calendars checked; other reminders do not reserve time.</p>
+        <label for="gmailPlanDay">Date to check</label><input id="gmailPlanDay" type="date">
+        <div class="grid2"><div><label for="gmailPlanFrom">Window start</label><input id="gmailPlanFrom" type="time" value="09:00"></div><div><label for="gmailPlanTo">Window end</label><input id="gmailPlanTo" type="time" value="17:00"></div></div>
+        <button id="gmailCheckCalendars" class="ghost" type="button">Check selected calendars</button>
+        <p id="gmailPlanStatus" class="setting-note" role="status"></p>
+        <div id="gmailRelatedEvents" class="activity-list"></div><div id="gmailCalendarGaps" class="activity-actions"></div>
+      </details>
+      <label for="gmailTaskReminder">Reminder time</label><input id="gmailTaskReminder" type="datetime-local" required>
+      <p class="history-private-note">Reminder input uses this device’s local time. Selecting a gap fills a reminder; it does not reserve Calendar time.</p>
+      <label class="quiet-hours-toggle"><input id="gmailAfterDue" type="checkbox"> Keep the reminder even if it falls after the due time</label>
+      <p class="history-private-note">The proposal is private and assigned to you. It stores the subject, sender, Gmail link and any event link you choose. These saved details may be used in assistant task context. Review the exact proposal in Activity before approving.</p>
+      <div id="gmailTaskError" class="message err hidden" role="alert"></div>
+    </div><div class="modalfoot"><button id="prepareGmailTask" class="primary" type="submit">Prepare for approval</button></div>
+  </form></dialog>
   <dialog id="activitySourceDialog" class="modal"><div class="modalhead"><h3>Source record</h3><button id="closeActivitySource" class="ghost" type="button">Close</button></div><div id="activitySourceContent" class="activity-source-content" style="padding:20px"></div></dialog>
   <button id="aiLauncher" class="ai-launcher" type="button" aria-label="Ask Open Brain AI"><span class="ai-star">✦</span><span id="assistantLauncherLabel">Ask Open Brain</span></button>
   <div id="aiBackdrop" class="ai-backdrop hidden"></div>
@@ -2615,14 +2638,15 @@
     function resetGmail(){
       gmailEpoch++;gmailRequest++;
       gmailView={owner:null,account:null,loaded:false,busy:false,rows:[],next:null,query:"",days:7,unavailable:0,error:"",draft:null,prepared:{}};
-      $("gmailQuery").value="";$("gmailDays").value="7";$("gmailTaskForm").reset();$("gmailTaskSource").textContent="";$("gmailTaskError").textContent="";$("gmailTaskError").classList.add("hidden");if($("gmailTaskDialog").open)$("gmailTaskDialog").close();renderGmail();
+      $("gmailDateCandidates").textContent="";$("gmailReviewStatus").textContent="";$("gmailReviewTimezone").textContent="";clearGmailPlan();$("gmailQuery").value="";$("gmailDays").value="7";$("gmailTaskForm").reset();$("gmailTaskSource").textContent="";$("gmailTaskError").textContent="";$("gmailTaskError").classList.add("hidden");if($("gmailTaskDialog").open)$("gmailTaskDialog").close();renderGmail();
     }
     function renderGmail(){
       const v=gmailView,connected=!!v.account?.connected;
       $("gmailConnectionStatus").textContent=v.account?connected?"Connected · "+v.account.email+" · Gmail read only"+(v.account.checked_at?" · Last read "+activityTime(v.account.checked_at):""):"Gmail is disconnected.":v.loaded?"Gmail is not connected.":"Open Email review to check your connection.";
       $("connectGmail").classList.toggle("hidden",connected);$("disconnectGmail").classList.toggle("hidden",!connected);
       for(const id of ["gmailQuery","gmailDays","searchGmail"])$(id).disabled=!connected||v.busy;
-      for(const id of ["connectGmail","disconnectGmail","refreshGmailStatus","moreGmail","prepareGmailTask"])$(id).disabled=v.busy;
+      for(const id of ["connectGmail","disconnectGmail","refreshGmailStatus","moreGmail"])$(id).disabled=v.busy;
+      $("prepareGmailTask").disabled=v.busy||!v.draft?.reviewReady;$("gmailCheckCalendars").disabled=v.busy||!v.draft?.reviewReady;$("gmailTaskDialog").querySelectorAll("input").forEach(input=>input.disabled=v.busy);
       $("gmailError").textContent=v.error;$("gmailError").classList.toggle("hidden",!v.error);$("gmailMessages").setAttribute("aria-busy",String(v.busy));$("moreGmail").classList.toggle("hidden",!v.next);
       $("gmailDigest").textContent=v.busy?"Working on your request…":v.error?"The read was not confirmed. Check the connection and try again.":v.rows.length?"Loaded "+v.rows.length+" messages · "+v.rows.filter(m=>m.signals?.includes("Possible deadline")).length+" possible deadlines · "+v.rows.filter(m=>m.signals?.includes("Possible commitment")).length+" possible commitments"+(v.unavailable?" · "+v.unavailable+" messages unavailable or outside this window":"")+(v.next?" · More are available.":""):v.loaded&&connected?"Run a search to review recent mail. An empty result does not confirm there are no deadlines.":"Connect Gmail, then run a search to prepare your email review.";
       $("gmailMessages").innerHTML=v.rows.map(m=>'<article class="activity-card"><h4>'+esc(m.subject)+'</h4><p class="activity-meta">'+esc(m.from)+' · '+esc(activityTime(m.received_at))+'</p><p style="white-space:pre-wrap;font-size:13px;line-height:1.6;overflow-wrap:anywhere">'+esc(m.snippet)+'</p><div class="activity-meta">'+esc((m.signals||[]).join(" · "))+'</div><div class="activity-actions"><a class="ghost smallbtn" href="'+esc("https://mail.google.com/mail/?authuser="+encodeURIComponent(v.account?.email||"")+"#all/"+encodeURIComponent(m.id))+'" target="_blank" rel="noopener noreferrer">Open in Gmail</a><button class="ghost smallbtn" type="button" data-gmail-task="'+esc(m.id)+'" '+(v.busy||v.prepared[m.id]?"disabled":"")+'>'+(v.prepared[m.id]?"Proposal prepared":"Prepare private reminder")+'</button></div></article>').join("");
@@ -2652,18 +2676,67 @@
       }catch(error){if(state.user?.id===owner&&epoch===gmailEpoch&&request===gmailRequest){gmailView.error=error.message;gmailView.rows=[];gmailView.next=null;}}
       finally{if(state.user?.id===owner&&epoch===gmailEpoch&&request===gmailRequest){gmailView.busy=false;renderGmail();}}
     }
-    function openGmailTask(id){
-      if(gmailView.busy)return;const mail=gmailView.rows.find(m=>m.id===id);if(!mail||!gmailView.account?.connected)return;
-      gmailView.draft={mail,connection_id:gmailView.account.connection_id,request_id:crypto.randomUUID()};
-      $("gmailTaskForm").reset();$("gmailTaskTitle").value=("Review email: "+mail.subject).slice(0,180);$("gmailTaskSource").textContent=mail.subject+" · "+mail.from;$("gmailTaskError").classList.add("hidden");$("gmailTaskDialog").showModal();
+    function clearGmailPlan(){
+      const d=gmailView.draft;if(d){if(d.slotIndex!=null)$("gmailTaskReminder").value="";d.plan=null;d.eventIndex=null;d.slotIndex=null;d.planRevision=(d.planRevision||0)+1;}
+      $("gmailPlanStatus").textContent="";$("gmailRelatedEvents").textContent="";$("gmailCalendarGaps").textContent="";
     }
+    function gmailDueLocal(){
+      const day=$("gmailTaskDueDate").value,time=$("gmailTaskDueTime").value;
+      if(!!day!==!!time)throw new Error("Choose both a due date and time, or leave both empty.");
+      return day?day+"T"+time:null;
+    }
+    function renderGmailPlan(){
+      const d=gmailView.draft,p=d?.plan;if(!p)return;
+      $("gmailPlanStatus").textContent="Checked "+activityTime(p.checked_at)+" · showing "+p.events.length+" of "+p.event_count+" events. Choose a link yourself; title matches do not confirm a relationship."+(Number($("gmailTaskEstimate").value)?" Possible gaps are snapshots, not reservations.":" Add a work estimate and check again to find gaps.");
+      $("gmailRelatedEvents").innerHTML=p.events.map((e,index)=>'<article class="activity-card"><strong>'+esc(e.title)+'</strong><div class="activity-meta">'+esc(e.source==="google"?"Google Calendar · read only":"Open Brain family event")+' · '+esc(activityTime(e.starts_at))+'</div><div class="activity-meta">'+esc(e.matches?.length?"Title matches: "+e.matches.join(", "):"Event in the selected window")+'</div><button type="button" class="ghost smallbtn" data-gmail-event="'+index+'" aria-pressed="'+String(d.eventIndex===index)+'">'+(d.eventIndex===index?"Linked · click to unlink":"Link this event")+'</button></article>').join("")||'<p class="history-private-note">No events found in this window.</p>';
+      $("gmailCalendarGaps").innerHTML=p.slots.map((slot,index)=>'<button type="button" class="ghost smallbtn" data-gmail-gap="'+index+'" aria-pressed="'+String(d.slotIndex===index)+'">'+esc(activityTime(slot.start))+" – "+esc(activityTime(slot.end))+(d.slotIndex===index?" · selected":" · Use this possible gap")+'</button>').join("");
+      if(!p.slots.length&&$("gmailTaskEstimate").value)$("gmailCalendarGaps").textContent="No gap long enough was found. Try another date or window.";
+    }
+    async function openGmailTask(id){
+      if(gmailView.busy)return;const mail=gmailView.rows.find(m=>m.id===id),owner=state.user?.id,epoch=gmailEpoch;if(!mail||!owner||!gmailView.account?.connected)return;
+      const draft={mail,connection_id:gmailView.account.connection_id,request_id:crypto.randomUUID(),reviewReady:false,plan:null,eventIndex:null,slotIndex:null,planRevision:0};gmailView.draft=draft;
+      $("gmailTaskForm").reset();clearGmailPlan();$("gmailDateCandidates").textContent="";$("gmailDatesSection").open=false;$("gmailPlanningSection").open=false;
+      $("gmailPlanDay").value=householdDateKey();$("gmailPlanFrom").value="09:00";$("gmailPlanTo").value="17:00";
+      $("gmailTaskTitle").value=("Review email: "+mail.subject).slice(0,180);$("gmailTaskSource").textContent=mail.subject+" · "+mail.from;$("gmailReviewStatus").textContent="Checking the current excerpt and dates…";$("gmailReviewTimezone").textContent="";$("gmailTaskError").classList.add("hidden");gmailView.busy=true;$("gmailTaskDialog").showModal();renderGmail();
+      try{
+        const data=await invokeGmail({action:"review",connection_id:draft.connection_id,message_id:mail.id,fingerprint:mail.fingerprint});
+        if(state.user?.id!==owner||epoch!==gmailEpoch||gmailView.draft!==draft||!$("gmailTaskDialog").open)return;
+        if(data.connection_id!==draft.connection_id||data.message?.fingerprint!==mail.fingerprint||!Array.isArray(data.dates)||!data.timezone)throw new Error("The review could not be verified. Refresh the search and try again.");
+        draft.dates=data.dates;draft.timezone=data.timezone;draft.reviewReady=true;
+        $("gmailReviewStatus").textContent="Current excerpt checked. Date suggestions remain unconfirmed; excerpts may be incomplete.";
+        $("gmailReviewTimezone").textContent="Due time and calendar-check window use your household timezone: "+data.timezone+".";
+        $("gmailDateCandidates").innerHTML=data.dates.map((c,i)=>'<div class="activity-card"><strong>'+esc(c.text)+'</strong><div class="activity-meta">'+esc(c.note)+'</div><blockquote style="font-size:12px;white-space:pre-wrap;margin:8px 0">'+esc(c.evidence)+'</blockquote>'+(c.date?'<button type="button" class="ghost smallbtn" data-gmail-date="'+i+'">Use '+esc(c.date)+' as a draft due date</button>':"")+'</div>').join("")||'<p class="history-private-note">No supported date text found. You can enter a confirmed due date and time yourself.</p>';
+      }catch(error){if(state.user?.id===owner&&epoch===gmailEpoch&&gmailView.draft===draft){$("gmailReviewStatus").textContent="Review unavailable. Refresh the email search before trying again.";$("gmailTaskError").textContent=error.message;$("gmailTaskError").classList.remove("hidden");}}
+      finally{if(state.user?.id===owner&&epoch===gmailEpoch&&gmailView.draft===draft){gmailView.busy=false;renderGmail();}}
+    }
+    async function checkGmailCalendars(){
+      const d=gmailView.draft,owner=state.user?.id,epoch=gmailEpoch;if(!d?.reviewReady||gmailView.busy)return;
+      clearGmailPlan();const revision=d.planRevision;gmailView.busy=true;renderGmail();$("gmailPlanStatus").textContent="Checking selected Google calendars and visible family events…";$("gmailTaskError").classList.add("hidden");
+      try{
+        const minutes=$("gmailTaskEstimate").value===""?null:Number($("gmailTaskEstimate").value);
+        const data=await invokeGmail({action:"plan",connection_id:d.connection_id,message_id:d.mail.id,fingerprint:d.mail.fingerprint,include_google_calendar:true,start_local:$("gmailPlanDay").value+"T"+$("gmailPlanFrom").value,end_local:$("gmailPlanDay").value+"T"+$("gmailPlanTo").value,due_local:gmailDueLocal(),minutes});
+        if(state.user?.id!==owner||epoch!==gmailEpoch||gmailView.draft!==d||d.planRevision!==revision)return;
+        if(data.connection_id!==d.connection_id||!data.plan_token||!Array.isArray(data.events)||!Array.isArray(data.slots))throw new Error("Calendar review could not be verified. Check again.");
+        d.plan=data;renderGmailPlan();
+      }catch(error){if(state.user?.id===owner&&epoch===gmailEpoch&&gmailView.draft===d){$("gmailPlanStatus").textContent="Availability has not been confirmed.";$("gmailTaskError").textContent=error.message;$("gmailTaskError").classList.remove("hidden");}}
+      finally{if(state.user?.id===owner&&epoch===gmailEpoch&&gmailView.draft===d){gmailView.busy=false;renderGmail();}}
+    }
+    $("gmailCheckCalendars").addEventListener("click",checkGmailCalendars);
+    for(const id of ["gmailTaskDueDate","gmailTaskDueTime","gmailTaskEstimate","gmailPlanDay","gmailPlanFrom","gmailPlanTo"])$(id).addEventListener("input",()=>{clearGmailPlan();$("gmailAfterDue").checked=false;});
+    $("gmailTaskReminder").addEventListener("input",()=>{if(gmailView.draft){gmailView.draft.slotIndex=null;renderGmailPlan();}$("gmailAfterDue").checked=false;});
+    $("gmailDateCandidates").addEventListener("click",event=>{const b=event.target.closest("[data-gmail-date]"),c=gmailView.draft?.dates?.[Number(b?.dataset.gmailDate)];if(b&&c?.date&&!gmailView.busy){$("gmailTaskDueDate").value=c.date;$("gmailTaskDueTime").value="";$("gmailAfterDue").checked=false;clearGmailPlan();}});
+    $("gmailRelatedEvents").addEventListener("click",event=>{const b=event.target.closest("[data-gmail-event]"),d=gmailView.draft;if(b&&d?.plan&&!gmailView.busy){const i=Number(b.dataset.gmailEvent);if(d.plan.events[i]){d.eventIndex=d.eventIndex===i?null:i;renderGmailPlan();}}});
+    $("gmailCalendarGaps").addEventListener("click",event=>{const b=event.target.closest("[data-gmail-gap]"),d=gmailView.draft;if(b&&d?.plan&&!gmailView.busy){const i=Number(b.dataset.gmailGap),slot=d.plan.slots[i];if(slot&&Date.parse(slot.start)>Date.now()){$("gmailTaskReminder").value=toLocalInput(slot.start);d.slotIndex=i;$("gmailAfterDue").checked=false;renderGmailPlan();}}});
+    $("gmailTaskDialog").addEventListener("cancel",event=>{if(gmailView.busy)event.preventDefault();else{clearGmailPlan();gmailView.draft=null;}});
+
     async function prepareGmailTask(event){
-      event.preventDefault();const owner=state.user?.id,epoch=gmailEpoch,draft=gmailView.draft;if(!owner||!draft||gmailView.busy)return;
+      event.preventDefault();const owner=state.user?.id,epoch=gmailEpoch,draft=gmailView.draft;if(!owner||!draft?.reviewReady||gmailView.busy)return;
       const time=$("gmailTaskReminder").value,title=$("gmailTaskTitle").value.trim();if(!time||!title||!Number.isFinite(new Date(time).getTime())||new Date(time).getTime()<=Date.now()){ $("gmailTaskError").textContent="Choose a title and future reminder time.";$("gmailTaskError").classList.remove("hidden");return;}
       let remindAt;try{const [day,clock]=time.split("T");remindAt=new Date(parsePlanningTime(day,clock)).toISOString();}catch(error){$("gmailTaskError").textContent=error.message;$("gmailTaskError").classList.remove("hidden");return;}
+      let dueLocal;try{dueLocal=gmailDueLocal();}catch(error){$("gmailTaskError").textContent=error.message;$("gmailTaskError").classList.remove("hidden");return;}
       gmailView.busy=true;renderGmail();
       try{
-        const data=await invokeGmail({action:"propose",connection_id:draft.connection_id,message_id:draft.mail.id,fingerprint:draft.mail.fingerprint,request_id:draft.request_id,title,remind_at:remindAt});
+        const data=await invokeGmail({action:"propose",connection_id:draft.connection_id,message_id:draft.mail.id,fingerprint:draft.mail.fingerprint,request_id:draft.request_id,title,remind_at:remindAt,due_local:dueLocal,estimated_minutes:$("gmailTaskEstimate").value===""?null:Number($("gmailTaskEstimate").value),after_due_confirmed:$("gmailAfterDue").checked,plan_token:draft.eventIndex!=null||draft.slotIndex!=null?draft.plan?.plan_token:undefined,event_index:draft.eventIndex,slot_index:draft.slotIndex});
         if(state.user?.id!==owner||epoch!==gmailEpoch||gmailView.draft!==draft)return;
         if(!data.activity_id)throw new Error("No proposal was confirmed. Check Activity before retrying.");
         gmailView.prepared[draft.mail.id]=data.activity_id;gmailView.draft=null;$("gmailTaskDialog").close();toast("Proposal prepared. Review it in Activity before saving.");openActivity();

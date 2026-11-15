@@ -24,13 +24,17 @@ publication.
   reviewed date evidence, optional due times and work estimates, deliberate event
   references and calendar-gap snapshots. [Behavior and Google setup](gmail-readonly-pilot.md).
 
+- Reviewed Google Calendar event creation, conflict review, exact approval and
+  interrupted-save recovery. [Behavior and permission setup](google-calendar-event-creation.md).
+
 ## Current work
 
-Reviewed Google Calendar event creation: manual/email drafts, selected writable
-calendars, conflict checks, exact approval and interrupted-save recovery.
-[Behavior and one-time permission setup](google-calendar-event-creation.md).
-Existing event editing/deletion, guests, recurrence and all-day creation are later
-additions; read-only display and Calendar questions continue unchanged.
+Background routine foundation: opt-in daily deadline review and deadline-change
+watches, durable bounded jobs, private history, pause/resume, quiet-hour-aware
+alerts and visible usage limits. [Behavior and rollout](background-routines.md).
+Future routine types may add separately scoped Calendar/email checks and reviewed
+AI work. Existing Google event editing/deletion, guests, recurrence and all-day
+creation remain later additions.
 
 ## Agreed next phases
 

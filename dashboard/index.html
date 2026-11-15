@@ -303,6 +303,7 @@
         <button class="navitem" data-scroll="gmailPanel">Email review</button>
         <button class="navitem" data-scroll="assistantSettings">Assistant</button>
         <button class="navitem" data-scroll="assistantActivity">Activity & approvals</button>
+        <button class="navitem" data-scroll="routinesPanel">Background routines</button>
         <button class="navitem" data-scroll="familyPanel">Family</button>
         <button class="navitem" data-scroll="familySettings">Settings</button>
       </nav>
@@ -609,6 +610,17 @@
           <p class="history-private-note">This is an on-demand review of the loaded messages, not a background inbox monitor or scheduled digest. No reminder time is inferred from an excerpt.</p>
         </div>
       </section>
+      <section id="routinesPanel" class="panel" aria-labelledby="routinesHeading">
+        <div class="panelhead"><div><h3 id="routinesHeading">Background routines</h3><div class="subtitle">Private deadline checks that keep working while Open Brain is closed.</div></div><div class="controls"><button id="refreshRoutines" class="ghost" type="button">Refresh</button><button id="newRoutine" class="primary" type="button">+ Routine</button></div></div>
+        <div style="padding:20px">
+          <p class="history-private-note">Choose a daily review or a watch for deadline changes. Only tasks assigned to you and visible to you are checked: deadlines from the past 30 days through your chosen window. No email, Google Calendar or Health records are read, and no AI calls are made.</p>
+          <p id="routineUsage" class="setting-note" role="status">Open this section to check your routines and usage.</p>
+          <p class="history-private-note">Up to 30 check attempts and 4 alert batches per UTC day across your routines. Each successful check covers up to 200 deadlines. You can configure one of each template. History is kept for 30 days. These are work limits, not a hosting-bill cap.</p>
+          <p id="routineError" class="message err hidden" role="alert"></p>
+          <div id="routineCards" class="activity-list"></div>
+          <h4>Private run history</h4><div id="routineRuns" class="activity-list"><p class="setting-note">No run history loaded.</p></div><button id="moreRoutineRuns" class="ghost hidden" type="button">Older runs</button>
+        </div>
+      </section>
       <section id="assistantActivity" class="panel" aria-labelledby="activityHeading">
         <div class="panelhead"><div><h3 id="activityHeading">Activity & approvals</h3><div class="subtitle">Your assistant’s progress. Your decisions before anything is saved.</div></div><button id="refreshActivity" class="ghost" type="button">Refresh</button></div>
         <div class="activity-layout">
@@ -626,7 +638,7 @@
             <div class="activity-health-card"><h4>Delivery needs attention</h4><div id="activityFailures"><p>Delivery status has not been checked.</p></div><p>Shows your task reminders and event notifications. Quiet hours can delay retries. Health notifications stay in Health.</p></div>
           </aside>
         </div>
-        <p class="history-private-note" style="padding:0 20px 16px">Pause or cancel holds pending changes and discards late results. An AI request already sent may finish at the provider. Completed saves remain in their own screens. Background routines are not enabled in this release.</p>
+        <p class="history-private-note" style="padding:0 20px 16px">Pause or cancel holds pending changes and discards late results. An AI request already sent may finish at the provider. Completed saves remain in their own screens. Opt-in background checks and their private run history are in Background routines.</p>
       </section>
       <section id="assistantSettings" class="panel">
         <div class="panelhead"><div><h3>Your assistant</h3><div class="subtitle">Personal preferences and memory controls, private to your account.</div></div></div>
@@ -803,6 +815,7 @@
           <button type="button" data-scroll="assistantSettings">✦ Assistant</button>
           <button type="button" data-scroll="gmailPanel">✉ Email review</button>
           <button type="button" data-scroll="assistantActivity">◷ Activity & approvals</button>
+          <button type="button" data-scroll="routinesPanel">◷ Background routines</button>
           <button type="button" data-scroll="familySettings">⚙️ Settings</button>
           <button id="mobileInstallApp" type="button">📲 Install app</button>
         </div>
@@ -1390,6 +1403,23 @@
     <div class="modalfoot"><button id="dismissInstallApp" class="primary" type="button">Got it</button></div>
   </dialog>
 
+  <dialog id="routineDialog"><form id="routineForm">
+    <div class="modalhead"><h3 id="routineEditorHeading">Background routine</h3><button id="closeRoutine" class="ghost" type="button">Close</button></div>
+    <div class="modalbody">
+      <label for="routineKind">What should run?</label><select id="routineKind"><option value="daily_deadlines">Daily deadline review</option><option value="deadline_watch">Watch deadline changes</option></select>
+      <p id="routineKindNote" class="history-private-note"></p>
+      <label for="routineTitle">Routine name</label><input id="routineTitle" maxlength="100" required>
+      <div id="routineDailyTime"><label for="routineTime">Daily check time</label><input id="routineTime" type="time" value="08:00" required></div>
+      <p id="routineTimezone" class="setting-note"></p>
+      <label for="routineHorizon">Upcoming deadlines to include</label><select id="routineHorizon"><option value="1">Next 24 hours</option><option value="3">Next 3 days</option><option value="7" selected>Next 7 days</option></select>
+      <p class="history-private-note">Overdue deadlines from the past 30 days are included. Results stay in your private run history; no tasks or calendar events are changed.</p>
+      <label class="quiet-hours-toggle"><input id="routineEnabled" type="checkbox"> Run this routine in the background</label>
+      <label class="quiet-hours-toggle"><input id="routinePush" type="checkbox"> Alert my enabled phones/browsers</label>
+      <label class="quiet-hours-toggle"><input id="routineTelegram" type="checkbox"> Alert my connected Telegram</label>
+      <p class="history-private-note">Alerts say a private check is ready, without task titles. They respect your quiet hours. Phone delivery uses up to 10 enabled devices with task notifications on; Telegram must already be enabled in Settings. The app records provider acceptance, which does not guarantee a device displayed an alert. If a send result is uncertain, it is not blindly resent.</p>
+      <p id="routineFormError" class="message err hidden" role="alert"></p>
+    </div><div class="modalfoot"><button id="saveRoutine" class="primary" type="submit">Save routine</button></div>
+  </form></dialog>
   <dialog id="googleEventDialog"><form id="googleEventForm">
     <div class="modalhead"><h3>Create a Google Calendar event</h3><button id="closeGoogleEvent" class="ghost" type="button">Close</button></div>
     <div class="modalbody">
@@ -2119,6 +2149,7 @@
       loadGoogleCalendarIntegration().catch(err=>console.warn("Google Calendar initialization failed:",err));
       loadQuietHoursPreferences();
       initializeAssistantSettings().catch(()=>{});
+      if(location.hash==="#routinesPanel"){loadRoutines();requestAnimationFrame(()=>$("routinesPanel").scrollIntoView({block:"start"}));}
     }
 
     async function loadData(){
@@ -2652,6 +2683,58 @@
       }
       return false;
     }
+
+    // BEGIN BACKGROUND ROUTINES
+    let routineEpoch=0,routineRequest=0,routineEditing=null;
+    let routineView={owner:null,loaded:false,loading:false,busy:false,rows:[],runs:[],more:false,usage:null,timezone:null,error:""};
+    function resetRoutines(){
+      routineEpoch++;routineRequest++;routineEditing=null;routineView={owner:null,loaded:false,loading:false,busy:false,rows:[],runs:[],more:false,usage:null,timezone:null,error:""};
+      $("routineForm").reset();$("saveRoutine").disabled=false;$("closeRoutine").disabled=false;$("routineCards").textContent="";$("routineRuns").textContent="";$("routineUsage").textContent="Open this section to check your routines and usage.";$("routineError").textContent="";$("routineError").classList.add("hidden");$("routineFormError").textContent="";$("routineTimezone").textContent="";$("moreRoutineRuns").classList.add("hidden");if($("routineDialog").open)$("routineDialog").close();
+    }
+    async function invokeRoutine(body){const {data,error}=await sb.functions.invoke("open-brain-routines",{body});if(error||data?.error){let details;try{details=await error?.context?.json?.();}catch(_){}throw new Error(details?.error||data?.error||error?.message||"Routine request failed. Refresh before retrying.");}return data;}
+    function routineTime(value,timezone){if(!value)return "Not scheduled";try{return new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short",timeZone:timezone}).format(new Date(value));}catch(_){return "Time unavailable";}}
+    function renderRoutines(){
+      const v=routineView;
+      $("refreshRoutines").disabled=v.busy||v.loading;$("newRoutine").disabled=v.busy||!v.loaded||v.rows.length>=2;$("moreRoutineRuns").disabled=v.busy||v.loading;$("moreRoutineRuns").classList.toggle("hidden",!v.more);
+      $("routineError").textContent=v.error;$("routineError").classList.toggle("hidden",!v.error);$("routineCards").setAttribute("aria-busy",String(v.loading||v.busy));
+      $("routineUsage").textContent=v.usage?"Today (UTC): "+v.usage.checks+" / 30 check attempts · "+v.usage.alerts+" / 4 alert batches · 0 AI calls. Counts reset at 00:00 UTC.":v.loading?"Loading your private routines…":"Open this section to check your routines and usage.";
+      $("routineCards").innerHTML=v.rows.map(r=>'<article class="activity-card"><h4>'+esc(r.title)+'</h4><p class="activity-meta">'+esc(r.enabled?"Running in background":"Paused")+' · '+esc(r.kind==="daily_deadlines"?"Daily at "+r.local_time.slice(0,5):"Hourly + deadline-change wake-ups")+' · '+esc(r.timezone)+'</p><p class="activity-meta">'+esc(r.enabled?"Next scheduled check: "+routineTime(r.next_run_at,r.timezone):"No new checks or alerts while paused.")+'</p><p class="history-private-note">Next '+r.horizon_days+' days + overdue from the past 30 days. Alerts: '+esc([r.notify_push?"enabled phones/browsers":null,r.notify_telegram?"connected Telegram":null].filter(Boolean).join(" and ")||"in-app results only")+'.</p><div class="activity-actions"><button class="ghost smallbtn" type="button" data-routine-edit="'+esc(r.id)+'" '+(v.busy?"disabled":"")+'>Edit</button><button class="ghost smallbtn" type="button" data-routine-command="'+(r.enabled?"pause":"resume")+'" data-routine-id="'+esc(r.id)+'" '+(v.busy?"disabled":"")+'>'+(r.enabled?"Pause":"Resume")+'</button><button class="ghost smallbtn" type="button" data-routine-command="run_now" data-routine-id="'+esc(r.id)+'" '+(v.busy||!r.enabled?"disabled":"")+'>Queue check now</button><button class="ghost smallbtn" type="button" data-routine-command="delete" data-routine-id="'+esc(r.id)+'" '+(v.busy?"disabled":"")+'>Delete routine & history</button></div></article>').join("")||(v.loaded?'<p class="setting-note">No routines configured. Create one to choose what can run in the background.</p>':"");
+      const labels={none:"Not scheduled",no_change:"No alert needed",in_app:"In-app result only",pending:"Alert queued",deferred:"Alert held for quiet hours or delivery",sending:"Alert delivery in progress",accepted:"Provider accepted delivery",partial:"Some delivery accepted",failed:"Delivery not accepted",unknown:"Delivery result uncertain; attempted channels will not be resent",daily_limit:"Daily alert limit reached; result stays here",expired:"Old alert expired",superseded:"A newer result replaced this alert",cancelled:"Alert cancelled",no_channel:"No enabled delivery channel"};
+      $("routineRuns").innerHTML=v.runs.map(j=>{const p=j.result,summary=p?(p.kind==="deadline_watch"&&p.baseline?"Initial baseline saved; future deadline changes can alert you.":p.overdue+" overdue · "+p.upcoming+" upcoming"+(p.kind==="deadline_watch"?" · "+p.added+" added · "+p.changed+" dates changed · "+p.became_overdue+" newly overdue · "+p.removed+" left this watch":"")):j.error_code==="daily_check_limit"?"Check limit reached; queued for the next UTC day.":j.error_code?"Check could not complete. It retries up to three times; reduce the deadline window if it keeps failing.":j.status==="queued"?"Waiting for the server worker. You may close the app.":j.status==="running"?"Checking your visible assigned deadlines…":j.status;
+        return '<article class="activity-card"><h4>'+esc(p?.title||v.rows.find(r=>r.id===j.routine_id)?.title||"Deadline routine")+'</h4><p class="activity-meta">'+esc(j.status)+' · '+esc(j.phase)+' · attempt '+j.attempts+' / 3 · '+esc(activityTime(j.created_at))+'</p><p>'+esc(summary)+'</p><p class="activity-meta">'+esc(labels[j.notification_state]||j.notification_state)+'</p>'+(j.channels?'<p class="activity-meta">Phone/browser: '+esc(j.channels.push)+' · Telegram: '+esc(j.channels.telegram)+'</p>':"")+(p?'<details><summary>View checked deadlines ('+p.tasks.length+')</summary><p class="history-private-note">Snapshot from '+esc(routineTime(p.checked_at,p.timezone))+' · '+esc(p.timezone)+'. Items that left a watch may be completed, reassigned, hidden or outside the window.</p>'+p.tasks.map(t=>'<p style="overflow-wrap:anywhere"><strong>'+esc(t.title)+'</strong><br><span class="activity-meta">'+esc(t.bucket)+' · '+esc(routineTime(t.due_at,p.timezone))+'</span></p>').join("")+'</details>':"")+'</article>';}).join("")||(v.loaded?'<p class="setting-note">No runs yet. Enabled checks are queued by the server, even while the app is closed.</p>':"");
+    }
+    async function loadRoutines(append=false,force=false){
+      const owner=state.user?.id;if(!owner||routineView.loading||routineView.busy&&!force)return;if(routineView.owner!==owner){resetRoutines();routineView.owner=owner;}
+      const epoch=routineEpoch,request=++routineRequest;routineView.loading=true;renderRoutines();
+      try{const last=append?routineView.runs.at(-1):null,data=await invokeRoutine({action:"list",cursor:last?{id:last.id,created_at:last.created_at}:undefined});if(state.user?.id!==owner||epoch!==routineEpoch||request!==routineRequest)return;if(!Array.isArray(data.routines)||!Array.isArray(data.runs))throw new Error("Routine status could not be verified.");routineView.rows=data.routines;routineView.runs=append?[...routineView.runs,...data.runs.filter(j=>!routineView.runs.some(old=>old.id===j.id))]:data.runs;routineView.more=!!data.has_more;routineView.usage=data.usage;routineView.timezone=data.timezone;routineView.loaded=true;routineView.error="";}
+      catch(error){if(state.user?.id===owner&&epoch===routineEpoch&&request===routineRequest){routineView.error=error.message;routineView.rows=[];routineView.runs=[];routineView.more=false;routineView.loaded=false;}}
+      finally{if(state.user?.id===owner&&epoch===routineEpoch&&request===routineRequest){routineView.loading=false;renderRoutines();}}
+    }
+    function renderRoutineEditor(){
+      const watch=$("routineKind").value==="deadline_watch";$("routineDailyTime").classList.toggle("hidden",watch);$("routineKindNote").textContent=watch?"The first check establishes a silent baseline. Later checks alert only for new deadlines, changed dates, newly overdue items or items leaving the watch. Checks run hourly; task changes can queue an earlier check, at least 15 minutes after the last start.":"Checks once per local day at your chosen time. An optional alert is sent when the review contains deadlines; empty reviews stay in history.";
+      $("routineTimezone").textContent="Schedule uses your household timezone: "+(routineView.timezone||state.household?.timezone||"unavailable")+". Clock changes may shift a skipped local time to a valid time.";$("saveRoutine").textContent=$("routineEnabled").checked?"Save & start routine":"Save paused routine";
+    }
+    function openRoutineEditor(row=null){
+      if(routineView.busy||!routineView.loaded)return;routineEditing=row?{...row}:null;$("routineForm").reset();$("routineKind").querySelectorAll("option").forEach(o=>o.disabled=!row&&routineView.rows.some(r=>r.kind===o.value));$("routineKind").disabled=!!row;$("routineKind").value=row?.kind||[...$("routineKind").options].find(o=>!o.disabled)?.value||"daily_deadlines";$("routineTitle").value=row?.title||($("routineKind").value==="daily_deadlines"?"Daily deadline review":"Deadline change watch");$("routineTime").value=row?.local_time?.slice(0,5)||"08:00";$("routineHorizon").value=String(row?.horizon_days||7);$("routineEnabled").checked=!!row?.enabled;$("routinePush").checked=!!row?.notify_push;$("routineTelegram").checked=!!row?.notify_telegram;$("routineFormError").classList.add("hidden");renderRoutineEditor();$("routineDialog").showModal();
+    }
+    async function saveRoutine(event){
+      event.preventDefault();const owner=state.user?.id,epoch=routineEpoch,row=routineEditing;if(!owner||routineView.busy)return;routineRequest++;routineView.loading=false;routineView.busy=true;renderRoutines();$("saveRoutine").disabled=true;$("closeRoutine").disabled=true;
+      try{await invokeRoutine({action:"save",id:row?.id,version:row?.version,config:{kind:$("routineKind").value,title:$("routineTitle").value.trim(),local_time:$("routineTime").value,horizon_days:Number($("routineHorizon").value),enabled:$("routineEnabled").checked,notify_push:$("routinePush").checked,notify_telegram:$("routineTelegram").checked}});if(state.user?.id!==owner||epoch!==routineEpoch)return;$("routineDialog").close();routineEditing=null;await loadRoutines(false,true);toast("Routine settings saved.");}
+      catch(error){if(state.user?.id===owner&&epoch===routineEpoch){$("routineFormError").textContent=error.message+" Refresh before retrying if the result is uncertain.";$("routineFormError").classList.remove("hidden");}}
+      finally{if(state.user?.id===owner&&epoch===routineEpoch){routineView.busy=false;$("saveRoutine").disabled=false;$("closeRoutine").disabled=false;renderRoutines();}}
+    }
+    async function routineCommand(id,action){
+      const row=routineView.rows.find(r=>r.id===id),owner=state.user?.id,epoch=routineEpoch;if(!row||!owner||routineView.busy)return;if(action==="delete"&&!confirm("Delete this routine and its private run history? Already dispatched alerts cannot be recalled. Usage counts remain until their retention period ends."))return;
+      routineRequest++;routineView.loading=false;routineView.busy=true;renderRoutines();
+      try{await invokeRoutine({action,id,version:row.version,confirm_delete:action==="delete"});if(state.user?.id!==owner||epoch!==routineEpoch)return;await loadRoutines(false,true);toast(action==="run_now"?"Check queued on the server. You may close the app.":action==="pause"?"Routine paused. Pending work and alerts were stopped; dispatched alerts cannot be recalled.":action==="resume"?"Routine resumed with a fresh baseline.":"Routine and history deleted.");}
+      catch(error){if(state.user?.id===owner&&epoch===routineEpoch){routineView.error=error.message;renderRoutines();}}
+      finally{if(state.user?.id===owner&&epoch===routineEpoch){routineView.busy=false;renderRoutines();}}
+    }
+    $("newRoutine").addEventListener("click",()=>openRoutineEditor());$("refreshRoutines").addEventListener("click",()=>loadRoutines());$("moreRoutineRuns").addEventListener("click",()=>loadRoutines(true));$("routineKind").addEventListener("change",renderRoutineEditor);$("routineEnabled").addEventListener("change",renderRoutineEditor);$("routineForm").addEventListener("submit",saveRoutine);$("closeRoutine").addEventListener("click",()=>{if(!routineView.busy)$("routineDialog").close();});$("routineDialog").addEventListener("cancel",e=>{if(routineView.busy)e.preventDefault();});
+    $("routineCards").addEventListener("click",event=>{const edit=event.target.closest("[data-routine-edit]"),command=event.target.closest("[data-routine-command]");if(edit)openRoutineEditor(routineView.rows.find(r=>r.id===edit.dataset.routineEdit));if(command)routineCommand(command.dataset.routineId,command.dataset.routineCommand);});
+    const routineObserver=new IntersectionObserver(entries=>{if(state.user&&!routineView.loaded&&entries.some(e=>e.isIntersecting))loadRoutines();},{threshold:0.05});routineObserver.observe($("routinesPanel"));
+    setInterval(()=>{const rect=$("routinesPanel").getBoundingClientRect();if(state.user&&!document.hidden&&rect.bottom>0&&rect.top<innerHeight&&!routineView.busy)loadRoutines();},15000);
+    // END BACKGROUND ROUTINES
 
     // BEGIN GMAIL PILOT
     let gmailEpoch=0,gmailRequest=0;
@@ -3759,7 +3842,7 @@
     }
 
     let healthTrendsRequest=0,taskSlotsRequest=0,taskSlotDraft=null;
-    function clearPrivateViews(){googleCalendarReadEpoch++;state.googleCalendarBusy=false;state.googleCalendarStatus=null;state.googleCalendars=[];state.googleEvents=[];resetGoogleEventCreation();resetGmail();state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
+    function clearPrivateViews(){resetRoutines();googleCalendarReadEpoch++;state.googleCalendarBusy=false;state.googleCalendarStatus=null;state.googleCalendars=[];state.googleEvents=[];resetGoogleEventCreation();resetGmail();state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
     function resetHealthTrends(){
       healthTrendsRequest++;state.healthTrends=null;
       $("healthTrendsSection").open=false;$("healthTrendPeriod").value="7";

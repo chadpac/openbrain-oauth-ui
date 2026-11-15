@@ -78,6 +78,11 @@ preparation or task approval: the stored check time is a snapshot, not a reserva
 or continuing conflict guarantee. Final approval rechecks Gmail identity and the
 existing assistant approval context, rather than repeating Calendar reads.
 
+A separate **Prepare Google event** action opens the [reviewed Calendar creation](google-calendar-event-creation.md)
+flow. It needs its own additional Google permission and explicit event approval;
+email source details are off by default. The private reminder flow above remains
+a separate task save.
+
 ## Google Cloud setup
 
 The pilot reuses the existing GOOGLE_CALENDAR_CLIENT_ID/SECRET and registered

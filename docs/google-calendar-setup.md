@@ -1,7 +1,9 @@
-# Google Calendar phase one setup
+# Google Calendar setup
 
-This extends the existing dashboard. Google events remain read-only, are fetched
-for the signed-in user, and are never written into the household events table.
+Google events are fetched for the signed-in user and are never automatically
+written into the household events table. Display and Calendar questions remain
+read-only. Optional [reviewed event creation](google-calendar-event-creation.md)
+uses a separately requested Google permission.
 Health & Wellbeing data is not sent to this integration or added to AI context.
 
 ## Google Cloud
@@ -15,13 +17,15 @@ Health & Wellbeing data is not sent to this integration or added to AI context.
      do not invent privacy-policy URLs. A production verification submission may
      require a real home page, privacy policy, and verified domain.
    - **Audience**: `External` for ordinary Gmail/family accounts. Keep publishing
-     status `Testing` initially. Add every family Google account that will test
+     status `Testing` initially for a new test client. Keep an existing Production
+     application in Production; do not switch it back for this update. Add every family Google account that will test
      the connection under **Test users**. `Internal` is only suitable if every
      user is in the same eligible Workspace organization.
    - **Data Access → Add or remove scopes**: add exactly:
      - `https://www.googleapis.com/auth/calendar.calendarlist.readonly`
      - `https://www.googleapis.com/auth/calendar.events.readonly`
-     Do not add Calendar write scopes.
+     These scopes are sufficient for display. Add the optional event-creation
+     scope only when enabling the reviewed creation feature described below.
 4. **Clients → Create client → Web application**:
    - Name: `Open Brain Calendar`
    - Authorized JavaScript origins: leave empty. This app uses a server callback,
@@ -61,9 +65,13 @@ existing live function. `supabase/config.toml` retains `verify_jwt = false` so t
 unauthenticated Google callback can reach it. Every authenticated POST performs
 its own bearer-token validation with `auth.getUser` and checks household membership.
 
-Deploy the reviewed function with the Supabase deployment tooling. No schema
-migration is required for these fixes. Merge/publish the dashboard changes through
-the repository's existing hosting flow; cache v16 replaces the previous v15 shell.
+For reviewed event creation, apply `20261115052104_google_calendar_event_creation.sql`
+and deploy google-calendar-oauth with its deno.json and all relative dependencies:
+shared gmail.ts, email-review.ts, calendar-create.ts and the existing pure
+open-brain-assistant/calendar-questions.ts helpers. Keep verify_jwt=false; the
+function validates every POST itself. Publish dashboard/about/privacy/service
+worker v29 through the existing hosting flow. Existing read-only connections
+continue working until the user chooses the permission upgrade.
 
 ## Verify configuration
 
@@ -73,8 +81,8 @@ Open this public metadata endpoint (it never returns tokens):
 https://prctfnpbftjepdckwpao.supabase.co/functions/v1/google-calendar-oauth?action=config
 ```
 
-Expected: `configured: true`, the exact redirect URI above, and only the two
-read-only scopes. This checks that both settings exist; a successful OAuth flow
+Expected: `configured: true`, the exact redirect URI above, the two default
+read-only scopes, and a separate `write_scope` for optional creation. This checks that both settings exist; a successful OAuth flow
 is still needed to confirm the values are valid.
 
 ## End-to-end acceptance check
@@ -96,7 +104,8 @@ is still needed to confirm the values are valid.
      still contribute to This Week.
    - Each Google event says `Google · read only`, with no Edit action.
 5. Change an event in Google, click **Refresh events**, and confirm the result.
-   Google updates are read only; Open Brain never modifies Google events.
+   The display refresh is read only. Event creation has its own explicit approval;
+   Open Brain does not edit or delete existing Google events.
 6. Reload Open Brain and reconnect in a later session to exercise refresh-token
    use. Browser responses/storage must never contain refresh tokens or ciphertext.
 7. Disconnect. Google revocation must succeed (or already be invalid) before the
@@ -130,3 +139,24 @@ before changing grants. See [Supabase function security guidance](https://supaba
 
 References: [Google server OAuth](https://developers.google.com/identity/protocols/oauth2/web-server),
 [Calendar scopes](https://developers.google.com/workspace/calendar/api/guides/auth).
+
+## Enable reviewed event creation on the existing connection
+
+1. In the **same Google Cloud project and existing OAuth client**, open **Google
+   Auth Platform → Data Access → Add or remove scopes**. Under the older console
+   navigation, **APIs & Services → OAuth consent screen** opens that configuration.
+2. Add `https://www.googleapis.com/auth/calendar.events` and save. Keep the existing
+   Calendar/Gmail scopes, registered callback, OAuth client credentials, audience
+   and publishing configuration. No additional API or Supabase secret is needed.
+3. In Open Brain Settings → Google Calendar, choose **Enable event creation**.
+   Complete Google consent for the intended personal/family account. The app's
+   ordinary Connect button continues requesting only read permissions.
+4. Select at least one calendar on which this Google account is an owner or writer.
+   Choose **+ Google event** in Upcoming Events, or **Prepare Google event** on an
+   email. Enter confirmed times, check/review, and approve the exact event.
+5. Confirm the result using **Open confirmed event in Google Calendar**. The app
+   reports completion only after Google confirms the same stored event identifier.
+
+The additional Google scope technically allows creation, modification and deletion;
+this feature exposes only reviewed creation. Full behavior, retry limits and
+privacy boundaries are documented in [event creation](google-calendar-event-creation.md).

@@ -67,7 +67,7 @@ with sync_playwright() as p:
  assert '2 gallons' in first.inner_text() and 'Whole milk — retain this note' in first.inner_text()
  assert first.locator('[data-activity-command="approve"]').first.evaluate('(el)=>getComputedStyle(el).backgroundColor!==getComputedStyle(el).color')
  assert '<school>' in first.inner_text() and page.locator('#activityList school').count()==0
- assert 'read-only' in page.locator('#activityConnections').inner_text()
+ assert 'check Settings for permissions' in page.locator('#activityConnections').inner_text()
  assert 'Retry limit reached' in page.locator('#activityFailures').inner_text()
  page.locator('#moreActivity').click();page.wait_for_function('activityTest.activityView.rows.length===25')
  assert page.locator('#moreActivity').is_hidden()

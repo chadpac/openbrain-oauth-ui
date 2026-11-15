@@ -1,6 +1,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.119.0";
 import { createGmailService } from "../_shared/gmail.ts";
+import { createCalendarEventService, CALENDAR_WRITE_SCOPE } from "../_shared/calendar-create.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -113,7 +114,7 @@ async function encryptRefreshToken(token:string){
 
 async function getConnection(userId:string){
   const {data,error}=await admin.from("google_calendar_connections")
-    .select("owner_user_id,household_id,google_email,refresh_token_cipher,scopes,selected_calendar_ids,connected_at,updated_at")
+    .select("owner_user_id,household_id,connection_id,google_email,refresh_token_cipher,scopes,selected_calendar_ids,connected_at,updated_at")
     .eq("owner_user_id",userId)
     .maybeSingle();
   if(error)throw new HttpError(500,error.message);
@@ -215,7 +216,7 @@ async function handleCallback(url:URL){
   const {data:row,error}=await admin.from("google_oauth_states")
     .delete()
     .eq("state",state)
-    .select("state,owner_user_id,household_id,code_verifier,expires_at")
+    .select("state,owner_user_id,household_id,code_verifier,expires_at,write_requested")
     .maybeSingle();
 
   if(error||!row)return redirect({google_calendar:"error",reason:"invalid_state"});
@@ -250,7 +251,7 @@ async function handleCallback(url:URL){
   }
 
   const granted=String(tokens.scope||"").split(/\s+/).filter(Boolean);
-  if(!SCOPES.every(scope=>granted.includes(scope)))return redirect({google_calendar:"error",reason:"missing_scopes"});
+  if(!granted.includes(SCOPES[0])||!granted.includes(SCOPES[1])&&!granted.includes(CALENDAR_WRITE_SCOPE)||row.write_requested&&!granted.includes(CALENDAR_WRITE_SCOPE))return redirect({google_calendar:"error",reason:"missing_scopes"});
   const existing=await getConnection(row.owner_user_id);
   let refreshToken=String(tokens.refresh_token||"");
   if(!refreshToken)return redirect({google_calendar:"error",reason:"no_refresh_token"});
@@ -277,13 +278,14 @@ async function handleCallback(url:URL){
   const {error:saveError}=await admin.from("google_calendar_connections").upsert({
     owner_user_id:row.owner_user_id,
     household_id:row.household_id,
+    connection_id:crypto.randomUUID(),
     google_email:primary?.id?String(primary.id):null,
     refresh_token_cipher:cipher,
     scopes,
     selected_calendar_ids:existing?.google_email===String(primary?.id||"")
       ? (existing.selected_calendar_ids||[]).filter((id:string)=>calendars.some(c=>String(c.id)===id))
       : defaultSelected,
-    connected_at:existing?.connected_at||new Date().toISOString(),
+    connected_at:new Date().toISOString(),
     updated_at:new Date().toISOString()
   },{onConflict:"owner_user_id"});
 
@@ -298,6 +300,7 @@ async function handleCallback(url:URL){
 async function handleAuthed(req:Request,body:any){
   const {user,member}=await requireUser(req);
   const action=String(body?.action||"status");
+  if(action.startsWith("event_"))return json(await createCalendarEventService(admin,{supabaseUrl:SUPABASE_URL,HttpError,accessTokenFor,getConnection,listCalendars,listEventsForCalendar}).handle(req,body,{user,member}));
 
   if(action==="status"){
     const connection=await getConnection(user.id);
@@ -309,12 +312,14 @@ async function handleAuthed(req:Request,body:any){
       selected_calendar_ids:connection?.selected_calendar_ids||[],
       selected_count:connection?.selected_calendar_ids?.length||0,
       connected_at:connection?.connected_at||null,
+      connection_id:connection?.connection_id||null,
+      write_enabled:(connection?.scopes||[]).includes(CALENDAR_WRITE_SCOPE),
       redirect_uri:REDIRECT_URI,
       scopes:SCOPES
     });
   }
 
-  if(action==="start"){
+  if(action==="start"||action==="start_write"){
     if(!configured())throw new HttpError(503,"Google Calendar OAuth credentials still need to be configured.");
     await admin.from("google_oauth_states").delete().lt("expires_at",new Date().toISOString());
     const state=randomToken(32);
@@ -325,6 +330,7 @@ async function handleAuthed(req:Request,body:any){
       owner_user_id:user.id,
       household_id:member.household_id,
       code_verifier:verifier,
+      write_requested:action==="start_write",
       expires_at:new Date(Date.now()+10*60*1000).toISOString()
     });
     if(error)throw new HttpError(500,"Unable to start the Google connection.");
@@ -333,7 +339,7 @@ async function handleAuthed(req:Request,body:any){
     authUrl.searchParams.set("client_id",GOOGLE_CLIENT_ID);
     authUrl.searchParams.set("redirect_uri",REDIRECT_URI);
     authUrl.searchParams.set("response_type","code");
-    authUrl.searchParams.set("scope",SCOPES.join(" "));
+    authUrl.searchParams.set("scope",[...SCOPES,...(action==="start_write"?[CALENDAR_WRITE_SCOPE]:[])].join(" "));
     authUrl.searchParams.set("access_type","offline");
     authUrl.searchParams.set("include_granted_scopes","false");
     authUrl.searchParams.set("prompt","consent");
@@ -426,7 +432,7 @@ Deno.serve(async (req:Request)=>{
   try{
     const url=new URL(req.url);
     if(req.method==="GET"&&url.searchParams.get("action")==="config"){
-      return json({ok:true,configured:configured(),redirect_uri:REDIRECT_URI,scopes:SCOPES});
+      return json({ok:true,configured:configured(),redirect_uri:REDIRECT_URI,scopes:SCOPES,write_scope:CALENDAR_WRITE_SCOPE});
     }
     if(req.method==="GET"&&url.searchParams.get("action")==="callback"){
       return await handleCallback(url);

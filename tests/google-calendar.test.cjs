@@ -55,7 +55,7 @@ function backend({connection=null,states=[],revokeStatus=200,scopes,tokenRefresh
     throw Error('Unexpected URL '+url);
   };
   let source=fs.readFileSync('supabase/functions/google-calendar-oauth/index.ts','utf8').replace(/^import[^\n]*\n/gm,'');
-  const context=vm.createContext({createGmailService:()=>({callback:async()=>Response.json({gmail_routed:true})}),createClient:()=>admin,Deno:{env:{get:k=>({SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-key',GOOGLE_CALENDAR_CLIENT_ID:'client',GOOGLE_CALENDAR_CLIENT_SECRET:'secret'})[k]},serve:fn=>handler=fn},crypto:globalThis.crypto,fetch,Response,Request,URL,URLSearchParams,TextEncoder,Uint8Array,btoa,console:{error(){},warn(){}}});
+  const context=vm.createContext({CALENDAR_WRITE_SCOPE:"https://www.googleapis.com/auth/calendar.events",createCalendarEventService:()=>({handle:async()=>({ok:true})}),createGmailService:()=>({callback:async()=>Response.json({gmail_routed:true})}),createClient:()=>admin,Deno:{env:{get:k=>({SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-key',GOOGLE_CALENDAR_CLIENT_ID:'client',GOOGLE_CALENDAR_CLIENT_SECRET:'secret'})[k]},serve:fn=>handler=fn},crypto:globalThis.crypto,fetch,Response,Request,URL,URLSearchParams,TextEncoder,Uint8Array,btoa,console:{error(){},warn(){}}});
   vm.runInContext(stripTypeScriptTypes(source),context);
   return {db,calls,request:(action,payload={},auth='valid')=>handler(new Request('https://example.supabase.co/functions/v1/google-calendar-oauth',{method:'POST',headers:auth?{Authorization:'Bearer '+auth}:{},body:JSON.stringify({action,...payload})})),callback:params=>handler(new Request('https://example.supabase.co/functions/v1/google-calendar-oauth?action=callback&'+new URLSearchParams(params)))};
 }
@@ -71,6 +71,14 @@ test('start requests only read scopes with offline PKCE',async()=>{
   const b=backend();const data=await (await b.request('start')).json();const u=new URL(data.auth_url);
   assert.equal(u.searchParams.get('access_type'),'offline');assert.equal(u.searchParams.get('code_challenge_method'),'S256');assert.equal(u.searchParams.get('include_granted_scopes'),'false');
   assert(u.searchParams.get('scope').split(' ').every(s=>s.endsWith('.readonly')));assert(!JSON.stringify(data).includes('code_verifier'));
+});
+test('event creation permission is requested only by the explicit write upgrade and bound to OAuth state',async()=>{
+ const b=backend(),data=await(await b.request('start_write')).json(),u=new URL(data.auth_url);assert(u.searchParams.get('scope').split(' ').includes('https://www.googleapis.com/auth/calendar.events'));assert.equal(b.db.google_oauth_states[0].write_requested,true);
+ const c=backend({states:[{...state,write_requested:true}]});const r=await c.callback({state:'state',code:'code'});assert(r.headers.get('location').includes('missing_scopes'));assert.equal(c.db.google_calendar_connections.length,0);
+});
+test('a write upgrade saves the granted scope and changes connection generation while keeping calendar choices',async()=>{
+ const b=backend({connection:{...connection,connection_id:'old'},states:[{...state,write_requested:true}],scopes:'https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events'});const r=await b.callback({state:'state',code:'code'});assert(r.headers.get('location').includes('connected'));assert.notEqual(b.db.google_calendar_connections[0].connection_id,'old');assert.equal(b.db.google_calendar_connections[0].selected_calendar_ids[0],'primary@example.com');
+ const s=await(await b.request('status')).json();assert.equal(s.write_enabled,true);assert.equal(s.connection_id,b.db.google_calendar_connections[0].connection_id);
 });
 test('empty selection returns zero events without primary fallback',async()=>{
   const b=backend({connection:{...connection,selected_calendar_ids:[]}});const data=await (await b.request('events')).json();assert.equal(data.events.length,0);assert.equal(b.calls.filter(c=>c.url.includes('/events')).length,0);

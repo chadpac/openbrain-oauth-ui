@@ -26,9 +26,11 @@ publication.
 
 ## Current work
 
-Email/calendar intelligence: reviewed date candidates, selected event references
-and optional calendar-gap checks are implemented. Verify the published flow with
-the connected account before extending to richer analysis or reply drafts.
+Reviewed Google Calendar event creation: manual/email drafts, selected writable
+calendars, conflict checks, exact approval and interrupted-save recovery.
+[Behavior and one-time permission setup](google-calendar-event-creation.md).
+Existing event editing/deletion, guests, recurrence and all-day creation are later
+additions; read-only display and Calendar questions continue unchanged.
 
 ## Agreed next phases
 

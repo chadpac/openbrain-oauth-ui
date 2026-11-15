@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v28";
-const SW_VERSION = "v28-email-calendar-review";
+const CACHE_NAME = "open-brain-pwa-v29";
+const SW_VERSION = "v29-google-event-creation";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",

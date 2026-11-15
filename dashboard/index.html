@@ -576,7 +576,7 @@
         <div class="overview-card">
           <div class="overview-head">
             <div><div class="eyebrow">Family dashboard</div><h3 id="eventsHeading">Upcoming events</h3></div>
-            <div class="controls"><button id="clearEventScope" class="ghost hidden" type="button">Show upcoming</button><button id="newEvent" class="ghost">+ Event</button></div>
+            <div class="controls"><button id="clearEventScope" class="ghost hidden" type="button">Show upcoming</button><button id="newGoogleEvent" class="ghost" type="button">+ Google event</button><button id="newEvent" class="ghost">+ Event</button></div>
           </div>
           <div id="upcomingEvents" class="event-list"><div class="overview-empty">No upcoming family events yet.</div></div>
         </div>
@@ -754,6 +754,8 @@
                   <button id="chooseGoogleCalendars" class="ghost hidden" type="button">Choose calendars</button>
                   <button id="refreshGoogleCalendar" class="ghost hidden" type="button">Refresh events</button>
                   <button id="disconnectGoogleCalendar" class="ghost hidden" type="button">Disconnect</button>
+                  <button id="enableGoogleEventCreation" class="ghost" type="button">Enable event creation</button>
+                  <button id="googleEventHistory" class="ghost" type="button">Event reviews &amp; history</button>
                 </div>
                 <div id="googleCalendarSetup" class="google-setup hidden"></div>
                 <div id="googleCalendarPicker" class="google-calendar-picker hidden"></div>
@@ -1388,6 +1390,30 @@
     <div class="modalfoot"><button id="dismissInstallApp" class="primary" type="button">Got it</button></div>
   </dialog>
 
+  <dialog id="googleEventDialog"><form id="googleEventForm">
+    <div class="modalhead"><h3>Create a Google Calendar event</h3><button id="closeGoogleEvent" class="ghost" type="button">Close</button></div>
+    <div class="modalbody">
+      <p class="history-private-note">Create one timed event after reviewing it. No guests or invitations are added. Your calendar’s default reminders apply. Editing, deleting, repeating and all-day Google events are future additions.</p>
+      <p id="googleEventStatus" class="setting-note" role="status"></p>
+      <button id="googleEventEnable" class="ghost hidden" type="button">Enable event creation with Google</button>
+      <p class="history-private-note">Event creation needs additional Google permission. Google’s permission also allows editing and deleting events; Open Brain uses it here only to create the event you approve.</p>
+      <div id="googleEventInputs">
+        <label for="googleEventCalendar">Destination calendar</label><select id="googleEventCalendar" required></select>
+        <p class="history-private-note">Choose from writable calendars selected in Settings. Calendar owners and editors may see details even with private event visibility.</p>
+        <label for="googleEventTitle">Event title</label><input id="googleEventTitle" required maxlength="180">
+        <div class="grid2"><div><label for="googleEventStart">Start</label><input id="googleEventStart" type="datetime-local" required></div><div><label for="googleEventEnd">End</label><input id="googleEventEnd" type="datetime-local" required></div></div>
+        <p id="googleEventTimezone" class="history-private-note"></p>
+        <label for="googleEventLocation">Location (optional)</label><input id="googleEventLocation" maxlength="500">
+        <label for="googleEventDescription">Details (optional)</label><textarea id="googleEventDescription" maxlength="4000"></textarea>
+        <label id="googleEventSourceChoice" class="quiet-hours-toggle hidden"><input id="googleEventIncludeSource" type="checkbox"> Include this email’s subject, sender and Gmail link in the event</label>
+      </div>
+      <div id="googleEventReview" class="hidden"></div>
+      <label id="googleEventConflictChoice" class="quiet-hours-toggle hidden"><input id="googleEventConfirmConflicts" type="checkbox"> I reviewed the conflicts and want to create this event anyway</label>
+      <p id="googleEventError" class="message err hidden" role="alert"></p>
+    </div>
+    <div class="modalfoot"><button id="googleEventEdit" class="ghost hidden" type="button">Edit &amp; check again</button><button id="googleEventPrepare" class="primary" type="submit">Check &amp; review</button><button id="googleEventApprove" class="primary hidden" type="button">Approve &amp; create</button></div>
+  </form></dialog>
+  <dialog id="googleEventHistoryDialog"><div class="modalhead"><h3>Google event reviews &amp; history</h3><button id="closeGoogleEventHistory" class="ghost" type="button">Close</button></div><div class="modalbody"><p class="history-private-note">Your 20 most recent reviews and save results. Closing a review does not create an event. Disconnecting keeps this history and events already created in Google.</p><div id="googleEventHistoryRows" class="activity-list"></div></div></dialog>
   <dialog id="gmailTaskDialog"><form id="gmailTaskForm">
     <div class="modalhead"><h3>Review email & plan a reminder</h3><button id="closeGmailTask" class="ghost" type="button">Close</button></div>
     <div class="modalbody">
@@ -2649,7 +2675,7 @@
       $("prepareGmailTask").disabled=v.busy||!v.draft?.reviewReady;$("gmailCheckCalendars").disabled=v.busy||!v.draft?.reviewReady;$("gmailTaskDialog").querySelectorAll("input").forEach(input=>input.disabled=v.busy);
       $("gmailError").textContent=v.error;$("gmailError").classList.toggle("hidden",!v.error);$("gmailMessages").setAttribute("aria-busy",String(v.busy));$("moreGmail").classList.toggle("hidden",!v.next);
       $("gmailDigest").textContent=v.busy?"Working on your request…":v.error?"The read was not confirmed. Check the connection and try again.":v.rows.length?"Loaded "+v.rows.length+" messages · "+v.rows.filter(m=>m.signals?.includes("Possible deadline")).length+" possible deadlines · "+v.rows.filter(m=>m.signals?.includes("Possible commitment")).length+" possible commitments"+(v.unavailable?" · "+v.unavailable+" messages unavailable or outside this window":"")+(v.next?" · More are available.":""):v.loaded&&connected?"Run a search to review recent mail. An empty result does not confirm there are no deadlines.":"Connect Gmail, then run a search to prepare your email review.";
-      $("gmailMessages").innerHTML=v.rows.map(m=>'<article class="activity-card"><h4>'+esc(m.subject)+'</h4><p class="activity-meta">'+esc(m.from)+' · '+esc(activityTime(m.received_at))+'</p><p style="white-space:pre-wrap;font-size:13px;line-height:1.6;overflow-wrap:anywhere">'+esc(m.snippet)+'</p><div class="activity-meta">'+esc((m.signals||[]).join(" · "))+'</div><div class="activity-actions"><a class="ghost smallbtn" href="'+esc("https://mail.google.com/mail/?authuser="+encodeURIComponent(v.account?.email||"")+"#all/"+encodeURIComponent(m.id))+'" target="_blank" rel="noopener noreferrer">Open in Gmail</a><button class="ghost smallbtn" type="button" data-gmail-task="'+esc(m.id)+'" '+(v.busy||v.prepared[m.id]?"disabled":"")+'>'+(v.prepared[m.id]?"Proposal prepared":"Prepare private reminder")+'</button></div></article>').join("");
+      $("gmailMessages").innerHTML=v.rows.map(m=>'<article class="activity-card"><h4>'+esc(m.subject)+'</h4><p class="activity-meta">'+esc(m.from)+' · '+esc(activityTime(m.received_at))+'</p><p style="white-space:pre-wrap;font-size:13px;line-height:1.6;overflow-wrap:anywhere">'+esc(m.snippet)+'</p><div class="activity-meta">'+esc((m.signals||[]).join(" · "))+'</div><div class="activity-actions"><a class="ghost smallbtn" href="'+esc("https://mail.google.com/mail/?authuser="+encodeURIComponent(v.account?.email||"")+"#all/"+encodeURIComponent(m.id))+'" target="_blank" rel="noopener noreferrer">Open in Gmail</a><button class="ghost smallbtn" type="button" data-gmail-task="'+esc(m.id)+'" '+(v.busy||v.prepared[m.id]?"disabled":"")+'>'+(v.prepared[m.id]?"Proposal prepared":"Prepare private reminder")+'</button><button class="ghost smallbtn" type="button" data-gmail-event-create="'+esc(m.id)+'" '+(v.busy?"disabled":"")+'>Prepare Google event</button></div></article>').join("");
     }
     async function loadGmailStatus(){
       const owner=state.user?.id;if(!owner||gmailView.busy)return;
@@ -2850,7 +2876,7 @@
       const owner=state.user?.id,epoch=activityEpoch;if(!owner)return;
       try{
         const h=await invokeActivity({action:"health"});if(state.user?.id!==owner||epoch!==activityEpoch)return;
-        $("activityConnections").innerHTML='<p><strong>Google Calendar · '+esc(h.calendar?.unavailable?"Could not check":h.calendar?.connected?"Connected · read-only":h.calendar?.configured===false?"Setup required":"Not connected")+'</strong><br>Last checked '+esc(activityTime(h.checked_at))+'</p>'+(state.googleCalendarRefreshedAt?'<p>Calendar events last refreshed in this session '+esc(activityTime(state.googleCalendarRefreshedAt))+'</p>':"");
+        $("activityConnections").innerHTML='<p><strong>Google Calendar · '+esc(h.calendar?.unavailable?"Could not check":h.calendar?.connected?"Connected · check Settings for permissions":h.calendar?.configured===false?"Setup required":"Not connected")+'</strong><br>Last checked '+esc(activityTime(h.checked_at))+'</p>'+(state.googleCalendarRefreshedAt?'<p>Calendar events last refreshed in this session '+esc(activityTime(state.googleCalendarRefreshedAt))+'</p>':"");
         $("activityDevices").innerHTML=h.devices===null?'<p>Could not check devices. Refresh to retry.</p>':(h.devices||[]).map((d,i)=>'<div class="activity-health-row"><strong>Device '+(i+1)+' · '+(d.enabled?"Enabled":"Off")+'</strong><br>Last updated '+esc(activityTime(d.updated_at))+'<br>'+esc([d.task_notifications?"Reminders":null,d.event_notifications?"Events":null,d.habit_notifications?"Habits":null].filter(Boolean).join(" · ")||"These notification types are off")+'</div>').join("")||'<p>No notification devices are registered for your account.</p>';
         $("activityFailures").innerHTML=h.failures_unavailable?'<p>Delivery status could not be fully checked. Refresh to retry.</p>':(h.failures||[]).map(f=>'<div class="activity-health-row">'+activitySourceButton(f.kind,f.id,f.kind==="task"?"Open reminder":"Open event")+'<br>'+esc(f.sent?"Delivered through at least one channel; another channel reported a problem.":f.attempts>=5?"Retry limit reached. Review the reminder’s schedule.":f.attempts?"Attempts "+f.attempts+" / 5 · next eligible retry "+activityTime(f.retry_after):"Delivery needs attention; retry details unavailable.")+'</div>').join("")||'<p>No delivery failures were reported for these reminders.</p>';
       }catch(_){if(state.user?.id===owner&&epoch===activityEpoch)for(const id of ["activityConnections","activityDevices","activityFailures"])$(id).textContent="Could not check status. Refresh to retry.";}
@@ -3151,17 +3177,21 @@
           expired_state:"The Google Calendar connection took too long. Please try again.",
           calendar_list:"Google connected, but Open Brain could not read your calendars.",
           save_failed:"Open Brain could not save the Google Calendar connection.",
-          missing_scopes:"Approve both read-only Calendar permissions, then reconnect."
+          missing_scopes:"Approve the Calendar permissions shown by Google, then reconnect."
         };
         toast(messages[reason]||"Google Calendar was not connected.",true);
       }
     }
 
+    let googleCalendarReadEpoch=0;
     async function loadGoogleCalendarIntegration(){
+      const owner=state.user?.id,epoch=googleCalendarReadEpoch;if(!owner)return;
+      const current=()=>state.user?.id===owner&&googleCalendarReadEpoch===epoch;
       if(state.googleCalendarBusy)throw new Error("Google Calendar is already refreshing. Please wait.");
       state.googleCalendarBusy=true;
       try{
         const status=await invokeGoogleCalendar("status");
+        if(!current())return;
         state.googleCalendarStatus=status;
         state.googleCalendars=[];
         state.googleEvents=[];
@@ -3173,23 +3203,26 @@
               time_max:new Date(Date.now()+45*86400000).toISOString()
             })
           ]);
+          if(!current())return;
           state.googleCalendars=calendarData.calendars||[];
           state.googleEvents=eventData.events||[];state.googleCalendarRefreshedAt=new Date().toISOString();
         }
       }catch(err){
+        if(!current())return;
         state.googleCalendarStatus={...state.googleCalendarStatus,error:err?.message||String(err)};
         state.googleCalendars=[];
         state.googleEvents=[];
         throw err;
       }finally{
-        state.googleCalendarBusy=false;
+        if(current()){state.googleCalendarBusy=false;
         renderGoogleCalendarSettings();
-        renderToday();renderWeek();renderOverview();
+        renderToday();renderWeek();renderOverview();}
       }
     }
 
     function renderGoogleCalendarSettings(){
       const status=state.googleCalendarStatus;
+      $("enableGoogleEventCreation").textContent=status?.write_enabled?"Renew event creation permission":"Enable event creation";
       const statusEl=$("googleCalendarConnectionStatus");
       const note=$("googleCalendarConnectionNote");
       const connect=$("connectGoogleCalendar");
@@ -3222,7 +3255,7 @@
       setup.classList.add("hidden");
       if(status.connected){
         statusEl.textContent=status.error?"Needs attention":"Connected";statusEl.classList.toggle("offline",!!status.error);
-        note.textContent=status.error||(status.google_email?status.google_email+" · ":"")+(status.selected_count||0)+" calendar"+((status.selected_count||0)===1?"":"s")+" shown in Open Brain";
+        note.textContent=status.error||(status.google_email?status.google_email+" · ":"")+(status.selected_count||0)+" calendar"+((status.selected_count||0)===1?"":"s")+" shown in Open Brain · "+(status.write_enabled?"Reviewed event creation enabled":"Read only");
         connect.classList.toggle("hidden",!status.error);choose.classList.remove("hidden");refresh.classList.remove("hidden");disconnect.classList.remove("hidden");
       }else{
         statusEl.textContent=status.error?"Needs attention":"Not connected";statusEl.classList.add("offline");
@@ -3250,7 +3283,7 @@
         box.innerHTML='<div class="setting-note">No Google calendars were returned.</div>';
         return;
       }
-      box.innerHTML='<div class="setting-note"><strong>Choose which calendars Open Brain should show.</strong> Google access remains read-only.</div>'+
+      box.innerHTML='<div class="setting-note"><strong>Choose which calendars Open Brain should show.</strong> Displaying events is read-only. Event creation requires its separate permission and review.</div>'+
         state.googleCalendars.map(cal=>
           '<label class="google-calendar-choice">'+
             '<input type="checkbox" data-google-calendar-id="'+esc(cal.id)+'" '+(cal.selected?"checked":"")+'>'+
@@ -3294,6 +3327,78 @@
         toast("Google Calendar disconnected.");
       }catch(err){toast(err?.message||"Unable to disconnect Google Calendar.",true);}
     }
+
+    // BEGIN GOOGLE EVENT CREATION
+    let googleEventEpoch=0,googleEventView={busy:false,options:null,source:null,proposal:null,requestId:null,history:[]};
+    function resetGoogleEventCreation(){
+      googleEventEpoch++;googleEventView={busy:false,options:null,source:null,proposal:null,requestId:null,history:[]};
+      $("googleEventForm").reset();for(const id of ["googleEventReview","googleEventStatus","googleEventError","googleEventHistoryRows","googleEventTimezone","googleEventCalendar"])$(id).textContent="";
+      for(const id of ["googleEventDialog","googleEventHistoryDialog"])if($(id).open)$(id).close();
+    }
+    function googleEventCurrent(owner,epoch){return state.user?.id===owner&&googleEventEpoch===epoch;}
+    function googleEventError(error){$("googleEventError").textContent=error?.message||String(error);$("googleEventError").classList.remove("hidden");}
+    function renderGoogleEventControls(){
+      const v=googleEventView,d=v.proposal,review=!!d;
+      $("googleEventInputs").classList.toggle("hidden",review);$("googleEventReview").classList.toggle("hidden",!review);
+      $("googleEventPrepare").classList.toggle("hidden",review);$("googleEventApprove").classList.toggle("hidden",!d||["completed","cancelled","failed"].includes(d.state));
+      $("googleEventEdit").classList.toggle("hidden",!d||!["pending","failed","cancelled"].includes(d.state)||!!d.write_started_at);
+      $("googleEventConflictChoice").classList.toggle("hidden",!d||d.state==="completed"||!d.review.conflict_count);
+      $("googleEventApprove").textContent=d&&["uncertain","creating"].includes(d.state)?"Check result / retry same event":"Approve & create";
+      $("googleEventPrepare").disabled=v.busy||!v.options?.calendars?.length;$("googleEventApprove").disabled=v.busy||!!d?.review.conflict_count&&!$("googleEventConfirmConflicts").checked;
+      $("googleEventDialog").querySelectorAll("input,select,textarea").forEach(el=>el.disabled=v.busy);
+      for(const id of ["closeGoogleEvent","googleEventEdit","googleEventEnable"])$(id).disabled=v.busy;
+    }
+    function googleEventTime(time,timezone){return new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short",timeZone:timezone}).format(new Date(time));}
+    function renderGoogleEventReview(){
+      const d=googleEventView.proposal;if(!d){renderGoogleEventControls();return;}const p=d.payload,r=d.review;
+      const field=(name,value)=>value?'<p><strong>'+esc(name)+'</strong><br><span style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(value)+'</span></p>':"";
+      $("googleEventStatus").textContent=d.state==="completed"?"Google confirmed this event was created.":d.state==="uncertain"||d.state==="creating"?"A save may have reached Google. Check or retry this same event to avoid a duplicate.":d.state==="failed"?"Check Google Calendar before starting another review.":d.state==="cancelled"?"This review was cancelled.":"Review the exact event before creating it.";
+      $("googleEventReview").innerHTML=field("Title",p.title)+field("Destination",r.calendar.name+" · "+(r.google_email||"Connected Google account"))+field("Calendar ID",p.calendar_id)+field("Start",googleEventTime(p.starts_at,p.timezone))+field("End",googleEventTime(p.ends_at,p.timezone))+field("Timezone",p.timezone)+field("Location",p.location)+field("Details",p.description)+'<p class="history-private-note">Private event visibility. Calendar owners and editors may still see details. Default calendar reminders apply. No guests or invitations are added.</p>'+field("Conflict check",r.conflict_count?"Showing "+r.conflicts.length+" of "+r.conflict_count+" overlapping busy events.":"No blocking events found in the calendars checked.")+r.conflicts.map(e=>'<article class="activity-card"><strong>'+esc(e.title)+'</strong><div class="activity-meta">'+esc(e.source==="google"?"Google Calendar":"Open Brain family event")+' · '+esc(e.all_day?e.starts_at.slice(0,10)+" · All day":googleEventTime(e.starts_at,p.timezone))+'</div></article>').join("")+'<p class="history-private-note">Checked '+esc(googleEventTime(r.checked_at,p.timezone))+'. Selected Google calendars and visible family events only. Conflicts are rechecked before a new save; other people can change calendars later.</p>'+(d.result?.url?'<a class="ghost smallbtn" href="'+esc(d.result.url)+'" target="_blank" rel="noopener noreferrer">Open confirmed event in Google Calendar</a>':"");
+      renderGoogleEventControls();
+    }
+    async function enableGoogleEventCreation(){
+      const owner=state.user?.id,epoch=googleEventEpoch;if(!owner||googleEventView.busy)return;googleEventView.busy=true;renderGoogleEventControls();
+      try{const data=await invokeGoogleCalendar("start_write");if(!googleEventCurrent(owner,epoch))return;const u=new URL(data.auth_url);if(u.origin!=="https://accounts.google.com"||u.pathname!=="/o/oauth2/v2/auth")throw new Error("Google authorization URL could not be verified.");location.assign(u.toString());}
+      catch(error){if(googleEventCurrent(owner,epoch)){googleEventError(error);toast(error.message,true);}}
+      finally{if(googleEventCurrent(owner,epoch)){googleEventView.busy=false;renderGoogleEventControls();}}
+    }
+    async function openGoogleEvent(mail=null){
+      const owner=state.user?.id;if(!owner||googleEventView.busy)return;resetGoogleEventCreation();const epoch=googleEventEpoch;
+      googleEventView.requestId=crypto.randomUUID();googleEventView.source=mail?{connection_id:gmailView.account?.connection_id,message_id:mail.id,fingerprint:mail.fingerprint}:null;
+      $("googleEventTitle").value=mail?mail.subject.slice(0,180):"";$("googleEventSourceChoice").classList.toggle("hidden",!mail);$("googleEventError").classList.add("hidden");$("googleEventEnable").classList.add("hidden");$("googleEventStatus").textContent="Checking writable calendars…";googleEventView.busy=true;$("googleEventDialog").showModal();renderGoogleEventControls();
+      try{const data=await invokeGoogleCalendar("event_options");if(!googleEventCurrent(owner,epoch))return;if(!data.connection_id||!data.timezone||!Array.isArray(data.calendars))throw new Error("Calendar choices could not be verified.");googleEventView.options=data;$("googleEventCalendar").innerHTML=data.calendars.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name+' · '+c.id)+'</option>').join("");$("googleEventTimezone").textContent="Enter both times in your household timezone: "+data.timezone;$("googleEventStatus").textContent=data.calendars.length?"Choose the destination and enter confirmed start and end times.":"No selected writable calendars. Select one in Google Calendar Settings, then reopen this form.";}
+      catch(error){if(googleEventCurrent(owner,epoch)){$("googleEventStatus").textContent="Event creation is not ready.";$("googleEventEnable").classList.remove("hidden");googleEventError(error);}}
+      finally{if(googleEventCurrent(owner,epoch)){googleEventView.busy=false;renderGoogleEventControls();}}
+    }
+    async function prepareGoogleEvent(event){
+      event.preventDefault();const owner=state.user?.id,epoch=googleEventEpoch,v=googleEventView;if(!owner||v.busy||v.proposal||!v.options)return;v.busy=true;$("googleEventError").classList.add("hidden");renderGoogleEventControls();
+      try{const data=await invokeGoogleCalendar("event_prepare",{request_id:v.requestId,connection_id:v.options.connection_id,calendar_id:$("googleEventCalendar").value,title:$("googleEventTitle").value,start_local:$("googleEventStart").value,end_local:$("googleEventEnd").value,location:$("googleEventLocation").value,description:$("googleEventDescription").value,include_email_source:$("googleEventIncludeSource").checked,source:v.source});if(!googleEventCurrent(owner,epoch))return;if(!data.proposal?.id)throw new Error("Review was not confirmed. Check event history before retrying.");v.proposal=data.proposal;$("googleEventConfirmConflicts").checked=false;renderGoogleEventReview();}
+      catch(error){if(googleEventCurrent(owner,epoch))googleEventError(error);}
+      finally{if(googleEventCurrent(owner,epoch)){v.busy=false;renderGoogleEventControls();}}
+    }
+    async function approveGoogleEvent(){
+      const owner=state.user?.id,epoch=googleEventEpoch,v=googleEventView,d=v.proposal;if(!owner||!d||v.busy)return;v.busy=true;$("googleEventError").classList.add("hidden");renderGoogleEventControls();
+      try{const data=await invokeGoogleCalendar("event_approve",{proposal_id:d.id,confirm_create:true,confirm_conflicts:$("googleEventConfirmConflicts").checked});if(!googleEventCurrent(owner,epoch))return;if(!data.proposal)throw new Error("Google save result is unknown. Check or retry the same review.");v.proposal=data.proposal;renderGoogleEventReview();if(data.proposal.state==="completed"){toast("Google confirmed the event was created.");loadGoogleCalendarIntegration().catch(()=>{});}}
+      catch(error){if(googleEventCurrent(owner,epoch)){v.proposal={...d,state:"uncertain"};try{const data=await invokeGoogleCalendar("event_get",{proposal_id:d.id});if(googleEventCurrent(owner,epoch)&&data.proposal)v.proposal=data.proposal;}catch(_){}if(googleEventCurrent(owner,epoch)){renderGoogleEventReview();googleEventError(error);}}}
+      finally{if(googleEventCurrent(owner,epoch)){v.busy=false;renderGoogleEventControls();}}
+    }
+    async function editGoogleEvent(){
+      const owner=state.user?.id,epoch=googleEventEpoch,v=googleEventView,d=v.proposal;if(!owner||!d||v.busy||d.write_started_at)return;v.busy=true;renderGoogleEventControls();
+      try{await invokeGoogleCalendar("event_cancel",{proposal_id:d.id});if(!googleEventCurrent(owner,epoch))return;const p=d.payload;v.proposal=null;v.requestId=crypto.randomUUID();$("googleEventTitle").value=p.title;$("googleEventStart").value=p.start_local;$("googleEventEnd").value=p.end_local;$("googleEventLocation").value=p.location;$("googleEventDescription").value=p.description_input??p.description;v.source=d.source||null;$("googleEventIncludeSource").checked=!!p.include_email_source;$("googleEventSourceChoice").classList.toggle("hidden",!d.source);const options=await invokeGoogleCalendar("event_options");if(!googleEventCurrent(owner,epoch))return;v.options=options;$("googleEventCalendar").innerHTML=options.calendars.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name+' · '+c.id)+'</option>').join("");$("googleEventCalendar").value=p.calendar_id;$("googleEventTimezone").textContent="Enter both times in your household timezone: "+options.timezone;$("googleEventStatus").textContent="Edit the event, then check and review again.";}
+      catch(error){if(googleEventCurrent(owner,epoch))googleEventError(error);}
+      finally{if(googleEventCurrent(owner,epoch)){v.busy=false;renderGoogleEventControls();}}
+    }
+    async function openGoogleEventHistory(){
+      const owner=state.user?.id,epoch=googleEventEpoch;if(!owner||googleEventView.busy)return;$("googleEventHistoryRows").textContent="Loading your reviews…";$("googleEventHistoryDialog").showModal();
+      try{const data=await invokeGoogleCalendar("event_history");if(!googleEventCurrent(owner,epoch))return;googleEventView.history=data.rows||[];$("googleEventHistoryRows").innerHTML=googleEventView.history.map((d,i)=>'<article class="activity-card"><strong>'+esc(d.payload.title)+'</strong><p class="activity-meta">'+esc(d.state)+' · '+esc(d.review.calendar.name)+' · '+esc(googleEventTime(d.payload.starts_at,d.payload.timezone))+'</p><button class="ghost smallbtn" type="button" data-google-event-review="'+i+'">View review / result</button></article>').join("")||"No Google event reviews yet.";}
+      catch(error){if(googleEventCurrent(owner,epoch))$("googleEventHistoryRows").textContent=error.message;}
+    }
+    $("newGoogleEvent").addEventListener("click",()=>openGoogleEvent());$("enableGoogleEventCreation").addEventListener("click",enableGoogleEventCreation);$("googleEventEnable").addEventListener("click",enableGoogleEventCreation);$("googleEventHistory").addEventListener("click",openGoogleEventHistory);
+    $("googleEventForm").addEventListener("submit",prepareGoogleEvent);$("googleEventApprove").addEventListener("click",approveGoogleEvent);$("googleEventEdit").addEventListener("click",editGoogleEvent);$("googleEventConfirmConflicts").addEventListener("change",renderGoogleEventControls);
+    $("closeGoogleEvent").addEventListener("click",()=>{if(!googleEventView.busy)$("googleEventDialog").close();});$("googleEventDialog").addEventListener("cancel",e=>{if(googleEventView.busy)e.preventDefault();});$("closeGoogleEventHistory").addEventListener("click",()=>$("googleEventHistoryDialog").close());
+    $("googleEventHistoryRows").addEventListener("click",async event=>{const b=event.target.closest("[data-google-event-review]"),d=googleEventView.history[Number(b?.dataset.googleEventReview)];if(!b||!d)return;const owner=state.user?.id,epoch=googleEventEpoch;try{const data=await invokeGoogleCalendar("event_get",{proposal_id:d.id});if(!googleEventCurrent(owner,epoch))return;$("googleEventHistoryDialog").close();googleEventView.proposal=data.proposal;$("googleEventError").classList.add("hidden");$("googleEventEnable").classList.add("hidden");$("googleEventConfirmConflicts").checked=false;renderGoogleEventReview();$("googleEventDialog").showModal();}catch(error){if(googleEventCurrent(owner,epoch))$("googleEventHistoryRows").textContent=error.message;}});
+    $("gmailMessages").addEventListener("click",event=>{const b=event.target.closest("[data-gmail-event-create]");if(b&&!gmailView.busy){const mail=gmailView.rows.find(m=>m.id===b.dataset.gmailEventCreate);if(mail)openGoogleEvent(mail);}});
+    // END GOOGLE EVENT CREATION
 
     function normalizedEventTitle(value){
       return String(value||"").trim().toLowerCase().replace(/\s+/g," ");
@@ -3654,7 +3759,7 @@
     }
 
     let healthTrendsRequest=0,taskSlotsRequest=0,taskSlotDraft=null;
-    function clearPrivateViews(){resetGmail();state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
+    function clearPrivateViews(){googleCalendarReadEpoch++;state.googleCalendarBusy=false;state.googleCalendarStatus=null;state.googleCalendars=[];state.googleEvents=[];resetGoogleEventCreation();resetGmail();state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
     function resetHealthTrends(){
       healthTrendsRequest++;state.healthTrends=null;
       $("healthTrendsSection").open=false;$("healthTrendPeriod").value="7";

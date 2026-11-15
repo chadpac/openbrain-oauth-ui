@@ -268,6 +268,8 @@
     @media(max-width:1100px){.family-shell{grid-template-columns:1fr}.family-roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:1100px){.today-grid,.overview,.week-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.task{grid-template-columns:1.4fr .8fr 1fr}.task .actions{grid-column:1/-1;justify-content:flex-start}}
     @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:10px 14px 4px}.brand{padding:2px 4px 8px}aside nav{display:none}.aside-foot{display:none}main{padding:14px 14px calc(116px + env(safe-area-inset-bottom))}.topbar{align-items:flex-start;margin-bottom:18px}.topbar>div:first-child{display:none}.userbox{width:100%;justify-content:flex-end}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}.mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:5px 6px calc(5px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.mobile-more{display:block}.push-device-prefs{grid-template-columns:1fr}.push-type-grid{grid-template-columns:1fr}.toast{left:12px;right:12px;bottom:calc(148px + env(safe-area-inset-bottom));max-width:none}}
+    .spaces-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:14px 0}.space-card{border:1px solid #dce5e5;border-radius:18px;padding:18px;background:linear-gradient(135deg,#f0fafa,#fff);min-width:0;overflow-wrap:anywhere}.space-card.school{background:linear-gradient(135deg,#edf4ff,#fff);border-color:#d6e3f9}.space-card.home{background:linear-gradient(135deg,#eef7ed,#fff);border-color:#dcebd8}.space-card.selected{outline:2px solid var(--teal);outline-offset:2px}.space-card h4{margin:4px 0 8px;font-size:19px}.space-card .activity-actions{margin-top:12px}.space-detail>.overview-head{align-items:flex-start;flex-wrap:wrap}.space-detail>.overview-head>div:first-child{flex:1 1 260px;min-width:0;overflow-wrap:anywhere}.space-detail{border-top:1px solid #dce5e5;margin-top:22px;padding-top:20px}.space-section{padding:18px;border:1px solid #dce5e5;border-radius:16px;margin:14px 0;background:#fff;min-width:0}.space-section h4{margin:0;font-size:17px}.space-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.space-item{padding:14px 0;border-top:1px solid #edf0f0;overflow-wrap:anywhere}.space-item:first-of-type{border-top:0}.space-item p{white-space:pre-wrap;line-height:1.6;margin:7px 0}.space-item-options{font-size:12px;margin-top:8px}.space-item-options summary{cursor:pointer;color:#536e71}.space-hidden-item{opacity:.65}.space-layout-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 0}.space-layout-row label{display:flex;align-items:center;gap:8px;margin:0;flex:1}.space-layout-row input{width:auto}.space-progress{height:9px;border-radius:8px;overflow:hidden;background:#e8eeee;margin:10px 0}.space-progress>span{height:100%;display:block;background:#469597}.space-starter{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.space-pick-row{border:1px solid #dce5e5;padding:14px;border-radius:12px;margin:10px 0;overflow-wrap:anywhere}.space-pick-row p{margin:6px 0}.space-check{display:flex;align-items:center;gap:8px;font-size:13px;margin:10px 0}.space-check input{width:auto}
+    @media(max-width:650px){.space-detail>.overview-head>div:first-child{flex-basis:100%}.spaces-grid{grid-template-columns:1fr}.space-section{padding:14px}.space-section-head{align-items:flex-start;flex-wrap:wrap}.space-card h4{font-size:18px}}
   </style>
 </head>
 <body>
@@ -304,6 +306,7 @@
         <button class="navitem" data-scroll="assistantSettings">Assistant</button>
         <button class="navitem" data-scroll="assistantActivity">Activity & approvals</button>
         <button class="navitem" data-scroll="routinesPanel">Background routines</button>
+        <button class="navitem" data-scroll="spacesPanel">Spaces</button>
         <button class="navitem" data-scroll="familyPanel">Family</button>
         <button class="navitem" data-scroll="familySettings">Settings</button>
       </nav>
@@ -597,6 +600,24 @@
         <div class="stat"><div class="label">Family</div><div id="statFamily" class="num">—</div><div class="hint">Open Brain household members</div></div>
       </section>
 
+      <section id="spacesPanel" class="panel" aria-labelledby="spacesHeading">
+        <div class="panelhead"><div><h3 id="spacesHeading">Spaces</h3><div class="subtitle">School, Home and the projects that matter to you.</div></div><div class="controls"><button id="refreshSpaces" class="ghost" type="button">Refresh</button><button id="newSpace" class="primary" type="button">+ Space</button></div></div>
+        <div style="padding:20px">
+          <p class="history-private-note">Collect related tasks, family events, goals, saved memories, notes and document links. Linked records keep their own permissions. Only the Space creator edits its contents; each viewer can customize their own layout.</p>
+          <div id="spaceStarters" class="space-starter"><button class="ghost" type="button" data-space-template="school">Create a School Space</button><button class="ghost" type="button" data-space-template="home">Create a Home Space</button></div>
+          <label class="space-check"><input id="spacesShowHidden" type="checkbox"> Show Spaces hidden from my view</label>
+          <p id="spacesStatus" class="setting-note" role="status">Open Spaces to load your collections.</p><p id="spacesError" class="message err hidden" role="alert"></p>
+          <div id="spacesGrid" class="spaces-grid"></div><button id="moreSpaces" class="ghost hidden" type="button">Load older Spaces</button>
+          <div id="spaceDetail" class="space-detail hidden">
+            <div class="overview-head"><div><div id="spaceDetailMeta" class="eyebrow"></div><h3 id="spaceDetailName"></h3><p id="spaceDetailDescription" class="subtitle" style="white-space:pre-wrap;overflow-wrap:anywhere"></p></div><div class="controls"><button id="editSpace" class="ghost" type="button">Space settings</button><button id="addSpaceItem" class="primary" type="button">+ Add item</button></div></div>
+            <p id="spaceSharingNote" class="history-private-note"></p>
+            <div class="activity-actions"><button id="spaceNewTask" class="ghost smallbtn" type="button">New task</button><button id="spaceNewEvent" class="ghost smallbtn" type="button">New family event</button><button id="spaceReviewActions" class="ghost smallbtn" type="button">Activity &amp; approvals</button></div>
+            <details id="spaceLayout" style="margin-top:14px"><summary>Customize my layout</summary><p class="history-private-note">Pin/hide items and reorder sections for your account. This does not change what another person sees or grant access to private records.</p><div id="spaceLayoutRows"></div></details>
+            <label class="space-check"><input id="spaceShowHiddenItems" type="checkbox"> Show items hidden from my view</label>
+            <div id="spaceSections"></div>
+          </div>
+        </div>
+      </section>
       <section id="gmailPanel" class="panel" aria-labelledby="gmailHeading">
         <div class="panelhead"><div><h3 id="gmailHeading">Email review</h3><div class="subtitle">A read-only Gmail pilot, private to your account.</div></div><button id="refreshGmailStatus" class="ghost" type="button">Check connection</button></div>
         <div style="padding:20px">
@@ -816,6 +837,7 @@
           <button type="button" data-scroll="gmailPanel">✉ Email review</button>
           <button type="button" data-scroll="assistantActivity">◷ Activity & approvals</button>
           <button type="button" data-scroll="routinesPanel">◷ Background routines</button>
+          <button type="button" data-scroll="spacesPanel">▦ Spaces</button>
           <button type="button" data-scroll="familySettings">⚙️ Settings</button>
           <button id="mobileInstallApp" type="button">📲 Install app</button>
         </div>
@@ -836,6 +858,7 @@
       <div class="modalhead"><h3 id="editorTitle">New reminder</h3><button id="closeEditor" class="ghost" type="button">Close</button></div>
       <div class="modalbody">
         <input id="taskId" type="hidden" />
+        <div id="spaceTaskContext" class="hidden"><p id="spaceTaskNotice" class="history-private-note"></p><label for="spaceTaskVisibility">Task visibility</label><select id="spaceTaskVisibility"><option value="private">Private · only me</option><option value="household">Household</option></select></div>
         <div>
           <label for="taskTitle">Title</label>
           <input id="taskTitle" required maxlength="180" placeholder="e.g. Fill up water bottles" />
@@ -1255,6 +1278,7 @@
       <div class="modalhead"><h3 id="eventEditorTitle">New family event</h3><button id="closeEventEditor" class="ghost" type="button">Close</button></div>
       <div class="modalbody">
         <input id="eventId" type="hidden" />
+        <p id="spaceEventNotice" class="history-private-note hidden"></p>
         <div><label for="eventTitle">Event</label><input id="eventTitle" required maxlength="180" placeholder="e.g. Orchestra concert" /></div>
         <div class="grid2">
           <div><label for="eventStart">Starts</label><input id="eventStart" type="datetime-local" required /></div>
@@ -1403,6 +1427,19 @@
     <div class="modalfoot"><button id="dismissInstallApp" class="primary" type="button">Got it</button></div>
   </dialog>
 
+  <dialog id="spaceEditor"><form id="spaceForm">
+    <div class="modalhead"><h3 id="spaceEditorHeading">New Space</h3><button id="closeSpaceEditor" class="ghost" type="button">Close</button></div>
+    <div class="modalbody"><label for="spaceName">Space name</label><input id="spaceName" maxlength="80" required><label for="spaceDescription">Purpose (optional)</label><textarea id="spaceDescription" maxlength="500"></textarea><label for="spaceVisibility">Who can see this Space?</label><select id="spaceVisibility"><option value="private">Private · only me</option><option value="household">Household</option></select><p class="history-private-note">Sharing exposes the Space name, purpose, notes and document links. Linked records stay restricted by their existing permissions. The Space creator manages its contents; layouts are personal.</p><label id="spaceShareConfirmation" class="quiet-hours-toggle hidden"><input id="spaceConfirmShare" type="checkbox"> I want to share this Space’s name, notes and document links with my household</label><p id="spaceFormError" class="message err hidden" role="alert"></p></div>
+    <div class="modalfoot"><button id="deleteSpace" class="ghost hidden" type="button" style="margin-right:auto">Delete Space</button><button id="saveSpace" class="primary" type="submit">Save Space</button></div>
+  </form></dialog>
+  <dialog id="spaceItemEditor"><form id="spaceItemForm">
+    <div class="modalhead"><h3 id="spaceItemHeading">Add to Space</h3><button id="closeSpaceItem" class="ghost" type="button">Close</button></div>
+    <div class="modalbody"><p id="spaceItemPrivacy" class="history-private-note"></p><label for="spaceItemKind">Item type</label><select id="spaceItemKind"><option value="task">Existing task</option><option value="event">Existing Open Brain family event</option><option value="goal">Existing goal</option><option value="memory">Existing saved memory</option><option value="note">New Space note</option><option value="document">Document / web link</option></select>
+      <div id="spaceSourcePicker"><label for="spaceSourceQuery">Find a record</label><input id="spaceSourceQuery" maxlength="200" placeholder="Search titles"><button id="searchSpaceSources" class="ghost" type="button">Search</button><p id="spacePickerStatus" class="setting-note" role="status"></p><div id="spaceSourceRows"></div><button id="moreSpaceSources" class="ghost hidden" type="button">More records</button></div>
+      <div id="spaceNativeFields" class="hidden"><label for="spaceItemTitle">Title</label><input id="spaceItemTitle" maxlength="160"><div id="spaceDocumentUrl"><label for="spaceItemUrl">Document or web address</label><input id="spaceItemUrl" type="url" maxlength="2048" placeholder="https://docs.google.com/…"></div><label for="spaceItemBody">Note / context</label><textarea id="spaceItemBody" maxlength="6000"></textarea><p class="history-private-note">Document links open in a new tab; Open Brain does not fetch or change the document or its sharing settings. Space notes are separate from AI memories and are not automatically sent to the assistant.</p></div>
+      <p id="spaceItemError" class="message err hidden" role="alert"></p></div><div class="modalfoot"><button id="saveSpaceItem" class="primary hidden" type="submit">Save item</button></div>
+  </form></dialog>
+  <dialog id="spaceSourceDialog"><div class="modalhead"><h3>Linked record</h3><button id="closeSpaceSource" class="ghost" type="button">Close</button></div><div id="spaceSourceContent" class="modalbody" style="white-space:pre-wrap;overflow-wrap:anywhere"></div></dialog>
   <dialog id="routineDialog"><form id="routineForm">
     <div class="modalhead"><h3 id="routineEditorHeading">Background routine</h3><button id="closeRoutine" class="ghost" type="button">Close</button></div>
     <div class="modalbody">
@@ -2150,6 +2187,7 @@
       loadQuietHoursPreferences();
       initializeAssistantSettings().catch(()=>{});
       if(location.hash==="#routinesPanel"){loadRoutines();requestAnimationFrame(()=>$("routinesPanel").scrollIntoView({block:"start"}));}
+      if(location.hash==="#spacesPanel"){loadSpaces();requestAnimationFrame(()=>$("spacesPanel").scrollIntoView({block:"start"}));}
     }
 
     async function loadData(){
@@ -2683,6 +2721,131 @@
       }
       return false;
     }
+
+    // BEGIN SPACES
+    const spaceSectionNames={progress:"Progress & goals",tasks:"Tasks",events:"Family events",notes:"Notes & saved memories",documents:"Documents & links"};
+    let spaceEpoch=0,spaceListRequest=0,spaceDetailRequest=0,spacePickerRequest=0,spaceSourceRequest=0,spaceSourceItemId=null,spaceEditing=null,spaceItemEditing=null,spacePendingCreate=null;
+    let spacesView={owner:null,loaded:false,loading:false,busy:false,list:[],more:false,last:null,selected:null,detail:null,error:"",picker:{rows:[],more:false,last:null,loading:false}};
+    function resetSpaces(clearEditors=false){
+      spaceEpoch++;spaceListRequest++;spaceDetailRequest++;spacePickerRequest++;spaceSourceRequest++;
+      if(clearEditors||spacePendingCreate?.kind==="task"){$("taskForm").reset();if($("editor").open)$("editor").close();}
+      if(clearEditors||spacePendingCreate?.kind==="event"){$("eventForm").reset();if($("eventEditor").open)$("eventEditor").close();}
+      spaceSourceItemId=null;spacePendingCreate=null;spaceEditing=null;spaceItemEditing=null;spacesView={owner:null,loaded:false,loading:false,busy:false,list:[],more:false,last:null,selected:null,detail:null,error:"",picker:{rows:[],more:false,last:null,loading:false}};
+      for(const id of ["spaceForm","spaceItemForm"])$(id).reset();for(const id of ["spacesGrid","spaceSections","spaceLayoutRows","spaceSourceRows","spaceSourceContent","spaceDetailName","spaceDetailDescription","spaceDetailMeta","spaceSharingNote","spaceItemPrivacy","spacePickerStatus","spaceFormError","spaceItemError","spacesError"])$(id).textContent="";
+      for(const id of ["spaceEditor","spaceItemEditor","spaceSourceDialog"])if($(id).open)$(id).close();$("spaceDetail").classList.add("hidden");$("spacesStatus").textContent="Open Spaces to load your collections.";$("spacesShowHidden").checked=false;$("spaceShowHiddenItems").checked=false;$("spaceTaskContext").classList.add("hidden");$("spaceTaskNotice").textContent="";$("spaceEventNotice").textContent="";
+      for(const id of ["saveSpace","closeSpaceEditor","saveSpaceItem","closeSpaceItem","searchSpaceSources","moreSpaceSources"])$(id).disabled=false;$("spaceEditor").querySelectorAll("input,select,textarea").forEach(el=>el.disabled=false);$("spaceItemEditor").querySelectorAll("input,select,textarea").forEach(el=>el.disabled=false);
+    }
+    function spaceCurrent(owner,epoch){return state.user?.id===owner&&spaceEpoch===epoch;}
+    async function spaceRpc(name,args={}){const {data,error}=await sb.rpc(name,args);if(error)throw new Error(error.message||"Space request failed. Refresh before retrying.");if(data===null)throw new Error("Space request was not confirmed. Refresh first.");return data;}
+    function defaultSpaceView(space,view=space.view){
+      return {pinned:view?.pinned===true,hidden:view?.hidden===true,position:view?.position||0,section_order:view?.section_order|| (space.template==="school"?["tasks","events","notes","documents","progress"]:["tasks","progress","events","notes","documents"]),hidden_sections:view?.hidden_sections||[],pinned_items:view?.pinned_items||[],hidden_items:view?.hidden_items||[],item_order:view?.item_order||[]};
+    }
+    function spaceSection(kind){return ({task:"tasks",event:"events",goal:"progress",memory:"notes",note:"notes",document:"documents"})[kind];}
+    function spaceUrl(value){try{const u=new URL(value);if(!["https:","http:"].includes(u.protocol)||u.username||u.password)return null;return u.toString();}catch(_){return null;}}
+    function spaceDate(value){return value?activityTime(value):"No date set";}
+    function spaceItemsForView(detail,includeHidden=false){const prefs=defaultSpaceView(detail.space,detail.view);return detail.items.filter(i=>(["note","document"].includes(i.kind)||i.source)&& (includeHidden||!prefs.hidden_items.includes(i.id))).sort((a,b)=>Number(prefs.pinned_items.includes(b.id))-Number(prefs.pinned_items.includes(a.id))+(Number(prefs.pinned_items.includes(a.id))===Number(prefs.pinned_items.includes(b.id))?((prefs.item_order.indexOf(a.id)<0?1000: prefs.item_order.indexOf(a.id))-(prefs.item_order.indexOf(b.id)<0?1000:prefs.item_order.indexOf(b.id))):0));}
+    function spaceProgress(detail){const tasks=spaceItemsForView(detail).filter(i=>i.kind==="task"&&["pending","in_progress","completed"].includes(i.source?.status)),done=tasks.filter(i=>i.source.status==="completed").length;return {total:tasks.length,done,percent:tasks.length?Math.round(done/tasks.length*100):null};}
+    function renderSpaces(){
+      const v=spacesView,disabled=v.busy||v.loading;
+      $("refreshSpaces").disabled=disabled;$("newSpace").disabled=disabled||!v.loaded;$("moreSpaces").disabled=disabled;$("moreSpaces").classList.toggle("hidden",!v.more);$("spacesError").textContent=v.error;$("spacesError").classList.toggle("hidden",!v.error);
+      $("spaceStarters").querySelectorAll("button").forEach(b=>{b.disabled=disabled||!v.loaded;b.classList.toggle("hidden",v.list.some(s=>s.template===b.dataset.spaceTemplate&&s.owner_user_id===state.user?.id));});
+      $("spacesStatus").textContent=v.loading?"Loading your accessible Spaces…":v.loaded?v.list.length+" loaded Spaces. Pins, hidden items and layout changes are personal.":"Open Spaces to load your collections.";
+      const list=v.list.filter(s=>$("spacesShowHidden").checked||!s.view?.hidden).slice().sort((a,b)=>Number(!!b.view?.pinned)-Number(!!a.view?.pinned)||(a.view?.position||0)-(b.view?.position||0));
+      $("spacesGrid").innerHTML=list.map(s=>'<article class="space-card '+esc(s.template)+(s.id===v.selected?' selected':'')+'"><div class="eyebrow">'+esc(s.template==="school"?"School":s.template==="home"?"Home":"Custom Space")+(s.view?.pinned?" · Pinned":"")+'</div><h4>'+esc(s.name)+'</h4><p class="activity-meta">'+esc(s.visibility==="private"?"Private · only you":"Household · source permissions still apply")+(s.view?.hidden?" · Hidden from your view":"")+'</p><p class="history-private-note">'+esc(s.description)+'</p><div class="activity-actions"><button class="primary smallbtn" type="button" data-space-open="'+esc(s.id)+'" '+(disabled?"disabled":"")+'>Open Space</button><button class="ghost smallbtn" type="button" data-space-view="pin" data-space-id="'+esc(s.id)+'" '+(disabled?"disabled":"")+'>'+(s.view?.pinned?"Unpin":"Pin")+'</button><button class="ghost smallbtn" type="button" data-space-view="hide" data-space-id="'+esc(s.id)+'" '+(disabled?"disabled":"")+'>'+(s.view?.hidden?"Show":"Hide")+'</button></div></article>').join("")||(v.loaded?'<p class="setting-note">Create a School or Home Space, or show your hidden Spaces.</p>':"");
+      const d=v.detail;$("spaceDetail").classList.toggle("hidden",!d);if(!d)return;
+      const mine=d.space.owner_user_id===state.user?.id,prefs=defaultSpaceView(d.space,d.view),items=spaceItemsForView(d,$("spaceShowHiddenItems").checked),progress=spaceProgress(d);
+      $("spaceDetailName").textContent=d.space.name;$("spaceDetailDescription").textContent=d.space.description;$("spaceDetailMeta").textContent=d.space.visibility==="private"?"Your private Space":"Household Space";
+      $("spaceSharingNote").textContent=(mine?"You manage this Space. ":"Read only: the creator manages this Space. ")+(d.space.visibility==="household"?"Its notes and document links are shared with the household. ":"Its notes and document links stay private. ")+"Linked records retain their own access rules. Customize your layout without changing another person’s view.";
+      for(const id of ["editSpace","addSpaceItem","spaceNewTask","spaceNewEvent"]) {$(id).classList.toggle("hidden",!mine);$(id).disabled=v.busy;}
+      $("spaceLayoutRows").innerHTML=prefs.section_order.map((section,index)=>'<div class="space-layout-row"><label><input type="checkbox" data-space-section-visible="'+section+'" '+(!prefs.hidden_sections.includes(section)?"checked":"")+' '+(v.busy?"disabled":"")+'>'+esc(spaceSectionNames[section])+'</label><button type="button" class="ghost smallbtn" data-space-section-move="'+section+'" data-direction="-1" '+(v.busy||index===0?"disabled":"")+'>Up</button><button type="button" class="ghost smallbtn" data-space-section-move="'+section+'" data-direction="1" '+(v.busy||index===4?"disabled":"")+'>Down</button></div>').join("");
+      const openOptions=new Set([...$("spaceSections").querySelectorAll("details[open][data-space-options-id]")].map(el=>el.dataset.spaceOptionsId));
+      $("spaceSections").innerHTML=prefs.section_order.filter(section=>!prefs.hidden_sections.includes(section)).map(section=>{
+        const rows=items.filter(i=>spaceSection(i.kind)===section),heading='<section class="space-section"><div class="space-section-head"><h4>'+esc(spaceSectionNames[section])+'</h4><span class="activity-meta">'+rows.length+(rows.length===1?' visible item':' visible items')+'</span></div>';
+        const summary=section==="progress"?(progress.total?'<strong>'+progress.done+' of '+progress.total+' visible linked tasks complete · '+progress.percent+'%</strong><div class="space-progress" role="progressbar" aria-label="Visible linked task completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress.percent+'"><span style="width:'+progress.percent+'%"></span></div>':'<p class="setting-note">Link active or completed tasks to see task progress here.</p>'):"";
+        return heading+summary+rows.map(i=>{
+          const source=i.source||{},title=source.title||i.title,pinned=prefs.pinned_items.includes(i.id),hidden=prefs.hidden_items.includes(i.id),same=rows.filter(x=>prefs.pinned_items.includes(x.id)===pinned),index=same.findIndex(x=>x.id===i.id);let content="";
+          if(i.kind==="task")content='<p class="activity-meta">'+esc(source.status)+' · '+esc(source.assigned_to||"Unassigned")+' · Due: '+esc(spaceDate(source.due_at))+'<br>Reminder: '+esc(spaceDate(source.remind_at))+'</p>';
+          else if(i.kind==="event")content='<p class="activity-meta">'+esc(source.all_day?"All day · "+new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeZone:state.household?.timezone||"America/Denver"}).format(new Date(source.starts_at)):spaceDate(source.starts_at))+(source.ends_at?' – '+esc(spaceDate(source.ends_at)):"")+(source.location?'<br>'+esc(source.location):"")+'</p>';
+          else if(i.kind==="goal"){const percent=Math.max(0,Math.min(100,Number(source.progress_percent)||0));content='<p class="activity-meta">'+esc(source.status)+' · '+percent+'%'+(source.target_date?' · Target '+esc(source.target_date):"")+'</p><div class="space-progress"><span style="width:'+percent+'%"></span></div>'+(source.next_action?'<p>'+esc(source.next_action)+'</p>':"");}
+          else if(i.kind==="memory")content='<p>'+esc(source.content)+'</p><p class="activity-meta">Linked saved memory · '+esc(source.visibility)+'</p>';
+          else if(i.kind==="note")content='<p>'+esc(i.body)+'</p>';
+          else{const url=spaceUrl(i.url);content=(url?'<p><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">Open document / link</a></p>':'<p class="setting-note">This link could not be verified.</p>')+(i.body?'<p>'+esc(i.body)+'</p>':"");}
+          const button=(action,label,extra="")=>'<button class="ghost smallbtn" type="button" data-space-item-action="'+action+'" data-item-id="'+esc(i.id)+'" '+(v.busy||extra?"disabled":"")+'>'+label+'</button>';
+          return '<article class="space-item'+(hidden?' space-hidden-item':'')+'"><strong>'+esc(title)+(pinned?' · Pinned':"")+(hidden?' · Hidden for you':"")+'</strong>'+content+'<details class="space-item-options" data-space-options-id="'+esc(i.id)+'"><summary>Item options</summary><div class="activity-actions">'+button("pin",pinned?"Unpin":"Pin")+button("hide",hidden?"Restore":"Hide for me")+button("up","Move up",index===0)+button("down","Move down",index===same.length-1)+(!["note","document"].includes(i.kind)?button("source","View original"):mine?button("edit","Edit"):"")+(mine?button("remove",["note","document"].includes(i.kind)?"Delete item":"Remove link"):"")+'</div></details></article>';
+        }).join("")+(rows.length?"":'<p class="setting-note">'+(section==="progress"?"No visible linked goals.":"No visible items in this section yet.")+'</p>')+'</section>';
+      }).join("");
+      $("spaceSections").querySelectorAll("[data-space-options-id]").forEach(el=>el.open=openOptions.has(el.dataset.spaceOptionsId));
+    }
+    async function loadSpaces(append=false,force=false){
+      const owner=state.user?.id;if(!owner||spacesView.loading&&!force||spacesView.busy&&!force)return;if(spacesView.owner!==owner){resetSpaces();spacesView.owner=owner;}
+      const epoch=spaceEpoch,request=++spaceListRequest;spacesView.loading=true;renderSpaces();
+      try{const last=append?spacesView.last:null,data=await spaceRpc("list_open_brain_spaces",{p_before:last?.created_at||null,p_before_id:last?.id||null});if(!spaceCurrent(owner,epoch)||request!==spaceListRequest)return;if(!Array.isArray(data.spaces))throw new Error("Spaces could not be verified.");spacesView.list=append?[...spacesView.list,...data.spaces.filter(s=>!spacesView.list.some(old=>old.id===s.id))]:data.spaces;spacesView.last=data.spaces.at(-1)||null;spacesView.more=!!data.has_more;spacesView.loaded=true;spacesView.error="";}
+      catch(error){if(spaceCurrent(owner,epoch)&&request===spaceListRequest){spacesView.error=error.message;spacesView.list=[];spacesView.detail=null;spacesView.more=false;spacesView.loaded=false;}}
+      finally{if(spaceCurrent(owner,epoch)&&request===spaceListRequest){spacesView.loading=false;renderSpaces();}}
+    }
+    async function loadSpaceDetail(id,scroll=false){
+      const owner=state.user?.id,epoch=spaceEpoch,request=++spaceDetailRequest;if(!owner)return;if(spacesView.selected!==id||spacesView.detail?.space.id!==id)spacesView.detail=null;spacesView.selected=id;renderSpaces();
+      try{const d=await spaceRpc("get_open_brain_space",{p_id:id});if(!spaceCurrent(owner,epoch)||request!==spaceDetailRequest||spacesView.selected!==id)return;if(!d.space||!Array.isArray(d.items))throw new Error("Space contents could not be verified.");if(spaceSourceItemId&&!d.items.some(i=>i.id===spaceSourceItemId)){spaceSourceRequest++;spaceSourceItemId=null;$("spaceSourceContent").textContent="This record is no longer accessible. Refresh the Space.";}spacesView.detail=d;spacesView.error="";spacesView.list=spacesView.list.map(s=>s.id===id?{...d.space,view:d.view}:s);renderSpaces();if(scroll)$("spaceDetail").scrollIntoView({block:"start",behavior:"smooth"});}
+      catch(error){if(spaceCurrent(owner,epoch)&&request===spaceDetailRequest){spacesView.detail=null;spacesView.error=error.message;renderSpaces();}}
+    }
+    async function mutateSpace(work,success,after=null,errorId=null){
+      const owner=state.user?.id,epoch=spaceEpoch;if(!owner||spacesView.busy)return;spacesView.busy=true;spaceListRequest++;spaceDetailRequest++;spacesView.loading=false;renderSpaces();
+      for(const id of ["saveSpace","closeSpaceEditor","saveSpaceItem","closeSpaceItem","searchSpaceSources","moreSpaceSources"])$(id).disabled=true;$("spaceEditor").querySelectorAll("input,select,textarea").forEach(el=>el.disabled=true);$("spaceItemEditor").querySelectorAll("input,select,textarea,[data-space-link-source]").forEach(el=>el.disabled=true);
+      try{const result=await work();if(!spaceCurrent(owner,epoch))return;if(after)after(result);await loadSpaces(false,true);if(spacesView.selected)await loadSpaceDetail(spacesView.selected);if(spaceCurrent(owner,epoch))toast(success);}
+      catch(error){if(spaceCurrent(owner,epoch)){spacesView.error=error.message;if(errorId){$(errorId).textContent=error.message+" Refresh before retrying if the result is uncertain.";$(errorId).classList.remove("hidden");}renderSpaces();}}
+      finally{if(spaceCurrent(owner,epoch)){spacesView.busy=false;for(const id of ["saveSpace","closeSpaceEditor","saveSpaceItem","closeSpaceItem","searchSpaceSources","moreSpaceSources"])$(id).disabled=false;$("spaceEditor").querySelectorAll("input,select,textarea").forEach(el=>el.disabled=false);$("spaceItemEditor").querySelectorAll("input,select,textarea,[data-space-link-source]").forEach(el=>el.disabled=false);$("spaceItemKind").disabled=spaceItemEditing?.version!=null;renderSpaces();}}
+    }
+    function openSpaceEditor(template="custom",row=null){
+      if(spacesView.busy||!spacesView.loaded)return;spaceEditing=row?{...row}:{id:crypto.randomUUID(),template,household_id:state.member.household_id,version:null};$("spaceForm").reset();$("spaceEditorHeading").textContent=row?"Space settings":"New "+(template==="school"?"School":template==="home"?"Home":"custom")+" Space";$("spaceName").value=row?.name||(template==="school"?"School":template==="home"?"Home":"");$("spaceDescription").value=row?.description||"";$("spaceVisibility").value=row?.visibility||"private";$("spaceFormError").classList.add("hidden");$("deleteSpace").classList.toggle("hidden",!row);renderSpaceSharing();$("spaceEditor").showModal();
+    }
+    function renderSpaceSharing(){const confirm=$("spaceVisibility").value==="household"&&spaceEditing?.visibility!=="household";$("spaceShareConfirmation").classList.toggle("hidden",!confirm);$("spaceConfirmShare").required=confirm;}
+    async function saveSpace(event){event.preventDefault();const s=spaceEditing;if(!s)return;const args={p_id:s.id,p_household:s.household_id,p_template:s.template,p_name:$("spaceName").value.trim(),p_description:$("spaceDescription").value.trim(),p_visibility:$("spaceVisibility").value,p_version:s.version,p_confirm_sharing:$("spaceConfirmShare").checked};await mutateSpace(()=>spaceRpc("save_open_brain_space",args),"Space saved.",result=>{spacesView.selected=result.id;$("spaceEditor").close();spaceEditing=null;},"spaceFormError");}
+    async function saveSpaceView(space,changes,view=space.view){const settings={...defaultSpaceView(space,view),...changes};return await spaceRpc("save_open_brain_space_view",{p_space:space.id,p_settings:settings,p_version:view?.version||null});}
+    function openSpaceItem(item=null){
+      const d=spacesView.detail;if(!d||spacesView.busy||d.space.owner_user_id!==state.user?.id)return;spaceItemEditing=item?{...item,space_id:d.space.id,space_version:d.space.version}:{id:crypto.randomUUID(),space_id:d.space.id,space_version:d.space.version,version:null};spacePickerRequest++;spacesView.picker={rows:[],more:false,last:null,loading:false};$("spaceItemForm").reset();$("spaceItemHeading").textContent=item?"Edit Space item":"Add to "+d.space.name;$("spaceItemKind").disabled=!!item;$("spaceItemKind").value=item?.kind||"task";$("spaceItemTitle").value=item?.title||"";$("spaceItemBody").value=item?.body||"";$("spaceItemUrl").value=item?.url||"";$("spaceItemError").classList.add("hidden");$("spaceItemPrivacy").textContent=d.space.visibility==="household"?"New notes, document labels and links will be visible to your household. Existing record permissions stay unchanged.":"Notes and document links stay in this private Space. Existing record permissions stay unchanged.";$("spaceItemEditor").showModal();renderSpaceItemMode();
+    }
+    function renderSpaceItemMode(){
+      const kind=$("spaceItemKind").value,native=["note","document"].includes(kind);spacePickerRequest++;spacesView.picker={rows:[],more:false,last:null,loading:false};$("spaceSourceRows").textContent="";$("spacePickerStatus").textContent="";$("moreSpaceSources").classList.add("hidden");$("spaceSourcePicker").classList.toggle("hidden",native);$("spaceNativeFields").classList.toggle("hidden",!native);$("spaceDocumentUrl").classList.toggle("hidden",kind!=="document");$("spaceItemTitle").required=native;$("spaceItemUrl").required=kind==="document";$("saveSpaceItem").classList.toggle("hidden",!native);if(!native)searchSpaceSources();
+    }
+    async function searchSpaceSources(append=false){
+      const owner=state.user?.id,epoch=spaceEpoch,draft=spaceItemEditing,kind=$("spaceItemKind").value,query=$("spaceSourceQuery").value.trim();if(!owner||!draft||spacesView.busy||["note","document"].includes(kind))return;const request=++spacePickerRequest,after=append?spacesView.picker.last:null;spacesView.picker.loading=true;$("spacePickerStatus").textContent="Reading accessible records…";$("spaceSourceRows").textContent="";$("searchSpaceSources").disabled=true;
+      try{const data=await spaceRpc("find_open_brain_space_sources",{p_space:draft.space_id,p_kind:kind,p_query:query,p_after:after});if(!spaceCurrent(owner,epoch)||request!==spacePickerRequest||spaceItemEditing!==draft||!$("spaceItemEditor").open)return;spacesView.picker.rows=append?[...spacesView.picker.rows,...data.rows.filter(r=>!spacesView.picker.rows.some(old=>old.id===r.id))]:data.rows;spacesView.picker.last=data.rows.at(-1)?.id||null;spacesView.picker.more=!!data.has_more;$("spaceSourceRows").innerHTML=spacesView.picker.rows.map(r=>'<article class="space-pick-row"><strong>'+esc(r.title)+'</strong><p class="activity-meta">'+esc(r.visibility||"Household family event")+(r.status?' · '+esc(r.status):"")+(r.due_at?' · '+esc(spaceDate(r.due_at)):"")+(r.starts_at?' · '+esc(spaceDate(r.starts_at)):"")+'</p><button class="ghost smallbtn" type="button" data-space-link-source="'+esc(r.id)+'">Link this record</button></article>').join("");$("spacePickerStatus").textContent=spacesView.picker.rows.length?"Only your accessible records are shown. Linking does not change their visibility.":"No matching accessible records. Create a task/event from this Space or search another title.";$("moreSpaceSources").classList.toggle("hidden",!data.has_more);}
+      catch(error){if(spaceCurrent(owner,epoch)&&request===spacePickerRequest){spacesView.picker.rows=[];$("spaceSourceRows").textContent="";$("spacePickerStatus").textContent=error.message;}}
+      finally{if(spaceCurrent(owner,epoch)&&request===spacePickerRequest){spacesView.picker.loading=false;$("searchSpaceSources").disabled=false;}}
+    }
+    async function saveNativeSpaceItem(event){event.preventDefault();const kind=$("spaceItemKind").value;if(!["note","document"].includes(kind)){searchSpaceSources();return;}const i=spaceItemEditing;if(!i)return;let url="";if(kind==="document"){url=spaceUrl($("spaceItemUrl").value.trim());if(!url){$("spaceItemError").textContent="Use an http or https link without a username/password.";$("spaceItemError").classList.remove("hidden");return;}}const args={p_id:i.id,p_space:i.space_id,p_kind:kind,p_title:$("spaceItemTitle").value.trim(),p_body:$("spaceItemBody").value.trim(),p_url:url,p_version:i.version,p_space_version:i.space_version};await mutateSpace(()=>spaceRpc("save_open_brain_space_item",args),"Space item saved.",()=>{$("spaceItemEditor").close();spaceItemEditing=null;spacePickerRequest++;},"spaceItemError");}
+    async function linkSpaceSource(id){const i=spaceItemEditing,kind=$("spaceItemKind").value;if(!i||!spacesView.picker.rows.some(r=>r.id===id))return;await mutateSpace(()=>spaceRpc("save_open_brain_space_item",{p_id:i.id,p_space:i.space_id,p_kind:kind,p_source:id,p_space_version:i.space_version}),"Record linked; its permissions are unchanged.",()=>{$("spaceItemEditor").close();spaceItemEditing=null;spacePickerRequest++;},"spaceItemError");}
+    async function openSpaceSource(item){
+      const owner=state.user?.id,epoch=spaceEpoch,selected=spacesView.selected,request=++spaceSourceRequest;const tables={task:"family_tasks",event:"family_events",goal:"family_goals",memory:"thoughts"};if(!tables[item.kind])return;spaceSourceItemId=item.id;$("spaceSourceContent").textContent="Reading the current record…";$("spaceSourceDialog").showModal();
+      try{let query=sb.from(tables[item.kind]).select(item.kind==="memory"?"id,content,visibility,archived_at":"*").eq("id",item.source_id).eq("household_id",spacesView.detail.space.household_id);if(item.kind==="memory")query=query.is("archived_at",null);const {data,error}=await query.maybeSingle();if(!spaceCurrent(owner,epoch)||request!==spaceSourceRequest||spacesView.selected!==selected)return;if(error||!data)throw new Error("This record is no longer accessible. Refresh the Space.");$("spaceSourceContent").textContent=item.kind==="memory"?data.content+"\n\nVisibility: "+data.visibility:[data.title,data.description,data.why_it_matters,data.next_action,data.location,data.status,data.due_at?"Due: "+spaceDate(data.due_at):null,data.starts_at?"Starts: "+spaceDate(data.starts_at):null,data.visibility?"Visibility: "+data.visibility:null].filter(Boolean).join("\n\n");}
+      catch(error){if(spaceCurrent(owner,epoch)&&request===spaceSourceRequest)$("spaceSourceContent").textContent=error.message;}
+    }
+    async function spaceItemAction(id,action){
+      const d=spacesView.detail,item=d?.items.find(i=>i.id===id);if(!item||spacesView.busy)return;const prefs=defaultSpaceView(d.space,d.view);
+      if(action==="source"){openSpaceSource(item);return;}if(action==="edit"){openSpaceItem(item);return;}
+      if(action==="remove"){if(!confirm(["note","document"].includes(item.kind)?"Delete this Space item? This removes the note or link from the Space.":"Remove this link from the Space? The original record will remain unchanged."))return;await mutateSpace(()=>spaceRpc("remove_open_brain_space_item",{p_space:d.space.id,p_id:id,p_version:item.version}),"Item removed from the Space.");return;}
+      let changes;if(action==="pin")changes={pinned_items:prefs.pinned_items.includes(id)?prefs.pinned_items.filter(x=>x!==id):[...prefs.pinned_items,id]};else if(action==="hide")changes={hidden_items:prefs.hidden_items.includes(id)?prefs.hidden_items.filter(x=>x!==id):[...prefs.hidden_items,id]};else{
+        const same=spaceItemsForView(d,$("spaceShowHiddenItems").checked).filter(x=>spaceSection(x.kind)===spaceSection(item.kind)&&prefs.pinned_items.includes(x.id)===prefs.pinned_items.includes(id)),index=same.findIndex(x=>x.id===id),next=index+(action==="up"?-1:1);if(!same[next])return;[same[index],same[next]]=[same[next],same[index]];const ids=same.map(x=>x.id);changes={item_order:[...ids,...prefs.item_order.filter(x=>!ids.includes(x))]};}
+      await mutateSpace(()=>saveSpaceView(d.space,changes,d.view),"Your Space layout was saved.");
+    }
+    function beginSpaceRecord(kind){const d=spacesView.detail;if(!d||spacesView.busy||d.space.owner_user_id!==state.user?.id)return;state.pendingInboxProcess=null;const context={kind,space_id:d.space.id,space_version:d.space.version,name:d.space.name,owner:state.user.id,epoch:spaceEpoch};if(kind==="task")openEditor(null,context);else openEventEditor(null,context);}
+    async function finishSpaceRecord(context,id){
+      if(!context||!spaceCurrent(context.owner,context.epoch))return;if(spacePendingCreate===context)spacePendingCreate=null;
+      try{await spaceRpc("save_open_brain_space_item",{p_id:crypto.randomUUID(),p_space:context.space_id,p_kind:context.kind,p_source:id,p_space_version:context.space_version});if(!spaceCurrent(context.owner,context.epoch))return;if(spacesView.selected===context.space_id)await loadSpaceDetail(context.space_id);toast("Record saved and linked to "+context.name+".");}
+      catch(_){if(spaceCurrent(context.owner,context.epoch))toast("The record was saved. Its Space link was not confirmed; use Add item to link the existing record. Do not create it again.",true);}
+    }
+    $("refreshSpaces").addEventListener("click",async()=>{await loadSpaces();if(spacesView.selected)await loadSpaceDetail(spacesView.selected);});$("moreSpaces").addEventListener("click",()=>loadSpaces(true));$("newSpace").addEventListener("click",()=>openSpaceEditor());$("spacesShowHidden").addEventListener("change",renderSpaces);$("spaceShowHiddenItems").addEventListener("change",renderSpaces);
+    $("spaceStarters").addEventListener("click",e=>{const b=e.target.closest("[data-space-template]");if(b)openSpaceEditor(b.dataset.spaceTemplate);});
+    $("spacesGrid").addEventListener("click",async e=>{if(spacesView.busy)return;const open=e.target.closest("[data-space-open]"),view=e.target.closest("[data-space-view]");if(open){$("spaceShowHiddenItems").checked=false;loadSpaceDetail(open.dataset.spaceOpen,true);}if(view){const s=spacesView.list.find(s=>s.id===view.dataset.spaceId);if(s)await mutateSpace(()=>saveSpaceView(s,view.dataset.spaceView==="pin"?{pinned:!s.view?.pinned}:{hidden:!s.view?.hidden}),"Your Space view was saved.");}});
+    $("editSpace").addEventListener("click",()=>{const s=spacesView.detail?.space;if(s)openSpaceEditor(s.template,s);});$("spaceVisibility").addEventListener("change",()=>{$("spaceConfirmShare").checked=false;renderSpaceSharing();});$("spaceForm").addEventListener("submit",saveSpace);$("closeSpaceEditor").addEventListener("click",()=>{if(!spacesView.busy)$("spaceEditor").close();});$("spaceEditor").addEventListener("cancel",e=>{if(spacesView.busy)e.preventDefault();});
+    $("deleteSpace").addEventListener("click",async()=>{const s=spaceEditing;if(s&&confirm("Delete this Space and its own notes/document links? Original tasks, events, goals and saved memories remain unchanged. Other viewers’ layouts for this Space will also be removed."))await mutateSpace(()=>spaceRpc("delete_open_brain_space",{p_id:s.id,p_version:s.version}),"Space deleted. Original records were preserved.",()=>{spacesView.selected=null;spacesView.detail=null;$("spaceEditor").close();});});
+    $("addSpaceItem").addEventListener("click",()=>openSpaceItem());$("spaceItemKind").addEventListener("change",renderSpaceItemMode);$("spaceItemForm").addEventListener("submit",saveNativeSpaceItem);$("searchSpaceSources").addEventListener("click",()=>searchSpaceSources());$("moreSpaceSources").addEventListener("click",()=>searchSpaceSources(true));$("spaceSourceQuery").addEventListener("input",()=>{spacePickerRequest++;spacesView.picker={rows:[],more:false,last:null,loading:false};$("spaceSourceRows").textContent="";$("spacePickerStatus").textContent="Search to update the results.";$("moreSpaceSources").classList.add("hidden");$("searchSpaceSources").disabled=false;});$("spaceSourceRows").addEventListener("click",e=>{const b=e.target.closest("[data-space-link-source]");if(b)linkSpaceSource(b.dataset.spaceLinkSource);});
+    $("closeSpaceItem").addEventListener("click",()=>{if(!spacesView.busy){spacePickerRequest++;$("spaceItemEditor").close();spaceItemEditing=null;}});$("spaceItemEditor").addEventListener("cancel",e=>{if(spacesView.busy)e.preventDefault();else{spacePickerRequest++;spaceItemEditing=null;}});$("closeSpaceSource").addEventListener("click",()=>{spaceSourceRequest++;spaceSourceItemId=null;$("spaceSourceDialog").close();$("spaceSourceContent").textContent="";});
+    $("spaceSections").addEventListener("click",e=>{const b=e.target.closest("[data-space-item-action]");if(b)spaceItemAction(b.dataset.itemId,b.dataset.spaceItemAction);});$("spaceLayoutRows").addEventListener("change",async e=>{const key=e.target.dataset.spaceSectionVisible,d=spacesView.detail;if(!key||!d)return;const prefs=defaultSpaceView(d.space,d.view),hidden=e.target.checked?prefs.hidden_sections.filter(x=>x!==key):[...prefs.hidden_sections,key];await mutateSpace(()=>saveSpaceView(d.space,{hidden_sections:hidden},d.view),"Your section visibility was saved.");});$("spaceLayoutRows").addEventListener("click",async e=>{const b=e.target.closest("[data-space-section-move]"),d=spacesView.detail;if(!b||!d)return;const order=[...defaultSpaceView(d.space,d.view).section_order],index=order.indexOf(b.dataset.spaceSectionMove),next=index+Number(b.dataset.direction);if(next<0||next>=order.length)return;[order[index],order[next]]=[order[next],order[index]];await mutateSpace(()=>saveSpaceView(d.space,{section_order:order},d.view),"Your section order was saved.");});
+    $("spaceTaskVisibility").addEventListener("change",()=>{if(spacePendingCreate?.kind!=="task")return;const shared=isAdmin()&&$("spaceTaskVisibility").value==="household";$("taskMember").disabled=!shared;if(!shared)$("taskMember").value=state.user.id;});$("editor").addEventListener("close",()=>{if(spacePendingCreate?.kind==="task")spacePendingCreate=null;});$("eventEditor").addEventListener("close",()=>{if(spacePendingCreate?.kind==="event")spacePendingCreate=null;});
+    $("spaceNewTask").addEventListener("click",()=>beginSpaceRecord("task"));$("spaceNewEvent").addEventListener("click",()=>beginSpaceRecord("event"));$("spaceReviewActions").addEventListener("click",openActivity);
+    const spacesObserver=new IntersectionObserver(entries=>{if(state.user&&!spacesView.loaded&&entries.some(e=>e.isIntersecting))loadSpaces();},{threshold:0.05});spacesObserver.observe($("spacesPanel"));setInterval(async()=>{const rect=$("spacesPanel").getBoundingClientRect();if(state.user&&!document.hidden&&rect.bottom>0&&rect.top<innerHeight&&!spacesView.busy&&!$("spaceItemEditor").open&&!$("spaceEditor").open){await loadSpaces();if(spacesView.selected)await loadSpaceDetail(spacesView.selected);}},15000);
+    // END SPACES
 
     // BEGIN BACKGROUND ROUTINES
     let routineEpoch=0,routineRequest=0,routineEditing=null;
@@ -3842,7 +4005,7 @@
     }
 
     let healthTrendsRequest=0,taskSlotsRequest=0,taskSlotDraft=null;
-    function clearPrivateViews(){resetRoutines();googleCalendarReadEpoch++;state.googleCalendarBusy=false;state.googleCalendarStatus=null;state.googleCalendars=[];state.googleEvents=[];resetGoogleEventCreation();resetGmail();state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
+    function clearPrivateViews(){resetSpaces(true);resetRoutines();googleCalendarReadEpoch++;state.googleCalendarBusy=false;state.googleCalendarStatus=null;state.googleCalendars=[];state.googleEvents=[];resetGoogleEventCreation();resetGmail();state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
     function resetHealthTrends(){
       healthTrendsRequest++;state.healthTrends=null;
       $("healthTrendsSection").open=false;$("healthTrendPeriod").value="7";
@@ -5565,9 +5728,11 @@
       }
     }
 
-    function openEventEditor(event=null){
+    function openEventEditor(event=null,spaceContext=null){
       if(event && !canEditEvent(event)){toast("You can view this family event, but only its creator or a household admin can edit it.",true);return;}
+      spacePendingCreate=spaceContext;
       $("eventForm").reset(); $("eventId").value=event?.id||"";
+      $("spaceEventNotice").classList.toggle("hidden",!spaceContext);$("spaceEventNotice").textContent=spaceContext?"This is a household-shared Open Brain family event. A private Space does not make the event private. It will be linked to "+spaceContext.name+" after saving.":"";
       $("eventEditorTitle").textContent=event?"Edit family event":"New family event";
       $("eventTitle").value=event?.title||"";
       $("eventStart").value=event?.starts_at?toLocalInput(event.starts_at):toLocalInput(new Date(Date.now()+24*60*60*1000));
@@ -5578,8 +5743,9 @@
       $("eventEditor").showModal();
     }
 
+    let eventEditorSaving=false;
     async function saveEvent(e){
-      e.preventDefault();
+      e.preventDefault();if(eventEditorSaving)return;eventEditorSaving=true;const spaceContext=spacePendingCreate?.kind==="event"?spacePendingCreate:null;const saveButton=$("eventForm").querySelector('button[type="submit"]');saveButton.disabled=true;
       try{
         const id=$("eventId").value;
         const payload={
@@ -5606,9 +5772,11 @@
             if(item) await finishInbox(item,"event",created.id);
           }
           toast("Family event added.");
+          await finishSpaceRecord(spaceContext,created.id);
         }
         $("eventEditor").close(); await loadData(); renderAll();
       }catch(err){toast(err?.message||"Unable to save event.",true);}
+      finally{eventEditorSaving=false;saveButton.disabled=false;}
     }
 
     function openGoalEditor(){
@@ -5791,9 +5959,11 @@
       },180);
     }
 
-    function openEditor(task=null){
+    function openEditor(task=null,spaceContext=null){
       if(task && !canManageTask(task)){toast("You can only edit your own personal reminders. Shared family reminders are managed by household admins.",true);return;}
+      spacePendingCreate=spaceContext;
       $("taskForm").reset(); $("taskId").value=task?.id||"";
+      $("spaceTaskContext").classList.toggle("hidden",!spaceContext);$("spaceTaskNotice").textContent=spaceContext?"This new task will be linked to "+spaceContext.name+" after saving. Sharing the Space does not change task visibility.":"";$("spaceTaskVisibility").value="private";$("spaceTaskVisibility").querySelector('option[value="household"]').disabled=!isAdmin();
       $("editorTitle").textContent=task?"Edit reminder":"New reminder";
       $("taskTitle").value=task?.title||""; $("taskDescription").value=task?.description||"";
       $("taskPriority").value=task?.priority||"normal";
@@ -5801,7 +5971,7 @@
       $("taskSlotDay").value=localDayKey(new Date());
       resetTaskSuggestions();
       $("taskMember").value=isAdmin()?(task?.assigned_to_user_id||state.member.user_id):state.user.id;
-      $("taskMember").disabled=!isAdmin();
+      $("taskMember").disabled=!isAdmin()||!!spaceContext;if(spaceContext)$("taskMember").value=state.user.id;
       $("taskReminder").value=task?.remind_at?toLocalInput(task.remind_at):toLocalInput(new Date(Date.now()+60*60*1000));
       $("taskDue").value=task?.due_at?toLocalInput(task.due_at):"";
       const known=[...$("taskRepeat").options].map(o=>o.value);
@@ -5815,6 +5985,7 @@
 
     async function saveTask(e){
       e.preventDefault();
+      const spaceContext=spacePendingCreate?.kind==="task"?spacePendingCreate:null;
       const btn=$("saveTask"); btn.disabled=true;
       try{
         const id=$("taskId").value;
@@ -5841,6 +6012,7 @@
           visibility:isAdmin()?"household":"private",
           updated_at:new Date().toISOString()
         };
+        if(spaceContext){payload.visibility=isAdmin()&&$("spaceTaskVisibility").value==="household"?"household":"private";payload.category=payload.visibility==="household"?"household":"personal";if(payload.visibility==="private"){payload.assigned_to_user_id=state.user.id;payload.assigned_to=state.member.display_name;}}
         if(!payload.title) throw new Error("Give the reminder a title.");
         if(!remindAt) throw new Error("Choose a reminder time.");
 
@@ -5867,6 +6039,7 @@
             if(item) await finishInbox(item,"task",created.id);
           }
           toast("Reminder created.");
+          await finishSpaceRecord(spaceContext,created.id);
         }
         $("editor").close();
         await loadData(); renderAll();

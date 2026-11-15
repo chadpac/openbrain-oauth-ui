@@ -5,7 +5,7 @@ function installBase64Compat(){
     Object.defineProperty(U8,"fromBase64",{
       configurable:true,
       writable:true,
-      value:(input,options)=>{
+      value:(input:string,options?:{alphabet?:"base64"|"base64url"})=>{
         let value=String(input).replace(/\s+/g,"");
         if(options?.alphabet==="base64url"){
           value=value.replace(/-/g,"+").replace(/_/g,"/");
@@ -23,7 +23,7 @@ function installBase64Compat(){
     Object.defineProperty(Uint8Array.prototype,"toBase64",{
       configurable:true,
       writable:true,
-      value:function(options){
+      value:function(this:Uint8Array,options?:{alphabet?:"base64"|"base64url";omitPadding?:boolean}){
         let binary="";
         const bytes=this;
         for(let i=0;i<bytes.length;i++) binary+=String.fromCharCode(bytes[i]);
@@ -87,7 +87,8 @@ export async function sendPushToUser(
   userId:string,
   payload:{title:string;body:string;url?:string;tag?:string;kind?:string;action_token?:string},
   onlyEndpoint?:string,
-  canSend?:()=>boolean
+  canSend?:()=>boolean|Promise<boolean>,
+  maxDevices?:number
 ) {
   const { privateKey } = await ensureVapid(admin);
 
@@ -97,6 +98,7 @@ export async function sendPushToUser(
     .eq("user_id", userId)
     .eq("enabled", true);
   if(onlyEndpoint) query=query.eq("endpoint",onlyEndpoint);
+  if(maxDevices!==undefined){if(!Number.isInteger(maxDevices)||maxDevices<1||maxDevices>20)throw new Error("Invalid device limit.");query=query.limit(maxDevices);}
 
   const { data: subscriptions, error } = await query;
 
@@ -109,7 +111,7 @@ export async function sendPushToUser(
     if (payload.kind==="event" && row.event_notifications===false) continue;
     if (payload.kind==="habit" && row.habit_notifications===false) continue;
     if (payload.kind==="health_checkin" && row.health_notifications===false) continue;
-    if(canSend&&!canSend()){deferred=true;continue;}
+    if(canSend&&!await canSend()){deferred=true;continue;}
     try {
       await send({
         endpoint: row.endpoint,
@@ -118,8 +120,8 @@ export async function sendPushToUser(
         vapid: privateKey,
         subscriber: VAPID_SUBSCRIBER,
         ttl: 3600
-      }, { fetch:(input,init)=>{
-        if(canSend&&!canSend())throw Object.assign(new Error("Held for quiet hours."),{quietHoursDeferred:true});
+      }, { fetch:async(input,init)=>{
+        if(canSend&&!await canSend())throw Object.assign(new Error("Held for quiet hours."),{quietHoursDeferred:true});
         return fetch(input,{...init,signal:AbortSignal.timeout(10000)});
       } });
       results.push({ id: row.id, sent: true });

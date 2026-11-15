@@ -20,8 +20,15 @@ memory, or included in general assistant context by this pilot.
 ## Reviewed private tasks
 
 Choose Prepare private reminder on a message. Edit the title and choose a future
-reminder time; dates are not inferred from excerpts. The browser rejects skipped
-and ambiguous local DST times. The server re-reads the source, checks its
+reminder time. A fresh excerpt review finds supported date text (ISO dates, named
+months, today/tomorrow), keeps source evidence, and labels it unconfirmed. Numeric
+slash dates remain ambiguous. Relative dates use the received day in the household
+timezone; yearless dates use the received year and require confirmation. Choosing
+a candidate fills only a draft date, never a time. Optional due date/time inputs
+use the household timezone; the reminder input uses the device timezone. Both
+reject skipped or repeated DST times. A reminder after the due time requires an
+explicit checkbox confirmation. Work estimates are optional, 1–480 minutes.
+The server re-reads the source, checks its
 fingerprint and connection generation, and creates one private/self-assigned
 proposal in Activity & approvals. This step does not save a task.
 
@@ -37,9 +44,39 @@ payloads under the same request ID are rejected. A new request can intentionally
 prepare another task, so this is not cross-request duplicate detection.
 
 Approved private tasks may enter the existing assistant's task context. This is
-disclosed in the review flow. Task descriptions contain only subject, sender and
-a fixed Gmail link, not the excerpt. Independently saved tasks and activity drafts
+disclosed in the review flow. Task descriptions retain subject, sender, a fixed
+Gmail link, and any event
+reference deliberately selected by the user, not the excerpt. The reference
+contains event title, start time, ID and Google calendar ID when applicable.
+Independently saved tasks and activity drafts
 remain after disconnect; deleting those records uses their own screens.
+
+## Optional calendar review
+
+Calendar access occurs only after **Check selected calendars**. It reads the user's
+selected Google calendars and caller-RLS-visible household events for one chosen
+local day/window through the next 60 days, with at most 24 elapsed hours. It does
+not read other household members' Google connections or private availability.
+No email, calendar details or combined review are sent to a model by this flow.
+
+Up to ten events are shown, ranked by simple title-word matches to the excerpt;
+matching never establishes a relationship. The user chooses any event reference.
+An optional estimate enables up to eight possible gaps, using all checked busy
+events, merged overlaps, all-day exclusive bounds, and the earlier of window end
+or due time. Free/declined events do not block time. Gaps leave at least a minute
+for selection when checking the current window and use whole-minute inputs.
+Only the earliest fitting start in each free interval is offered. Unknown event
+ends, incomplete/oversized reads, account or calendar-selection changes fail the
+check. Tasks/reminders are not calendar reservations and do not block these gaps.
+
+A five-minute signed review token binds owner, Gmail generation, source excerpt,
+window, estimate, due time, selected Calendar identity and event snapshot. Preparing
+a proposal re-reads and checks that snapshot before attaching a selected event or
+gap. Editing the window, estimate or due time clears the selection; a selected gap
+also clears its filled reminder. Calendar changes can still happen after proposal
+preparation or task approval: the stored check time is a snapshot, not a reservation
+or continuing conflict guarantee. Final approval rechecks Gmail identity and the
+existing assistant approval context, rather than repeating Calendar reads.
 
 ## Google Cloud setup
 
@@ -91,8 +128,9 @@ refresh/reconnect. Replacing the Gmail account invalidates older Gmail approvals
   responses cannot populate another signed-in account. Failed reads clear the
   actionable message list. Server responses are no-store; service workers never
   cache Gmail API responses.
-- Stored proposal/task copies intentionally retain the approved subject, sender
-  and link. Disconnect does not erase those separate records. No mailbox sync,
+- Stored proposal/task copies intentionally retain the approved subject, sender,
+  link and explicitly selected event reference. Disconnect does not erase those
+  separate records. No mailbox sync,
   historical import, automatic AI learning or background polling is added.
 
 ## Rollout
@@ -102,16 +140,21 @@ refresh/reconnect. Replacing the Gmail account invalidates older Gmail approvals
    verify_jwt=false is intentional: every POST validates its bearer with
    auth.getUser; GET config contains no secrets. The OAuth callback is handled by
    the existing public Calendar callback, which also retains verify_jwt=false.
-3. Deploy google-calendar-oauth including the shared helper, and open-brain-activity
+   For the v28 review, bundle shared email-review.ts and the pure date/event
+   helpers in open-brain-assistant/calendar-questions.ts with both Gmail and
+   Calendar entrypoints. No new schema migration or Google scope is needed.
+3. Deploy google-calendar-oauth including the shared helpers, and open-brain-activity
    with its existing helper plus Gmail account checks. Other assistant/model
    functions are unchanged.
-4. Publish dashboard/privacy/service worker v27. Configure Google Cloud and complete
+4. Publish dashboard/privacy/service worker v28. Configure Google Cloud and complete
    consent before claiming a live mailbox read works.
 
 Automated checks use synthetic records and mocked Google responses. They cover
 OAuth scope/PKCE/state replay, encrypted storage, metadata projections, bounded
 queries, source fingerprints, generation changes, revocation failures, caller-RLS
-task saves/rollback, UI account switching and 320/390/1280px layouts.
+task saves/rollback, date evidence, timezone/DST checks, signed review expiry and
+tampering, selected-event/gap revalidation, UI account switching and
+320/390/1280px layouts.
 
 References: [Gmail scopes](https://developers.google.com/workspace/gmail/api/auth/scopes),
 [messages.list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list),

@@ -1,3 +1,5 @@
+import { emailDateCandidates, callerEmailReader, signEmailPlan, readEmailPlan } from "./email-review.ts";
+import { localInstant } from "../open-brain-assistant/calendar-questions.ts";
 export const GMAIL_SCOPE="https://www.googleapis.com/auth/gmail.readonly";
 export function gmailLink(email:string,id:string){return "https://mail.google.com/mail/?authuser="+encodeURIComponent(email)+"#all/"+encodeURIComponent(id);}
 export function gmailSignals(text:string){
@@ -108,7 +110,7 @@ export function createGmailService(admin:any,options:{supabaseUrl:string;clientI
     }else await checked(admin.from("google_gmail_oauth_states").delete().eq("owner_user_id",user.id));
     return json({connected:false});
    }
-   if(!["search","message","propose"].includes(action))throw new Failure(400,"Unknown Gmail action.");
+   if(!["search","message","review","plan","propose"].includes(action))throw new Failure(400,"Unknown Gmail action.");
    const a=await access(user.id);
    if(a.row.household_id!==member.household_id||body.connection_id!==a.row.connection_id)throw new Failure(409,"Gmail connection changed. Refresh first.");
    if(action==="search"){
@@ -127,11 +129,44 @@ export function createGmailService(admin:any,options:{supabaseUrl:string;clientI
    if(!messageId(body.message_id))throw new Failure(400,"Choose a valid message.");
    const mail=await message(body.message_id,a.access,a.email);await current(user.id,a.row.connection_id);
    if(action==="message")return json({message:mail,connection_id:a.row.connection_id});
+   const reader=callerEmailReader({supabaseUrl:options.supabaseUrl,authorization:req.headers.get("Authorization")||"",householdId:member.household_id});
+   if(action==="review"||action==="plan"){
+    if(body.fingerprint!==mail.fingerprint)throw new Failure(409,"The email excerpt changed. Refresh the search and review it again.");
+    try{
+     if(action==="review"){const timezone=await reader.timezone();await current(user.id,a.row.connection_id);return json({message:mail,connection_id:a.row.connection_id,timezone,dates:emailDateCandidates(mail,timezone)});}
+     const snapshot=await reader.snapshot(mail,body);await current(user.id,a.row.connection_id);
+     const plan_token=await signEmailPlan({owner:user.id,connection_id:a.row.connection_id,fingerprint:mail.fingerprint,expires:Date.now()+300000,context_hash:snapshot.context_hash,checked_at:snapshot.checked_at,slots:snapshot.slots,request:snapshot.request});
+     return json({...snapshot,context_hash:undefined,plan_token,connection_id:a.row.connection_id});
+    }catch(error){throw error instanceof Failure?error:new Failure(409,error instanceof Error?error.message:"The review could not be completed.");}
+   }
    if(!uuid(body.request_id)||body.fingerprint!==mail.fingerprint||typeof body.title!=="string"||!body.title.trim()||body.title.length>180||typeof body.remind_at!=="string"||!/(Z|[+-]\d\d:\d\d)$/.test(body.remind_at)||!Number.isFinite(Date.parse(body.remind_at))||Date.parse(body.remind_at)<=Date.now())throw new Failure(409,"Review the current message, title and a future reminder time before proposing.");
+   let dueAt:string|null=null,linkedEvent:any=null,calendarNote="";
+   const minutes=body.estimated_minutes??null;
+   if(minutes!==null&&(!Number.isInteger(minutes)||minutes<1||minutes>480))throw new Failure(400,"Enter an estimate from 1 to 480 minutes.");
+   try{
+    if(body.due_local){const timezone=await reader.timezone();dueAt=new Date(localInstant(body.due_local,timezone)).toISOString();}
+    if(dueAt&&Date.parse(body.remind_at)>Date.parse(dueAt)&&body.after_due_confirmed!==true)throw new Error("The reminder is after the due time. Confirm that choice or change it.");
+    if(body.event_index!=null||body.slot_index!=null){
+     const plan=await readEmailPlan(body.plan_token,user.id,a.row.connection_id,mail.fingerprint);
+     const fresh=await reader.snapshot(mail,plan.request);
+     if(fresh.context_hash!==plan.context_hash||fresh.due_at!==dueAt||plan.request.minutes!==minutes)throw new Error("Calendar events, due time or estimate changed. Check calendars again.");
+     calendarNote="\nCalendar review checked: "+plan.checked_at+". Snapshot only; no calendar time reserved.";
+     if(body.event_index!=null){if(!Number.isInteger(body.event_index)||body.event_index<0||!fresh.events[body.event_index])throw new Error("Choose an event from the current review.");linkedEvent=fresh.events[body.event_index];}
+     if(body.slot_index!=null){
+      const slot=Number.isInteger(body.slot_index)?plan.slots[body.slot_index]:null;
+      if(body.slot_index<0||!slot||slot.start!==new Date(body.remind_at).toISOString()||Date.parse(slot.start)<=Date.now()||!minutes||Date.parse(slot.end)-Date.parse(slot.start)!==minutes*60000||dueAt&&Date.parse(slot.end)>Date.parse(dueAt))throw new Error("That suggested gap changed or passed. Check calendars again.");
+      // The context hash revalidates every event and selected Calendar account;
+      // the signed slot is the exact time the user selected in the review.
+
+     }
+    }else if(body.plan_token)throw new Error("Choose a reviewed event or time before attaching a calendar review.");
+   }catch(error){throw new Failure(409,error instanceof Error?error.message:"Check the reviewed details again.");}
+   await current(user.id,a.row.connection_id);
    // Caller-RLS preferences, never service-role memory context.
    const callerResponse=await fetch(options.supabaseUrl+"/rest/v1/rpc/get_open_brain_assistant_preferences",{method:"POST",headers:{Authorization:req.headers.get("Authorization")||"",apikey:Deno.env.get("SUPABASE_ANON_KEY")!,"Content-Type":"application/json"},body:"{}",signal:AbortSignal.timeout(10000)});
    const profile=callerResponse.ok?await callerResponse.json():null;if(!profile?.context_version)throw new Failure(503,"Assistant settings could not be verified.");
-   const proposal={type:"task",label:"Review email reminder",blocked:null,gmail_source:{connection_id:a.row.connection_id,message_id:mail.id},payload:{title:body.title.trim(),description:"Email: "+mail.subject+"\nFrom: "+mail.from+"\nSource: "+mail.url,assigned_to:member.display_name,assigned_to_user_id:user.id,visibility:"private",priority:"normal",remind_at:new Date(body.remind_at).toISOString(),due_at:null,recurrence_rule:null,estimated_minutes:null}};
+   const linked=linkedEvent?"\nLinked "+(linkedEvent.source==="google"?"Google Calendar":"Open Brain")+" event: "+linkedEvent.title+"\nEvent starts: "+linkedEvent.starts_at+"\nEvent ID: "+linkedEvent.id+(linkedEvent.source==="google"?"\nCalendar ID: "+linkedEvent.calendar_id:""):"";
+   const proposal={type:"task",label:"Review email reminder",blocked:null,gmail_source:{connection_id:a.row.connection_id,message_id:mail.id},payload:{title:body.title.trim(),description:"Email: "+mail.subject+"\nFrom: "+mail.from+"\nSource: "+mail.url+linked+calendarNote+(dueAt&&Date.parse(body.remind_at)>Date.parse(dueAt)?"\nReminder after due time explicitly confirmed.":""),assigned_to:member.display_name,assigned_to_user_id:user.id,visibility:"private",priority:"normal",remind_at:new Date(body.remind_at).toISOString(),due_at:dueAt,recurrence_rule:null,estimated_minutes:minutes}};
    const id=await checked(admin.rpc("create_open_brain_gmail_proposal",{p_owner:user.id,p_household:member.household_id,p_connection:a.row.connection_id,p_request:body.request_id,p_context:profile.context_version,p_action:proposal}));
    return json({activity_id:id});
   }catch(error){return json({error:error instanceof Failure?error.message:"Gmail could not complete the request. Please retry."},error instanceof Failure?error.status:503);}

@@ -5,6 +5,10 @@ Open **Spaces** in the sidebar or mobile More menu. **Create a School Space** an
 default. **+ Space** supports other named collections using the same controls.
 Deployment creates no user Spaces or sample records.
 
+For ChatGPT or Claude, use the personal OAuth connection and the six Space tools
+to read a chosen collection, add notes/document links or reference existing
+records. [Connection setup and example prompts](spaces-from-chat.md).
+
 ## What a Space contains
 
 - References to existing visible Open Brain tasks, family events, goals and saved

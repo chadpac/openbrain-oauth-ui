@@ -31,12 +31,17 @@ publication.
   watches, durable bounded jobs, private history, pause/resume, quiet-hour-aware
   alerts and visible usage limits. [Behavior and rollout](background-routines.md).
 
-## Current work
+- School/Home Spaces: private or household collections of existing tasks, family
+  events, goals and saved memories, plus Space notes and document/web links. Personal
+  pin/hide/section/item ordering, visible linked-task progress and reviewed record
+  creation are implemented. [Behavior and rollout](spaces.md).
 
-School/Home Spaces: private or household collections of existing tasks, family
-events, goals and saved memories, plus Space notes and document/web links. Personal
-pin/hide/section/item ordering, visible linked-task progress and reviewed record
-creation are implemented. [Behavior and rollout](spaces.md).
+## Current work: Spaces from chat
+
+Personal OAuth MCP tools for ChatGPT/Claude: find/read Spaces, search accessible
+existing sources, save native notes/document links and link records. Caller RLS,
+version guards and explicit household note/link consent. The older shared-parent
+key never receives private Space access. [Setup and prompts](spaces-from-chat.md).
 Future extensions can add collaborative editing, separately scoped connector
 sources and generated layouts after the current collection workflows prove useful.
 Existing Google event editing/deletion, guests, recurrence and all-day creation

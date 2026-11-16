@@ -5,19 +5,24 @@ find a Space, read it, save a note or document link, or link an existing record.
 
 ## One-time connection setup
 
-Use this **OAuth MCP server URL** in a custom connector/integration:
+Use the same **public OAuth gateway URL ending in `/mcp`** that was set up for
+Gemini. It points to the personal Open Brain endpoint and advertises automatic
+OAuth client registration for other compatible clients too.
 
-```
-https://prctfnpbftjepdckwpao.supabase.co/functions/v1/open-brain-gemini-oauth
-```
+To find it, open Cloudflare → Workers & Pages →
+**openbrain-gemini-oauth-gateway** → Settings → Domains & Routes. Copy the
+public `workers.dev` address and append `/mcp`. You can also copy that public URL
+from the existing Gemini connection. Use the production address, without an
+access key or preview/version prefix.
 
 1. In ChatGPT, add a custom MCP app in Settings → Apps. Write-capable custom MCP
    apps require developer mode and availability/permission on your plan or workspace.
    In Claude, add a custom connector in Settings → Connectors. The exact labels
    vary by client version and organization settings.
-2. Choose OAuth and enter the URL above. Do not append an access key or paste a
+2. Choose OAuth and enter that gateway URL. Do not append an access key or paste a
    Supabase API key, password or token into chat. Client ID/secret can normally be
-   left blank when the client supports dynamic client registration.
+   left blank when the client supports dynamic client registration, which the
+   gateway advertises.
 3. Complete the Open Brain sign-in/consent flow using **the same account as your
    Open Brain dashboard**. This endpoint retains its existing household-admin
    requirement. This is an Open Brain login; no new Gmail/Calendar scope is needed.
@@ -30,6 +35,13 @@ The existing shared-key connection keeps its old memory/task tools. Its six new
 Space entries return setup instructions: the shared key does not identify an
 individual account and **never gains private Space access**. Refreshing that
 shared-key connection alone does not turn it into a personal OAuth connection.
+
+The upstream endpoint is
+`https://prctfnpbftjepdckwpao.supabase.co/functions/v1/open-brain-gemini-oauth`.
+Use the gateway for automatic setup: the direct Supabase authorization-server
+metadata does not advertise `registration_endpoint`, so direct setup may require
+an explicitly registered OAuth client ID and matching redirect URI. There is no
+need to create a second gateway or change its existing routing.
 
 ## Things to say
 

@@ -47,23 +47,46 @@
     const reset = document.getElementById("reset");
     const message = document.getElementById("message");
     const signinStatus = document.getElementById("signinStatus");
+    const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+    let recoveringPassword = hash.get("type") === "recovery";
+    let resumingAuthorization = false;
+    let resumeRequested = false;
+    let redirecting = false;
 
     async function resumePendingAuthorization() {
-      const { data } = await sb.auth.getSession();
-      if (!data.session) return false;
-
-      const pendingId = localStorage.getItem("openbrain_pending_authorization_id");
-      if (pendingId) {
-        localStorage.removeItem("openbrain_pending_authorization_id");
-        location.replace(
-          "/openbrain-oauth-ui/oauth/consent/?authorization_id=" +
-            encodeURIComponent(pendingId)
-        );
-        return true;
+      if (redirecting || recoveringPassword) return false;
+      if (resumingAuthorization) {
+        resumeRequested = true;
+        return false;
       }
+      resumingAuthorization = true;
+      try {
+        const { data, error } = await sb.auth.getSession();
+        if (error) throw error;
+        if (!data.session || recoveringPassword) return false;
 
-      location.replace("/openbrain-oauth-ui/dashboard/");
-      return true;
+        const pendingId = localStorage.getItem("openbrain_pending_authorization_id");
+        const destination = pendingId
+          ? "/openbrain-oauth-ui/oauth/consent/?authorization_id=" + encodeURIComponent(pendingId)
+          : "/openbrain-oauth-ui/dashboard/";
+        // Initial session loading and SIGNED_IN can finish together. Once a
+        // destination is chosen, a second callback must not replace consent
+        // with the dashboard after the pending request has been consumed.
+        redirecting = true;
+        location.replace(destination);
+        if (pendingId) localStorage.removeItem("openbrain_pending_authorization_id");
+        return true;
+      } catch (error) {
+        redirecting = false;
+        signinStatus.textContent = error?.message || "Unable to resume sign-in. Refresh this page to try again.";
+        return false;
+      } finally {
+        resumingAuthorization = false;
+        if (resumeRequested && !redirecting && !recoveringPassword) {
+          resumeRequested = false;
+          setTimeout(() => resumePendingAuthorization(), 0);
+        }
+      }
     }
 
     function showReset() {
@@ -79,18 +102,18 @@
       message.appendChild(div);
     }
 
-    const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
-    if (hash.get("type") === "recovery" || hash.get("access_token")) {
+    if (recoveringPassword) {
       showReset();
     }
 
     sb.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
+        recoveringPassword = true;
         showReset();
         return;
       }
       if (event === "SIGNED_IN") {
-        resumePendingAuthorization();
+        setTimeout(() => resumePendingAuthorization(), 0);
       }
     });
 
@@ -111,7 +134,7 @@
         return;
       }
 
-      showMessage("Password saved. Return to Gemini and sign in again with this Open Brain password.", "ok");
+      showMessage("Password saved. Return to the app you are connecting and sign in again with this Open Brain password.", "ok");
       e.target.reset();
     });
   </script>

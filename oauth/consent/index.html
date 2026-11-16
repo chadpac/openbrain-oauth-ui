@@ -97,7 +97,7 @@
 
     async function loadConsent() {
       if (!authorizationId) {
-        fail("Missing authorization request. Please start the connection again from Gemini.");
+        fail("Missing authorization request. Please start the connection again from ChatGPT, Gemini or your other AI app.");
         return;
       }
 
@@ -157,7 +157,7 @@
 
       const email = document.getElementById("email").value.trim();
 
-      // Preserve Gemini's pending OAuth authorization request while the user
+      // Preserve the AI app's pending OAuth authorization request while the user
       // leaves this page to open the magic link from email.
       localStorage.setItem("openbrain_pending_authorization_id", authorizationId);
 
@@ -177,7 +177,7 @@
       }
 
       showMessage(
-        "Sign-in link sent. Open the email on this device and click the link. You will be returned to the Gemini approval step.",
+        "Sign-in link sent. Open the email link in this same browser, then click Approve on the Authorize Open Brain page to finish connecting your AI app.",
         "ok"
       );
     });

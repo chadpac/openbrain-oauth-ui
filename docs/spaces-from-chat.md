@@ -5,43 +5,51 @@ find a Space, read it, save a note or document link, or link an existing record.
 
 ## One-time connection setup
 
-Use the same **public OAuth gateway URL ending in `/mcp`** that was set up for
-Gemini. It points to the personal Open Brain endpoint and advertises automatic
-OAuth client registration for other compatible clients too.
+For ChatGPT, use the personal Supabase OAuth endpoint directly:
 
-To find it, open Cloudflare → Workers & Pages →
-**openbrain-gemini-oauth-gateway** → Settings → Domains & Routes. Copy the
-public `workers.dev` address and append `/mcp`. You can also copy that public URL
-from the existing Gemini connection. Use the production address, without an
-access key or preview/version prefix.
+```
+https://prctfnpbftjepdckwpao.supabase.co/functions/v1/open-brain-gemini-oauth
+```
 
-1. In ChatGPT, add a custom MCP app in Settings → Apps. Write-capable custom MCP
-   apps require developer mode and availability/permission on your plan or workspace.
-   In Claude, add a custom connector in Settings → Connectors. The exact labels
-   vary by client version and organization settings.
-2. Choose OAuth and enter that gateway URL. Do not append an access key or paste a
-   Supabase API key, password or token into chat. Client ID/secret can normally be
-   left blank when the client supports dynamic client registration, which the
-   gateway advertises.
-3. Complete the Open Brain sign-in/consent flow using **the same account as your
-   Open Brain dashboard**. This endpoint retains its existing household-admin
-   requirement. This is an Open Brain login; no new Gmail/Calendar scope is needed.
-4. Enable the personal connection in your conversation. If you also have the older
-   shared-parent connection, deselect it for Space work so the AI chooses the
-   personal connection. Refresh its tools/reconnect or start a new chat if the new
-   commands have not appeared yet.
+1. Open [ChatGPT Plugins](https://chatgpt.com/plugins), select **+ → Add custom MCP
+   server**, name it **Open Brain Personal**, enter the endpoint above and choose
+   OAuth. Available controls depend on account/workspace permissions.
+2. If ChatGPT asks for a client ID and secret, copy the exact callback/redirect URL
+   shown for this connection. In your Supabase project, open **Authentication →
+   OAuth Apps → New OAuth App**, name it **Open Brain ChatGPT**, choose
+   **Confidential** and paste that exact redirect URL. Create the app and copy its
+   generated client ID/secret directly into ChatGPT. A callback URL is not a secret;
+   keep the client secret private. Do not substitute a project API key.
+3. Complete the connection in ChatGPT. Sign in with the **same Open Brain account
+   as the dashboard**, using the same browser for the emailed sign-in link.
+4. On **Authorize Open Brain**, review the app name **Open Brain ChatGPT** and
+   click **Approve**. Signing in alone does not approve the connection. Wait for
+   the page to return to ChatGPT. This endpoint retains its existing household-admin
+   requirement and requests no new Gmail/Calendar permissions.
+5. In a new chat, select **Open Brain Personal** with `@` and ask it to use
+   `list_spaces` to show your Spaces. Refresh the connection's tools if needed.
 
-The existing shared-key connection keeps its old memory/task tools. Its six new
-Space entries return setup instructions: the shared key does not identify an
-individual account and **never gains private Space access**. Refreshing that
-shared-key connection alone does not turn it into a personal OAuth connection.
+An expired request cannot finish connecting. Close its old authorization tab,
+reload the ChatGPT connection page and start a fresh Connect attempt. If a sign-in
+link opens the dashboard, return to the original Authorize Open Brain tab and
+look for Approve. Complete approval before the new request expires. A spinning
+ChatGPT Connect button can represent an unfinished attempt; a fresh page load
+is needed before retrying. Do not create replacement credentials just because
+an individual authorization request expired.
 
-The upstream endpoint is
-`https://prctfnpbftjepdckwpao.supabase.co/functions/v1/open-brain-gemini-oauth`.
-Use the gateway for automatic setup: the direct Supabase authorization-server
-metadata does not advertise `registration_endpoint`, so direct setup may require
-an explicitly registered OAuth client ID and matching redirect URI. There is no
-need to create a second gateway or change its existing routing.
+The existing shared-parent connection keeps its old memory/task tools, but cannot
+identify an individual or access private Spaces. Select the personal connection
+for Space work. Refreshing a shared-key connection alone does not make it personal.
+
+Claude can use a custom OAuth connector to the same personal endpoint with its own
+registered client and exact callback URI. Gemini's quick-add connection is a separate
+setup; preserve its current configuration while verifying ChatGPT.
+
+The existing Cloudflare OAuth gateway ending in `/mcp` is an optional route for
+clients that need dynamic registration advertised. It is not required when using
+an explicitly registered OAuth client with the direct Supabase endpoint. Supabase's
+current public authorization-server metadata does not advertise
+`registration_endpoint`. Manual registration does not require a saved gateway URL.
 
 ## Things to say
 

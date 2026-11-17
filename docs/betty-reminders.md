@@ -26,6 +26,26 @@ expose these personal OAuth tools; inspect its available tools before relying on
 the same wording there. No replacement of that working connection is required
 by this rollout.
 
+## Betty inside the Open Brain dashboard
+
+The dashboard's built-in Betty panel is a separate path from ChatGPT/Gemini.
+“Betty, check my Open Brain reminder settings” now reads the signed-in person's
+saved channel configuration, timezone and quiet hours directly, with no AI request,
+task/memory/Health reads, notification sends or changes. The chosen assistant name
+is recognized. Explicit settings-only questions use this path; a combined settings
+and action request retains the normal proposal/review flow. Existing assistant
+context checks and private activity tracking still apply.
+
+The November 17 dashboard error was a provider failure, not an OAuth failure or
+an invalid Betty name. The primary model ID was invalid; the fallback's unspecified
+output limit requested a 16,384-token allowance and was rejected for insufficient
+credit. General answers now use the existing valid `openai/gpt-4o-mini` model with
+an explicit 3,000-token output cap and a 30-second request timeout. No provider call
+or credit purchase was made to test the fix. Credit can still run out; the UI now
+reports that specific condition instead of incorrectly blaming verified settings.
+Truncated responses never become actionable proposals, and provider response bodies
+are not logged or displayed. These response limits are not an account spending cap.
+
 ## Personal reminder tools
 
 - `get_my_reminder_settings`: read only the caller's channel booleans, household

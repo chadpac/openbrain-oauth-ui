@@ -1,13 +1,14 @@
 import { readAssistantPreferences, assistantStyle, assistantProfileContext } from "./assistant-preferences.ts";
 import { activityCommand, prepareActivityActions } from "../_shared/assistant-activity.ts";
 import { answerCalendarQuestion } from "./calendar-questions.ts";
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { withSupabase } from "npm:@supabase/server@1";
+import { readPersonalReminderSettings } from "../_shared/reminder-settings.ts";
+import type {} from "npm:@supabase/functions-js@2.119.0/src/edge-runtime.d.ts";
+import { withSupabase } from "npm:@supabase/server@1.9.2";
 
 const OPENROUTER_API_KEY=Deno.env.get("OPENROUTER_API_KEY")!;
 const OPENROUTER_BASE="https://openrouter.ai/api/v1";
-const PRIMARY_MODEL="openai/gpt-luna-latest";
-const FALLBACK_MODEL="openai/gpt-4o-mini";
+const ASSISTANT_MODEL="openai/gpt-4o-mini";
+const MAX_RESPONSE_TOKENS=3000;
 
 const corsHeaders={
   "Access-Control-Allow-Origin":"*",
@@ -217,12 +218,16 @@ function inferShoppingFallback(message:string,lists:any[]){
   };
 }
 
+class AssistantProviderError extends Error {
+  readonly code:string;
+  constructor(code:string, message:string){super(message);this.code=code;}
+}
+
 async function callModel(messages:any[]){
-  let lastError="";
-  for(const model of [PRIMARY_MODEL,FALLBACK_MODEL]){
-    try{
+  try{
       const response=await fetch(`${OPENROUTER_BASE}/chat/completions`,{
         method:"POST",
+        signal:AbortSignal.timeout(30000),
         headers:{
           Authorization:`Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type":"application/json",
@@ -230,27 +235,46 @@ async function callModel(messages:any[]){
           "X-Title":"Open Brain"
         },
         body:JSON.stringify({
-          model,
+          model:ASSISTANT_MODEL,
+          max_tokens:MAX_RESPONSE_TOKENS,
           temperature:0.2,
           response_format:{type:"json_object"},
           messages
         })
       });
       if(!response.ok){
-        lastError=`${model}: ${response.status} ${await response.text().catch(()=>"")}`;
-        console.error("Open Brain assistant model failed:",lastError);
-        continue;
+        // Do not log provider response bodies, prompts, account IDs or credits.
+        console.error("Open Brain assistant provider status:",response.status);
+        if(response.status===402)throw new AssistantProviderError("ai_credit_limit","The AI service could not process this request within its available credit. Check the AI service's credit, then try again. Nothing was saved.");
+        throw new AssistantProviderError("ai_unavailable","The AI service is unavailable right now. Please try again. Nothing was saved.");
       }
       const data=await response.json();
+      if(data?.choices?.[0]?.finish_reason==="length")throw new AssistantProviderError("ai_response_limit","The answer was too long to finish safely. Please ask for fewer items at a time. Nothing was saved.");
       const raw=data?.choices?.[0]?.message?.content;
       if(typeof raw!=="string"||!raw.trim())throw new Error("Empty model response.");
-      return {parsed:JSON.parse(raw),model};
+      return {parsed:JSON.parse(raw),model:ASSISTANT_MODEL};
     }catch(err){
-      lastError=err instanceof Error?err.message:String(err);
-      console.error("Open Brain assistant model error:",model,lastError);
+      if(err instanceof AssistantProviderError)throw err;
+      // Parsing/network failures never turn partial JSON into actionable saves.
+      throw new AssistantProviderError("ai_unavailable","The AI service could not return a complete answer. Please try again. Nothing was saved.");
     }
-  }
-  throw new Error(lastError||"AI service unavailable.");
+}
+
+function isReminderSettingsQuestion(message:string,assistantName:string){
+  const alias=assistantName.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  const text=message.trim().replace(new RegExp("^(?:"+alias+"|Open Brain)[,:]?\\s+","i"),"").replace(/[.!?]+$/,"").trim();
+  return /^(?:please\s+)?(?:check|show|review)(?:\s+me)?\s+(?:my\s+)?(?:open\s+brain\s+)?(?:reminder|notification|alert)(?:\s+delivery)?\s+(?:settings|setup|preferences|channels)$/i.test(text);
+}
+
+function reminderSettingsAnswer(settings:any){
+  const quiet=settings.quiet_hours;
+  return [
+    `Your Open Brain reminder timezone is ${settings.timezone}.`,
+    `Phone/browser task alerts: ${settings.channels.phone_or_browser?"enabled":"not enabled"}. Telegram reminders: ${settings.channels.telegram?"enabled":"not enabled"}.`,
+    quiet.enabled?`Quiet hours: ${quiet.start.slice(0,5)}–${quiet.end.slice(0,5)} (${quiet.timezone}); reminders can wait until quiet hours end.`:"Quiet hours are off.",
+    settings.delivery_configured?"An enabled channel is configured; this does not confirm that an alert appeared on your phone.":"No reminder channel is enabled. Open Settings to enable device notifications or Telegram before relying on an alert.",
+    "Open Brain checks due reminders about once a minute, even with the dashboard closed. Nothing was changed or sent by this check.",
+  ].join("\n\n");
 }
 
 const handler=withSupabase({auth:"user"},async(req,ctx)=>{
@@ -303,6 +327,15 @@ const handler=withSupabase({auth:"user"},async(req,ctx)=>{
     const preferences=assistantContext.profile;
     if(activity&&activity.context_version!==assistantContext.context_version)return json({error:"Assistant context changed. Ask again.",context_reset:true},409);
     const contextReset=body?.context_version!==assistantContext.context_version;
+    if(isReminderSettingsQuestion(message,preferences.assistant_name)){
+      let reminderSettings;
+      try{reminderSettings=(await readPersonalReminderSettings({client:ctx.supabase,userId:user.id,householdId})).public;}
+      catch(_){return json({error:"Your reminder settings could not be checked. Open Settings or try again. Nothing was changed.",code:"reminder_settings_unavailable"},503);}
+      const current=await readAssistantPreferences(ctx.supabase,user.id);
+      if(current.context_version!==assistantContext.context_version)return json({error:"Assistant context changed. Ask again.",context_reset:true},409);
+      if(activity){await activityCommand(user.id,activity.id,"finish",activity.version,{actions:[],sources:[]});activityFinished=true;}
+      return json({activity_id:activity?.id||null,context_version:assistantContext.context_version,context_reset:contextReset,answer:reminderSettingsAnswer(reminderSettings),reminder_settings:reminderSettings,actions:[],action:null,sources:[],model:null,replace_previous_actions:false});
+    }
     const compatibleHistory=contextReset?[]:body?.history;
     const refersToPriorProposal=/\b(that|those|them|it|also|instead|change|update|modify|make|remove|delete|same|hers|his|the milk|the eggs|the reminder|the event|the list)\b/i.test(message);
     const hasPriorProposal=Array.isArray(compatibleHistory)&&compatibleHistory.some((m:any)=>
@@ -606,6 +639,7 @@ Do not include markdown in action payload values.`;
       replace_previous_actions:isProposalRevision&&finalActions.length>0
     });
   }catch(err){
+    if(err instanceof AssistantProviderError)return json({error:err.message,code:err.code},503);
     const message=err instanceof Error?err.message:String(err);
     console.error("Open Brain assistant error:",message);
     return json({error:"Open Brain AI is unavailable right now."},500);

@@ -270,6 +270,8 @@
     @media(max-width:760px){.today-top{display:block}.quick-capture{display:grid}.quick-actions{display:grid;grid-template-columns:repeat(3,1fr)}.today-summary{grid-template-columns:repeat(3,1fr)}.shell{display:block}aside{height:auto;position:static;padding:10px 14px 4px}.brand{padding:2px 4px 8px}aside nav{display:none}.aside-foot{display:none}main{padding:14px 14px calc(116px + env(safe-area-inset-bottom))}.topbar{align-items:flex-start;margin-bottom:18px}.topbar>div:first-child{display:none}.userbox{width:100%;justify-content:flex-end}.userbox .name{display:none}.stats{grid-template-columns:1fr 1fr}.panelhead{align-items:flex-start}.task{grid-template-columns:1fr;padding:16px}.actions{justify-content:flex-start!important}.grid2{grid-template-columns:1fr}.filterbar{align-items:stretch}.search{max-width:none;min-width:100%}.family-shell{padding:14px}.family-roster{grid-template-columns:1fr}.family-summary{grid-template-columns:repeat(3,1fr)}.mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:5px 6px calc(5px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.mobile-more{display:block}.push-device-prefs{grid-template-columns:1fr}.push-type-grid{grid-template-columns:1fr}.toast{left:12px;right:12px;bottom:calc(148px + env(safe-area-inset-bottom));max-width:none}}
     .spaces-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:14px 0}.space-card{border:1px solid #dce5e5;border-radius:18px;padding:18px;background:linear-gradient(135deg,#f0fafa,#fff);min-width:0;overflow-wrap:anywhere}.space-card.school{background:linear-gradient(135deg,#edf4ff,#fff);border-color:#d6e3f9}.space-card.home{background:linear-gradient(135deg,#eef7ed,#fff);border-color:#dcebd8}.space-card.selected{outline:2px solid var(--teal);outline-offset:2px}.space-card h4{margin:4px 0 8px;font-size:19px}.space-card .activity-actions{margin-top:12px}.space-detail>.overview-head{align-items:flex-start;flex-wrap:wrap}.space-detail>.overview-head>div:first-child{flex:1 1 260px;min-width:0;overflow-wrap:anywhere}.space-detail{border-top:1px solid #dce5e5;margin-top:22px;padding-top:20px}.space-section{padding:18px;border:1px solid #dce5e5;border-radius:16px;margin:14px 0;background:#fff;min-width:0}.space-section h4{margin:0;font-size:17px}.space-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.space-item{padding:14px 0;border-top:1px solid #edf0f0;overflow-wrap:anywhere}.space-item:first-of-type{border-top:0}.space-item p{white-space:pre-wrap;line-height:1.6;margin:7px 0}.space-item-options{font-size:12px;margin-top:8px}.space-item-options summary{cursor:pointer;color:#536e71}.space-hidden-item{opacity:.65}.space-layout-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 0}.space-layout-row label{display:flex;align-items:center;gap:8px;margin:0;flex:1}.space-layout-row input{width:auto}.space-progress{height:9px;border-radius:8px;overflow:hidden;background:#e8eeee;margin:10px 0}.space-progress>span{height:100%;display:block;background:#469597}.space-starter{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.space-pick-row{border:1px solid #dce5e5;padding:14px;border-radius:12px;margin:10px 0;overflow-wrap:anywhere}.space-pick-row p{margin:6px 0}.space-check{display:flex;align-items:center;gap:8px;font-size:13px;margin:10px 0}.space-check input{width:auto}
     .space-card [data-space-open]{color:#000}
+    .account-settings{padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+    .account-settings .setting-value,#passwordChangeEmail{overflow-wrap:anywhere}
     @media(max-width:650px){.space-detail>.overview-head>div:first-child{flex-basis:100%}.spaces-grid{grid-template-columns:1fr}.space-section{padding:14px}.space-section-head{align-items:flex-start;flex-wrap:wrap}.space-card h4{font-size:18px}}
   </style>
 </head>
@@ -712,6 +714,12 @@
             <div id="familyRoster" class="family-roster"><div class="list-empty">Loading family…</div></div>
           </div>
           <div id="familySettings" class="family-settings">
+            <section class="account-settings" aria-labelledby="accountSettingsHeading">
+              <h4 id="accountSettingsHeading">Your account</h4>
+              <p id="accountSettingsEmail" class="setting-value">Checking signed-in account…</p>
+              <p class="setting-note">Manage the password for your own Open Brain account.</p>
+              <button id="openPasswordChange" class="ghost" type="button">Change Open Brain password</button>
+            </section>
             <div class="family-settings-head">
               <h4>Household settings</h4><button class="ghost smallbtn" type="button" data-scroll="assistantSettings">Assistant preferences</button>
               <button id="editHouseholdSettings" class="ghost hidden" type="button">Edit</button>
@@ -1441,6 +1449,17 @@
       <p id="spaceItemError" class="message err hidden" role="alert"></p></div><div class="modalfoot"><button id="saveSpaceItem" class="primary hidden" type="submit">Save item</button></div>
   </form></dialog>
   <dialog id="spaceSourceDialog"><div class="modalhead"><h3>Linked record</h3><button id="closeSpaceSource" class="ghost" type="button">Close</button></div><div id="spaceSourceContent" class="modalbody" style="white-space:pre-wrap;overflow-wrap:anywhere"></div></dialog>
+  <dialog id="passwordChangeDialog" aria-labelledby="passwordChangeHeading"><form id="passwordChangeForm">
+    <div class="modalhead"><h3 id="passwordChangeHeading">Change Open Brain password</h3><button id="closePasswordChange" class="ghost" type="button">Close</button></div>
+    <div class="modalbody">
+      <p>Account: <strong id="passwordChangeEmail">Checking your sign-in…</strong></p>
+      <p class="setting-note">Use this Open Brain password when connecting ChatGPT or another AI app. This form uses your current dashboard sign-in.</p>
+      <label for="newAccountPassword">New password</label><input id="newAccountPassword" type="password" autocomplete="new-password" minlength="8" required disabled>
+      <label for="confirmAccountPassword">Confirm new password</label><input id="confirmAccountPassword" type="password" autocomplete="new-password" minlength="8" required disabled>
+      <p id="passwordChangeMessage" class="setting-note" role="status" aria-live="polite"></p>
+    </div>
+    <div class="modalfoot"><button id="saveAccountPassword" class="primary" type="submit" disabled>Save new password</button></div>
+  </form></dialog>
   <dialog id="routineDialog"><form id="routineForm">
     <div class="modalhead"><h3 id="routineEditorHeading">Background routine</h3><button id="closeRoutine" class="ghost" type="button">Close</button></div>
     <div class="modalbody">
@@ -2146,6 +2165,82 @@
       return data;
     }
 
+    let passwordChangeEpoch=0,passwordChangeOwner=null,passwordChangeEmail="",passwordChangeReady=false,passwordChangeBusy=false,passwordChangeController=null;
+    function renderAccountSecurity(){
+      $("accountSettingsEmail").textContent=state.user?.email||"Signed-in account details will be checked before saving.";
+      $("openPasswordChange").disabled=!state.user?.id;
+    }
+    function passwordChangeMessage(text,error=false){
+      $("passwordChangeMessage").textContent=text;
+      $("passwordChangeMessage").className=error?"message err":"setting-note";
+    }
+    function passwordChangeControls(){
+      for(const id of ["newAccountPassword","confirmAccountPassword","saveAccountPassword"])$(id).disabled=!passwordChangeReady||passwordChangeBusy;
+      $("closePasswordChange").disabled=passwordChangeBusy;
+    }
+    function resetPasswordChange(close=true){
+      passwordChangeEpoch++;passwordChangeController?.abort();passwordChangeController=null;
+      passwordChangeOwner=null;passwordChangeEmail="";passwordChangeReady=false;passwordChangeBusy=false;
+      $("passwordChangeForm").reset();$("passwordChangeEmail").textContent="";passwordChangeMessage("");passwordChangeControls();
+      if(close&&$("passwordChangeDialog").open)$("passwordChangeDialog").close();
+    }
+    function clearAccountSecurity(){resetPasswordChange();$("accountSettingsEmail").textContent="";$("openPasswordChange").disabled=true;}
+    function passwordChangeCurrent(owner,epoch){return state.user?.id===owner&&passwordChangeOwner===owner&&passwordChangeEpoch===epoch&&$("passwordChangeDialog").open;}
+    async function verifiedPasswordSession(owner,epoch){
+      const {data,error}=await sb.auth.getSession();
+      if(!passwordChangeCurrent(owner,epoch))return null;
+      const session=data?.session;
+      if(error||!session?.access_token||session.user?.id!==owner)throw new Error("This dashboard's sign-in session is unavailable. Sign in again in this browser before changing your password.");
+      const verified=await sb.auth.getUser(session.access_token);
+      if(!passwordChangeCurrent(owner,epoch))return null;
+      const user=verified.data?.user;
+      if(verified.error||user?.id!==owner||!user.email)throw new Error("Your signed-in account could not be verified. Refresh the dashboard and sign in again before changing your password.");
+      if(passwordChangeEmail&&user.email.toLowerCase()!==passwordChangeEmail.toLowerCase())throw new Error("The signed-in account changed. Refresh the dashboard before changing a password.");
+      return {token:session.access_token,user};
+    }
+    async function openPasswordChange(){
+      resetPasswordChange();if(!state.user?.id)return;
+      const owner=state.user.id,epoch=passwordChangeEpoch;passwordChangeOwner=owner;passwordChangeEmail=state.user.email||"";
+      $("passwordChangeEmail").textContent="Checking your sign-in…";passwordChangeMessage("Checking the account signed in to this dashboard…");$("passwordChangeDialog").showModal();
+      try{
+        const verified=await verifiedPasswordSession(owner,epoch);if(!verified)return;
+        passwordChangeEmail=verified.user.email;$("passwordChangeEmail").textContent=passwordChangeEmail;
+        passwordChangeReady=true;passwordChangeMessage("Choose a new password for this account. No sign-in email is needed.");passwordChangeControls();$("newAccountPassword").focus();
+      }catch(err){if(passwordChangeCurrent(owner,epoch)){passwordChangeReady=false;passwordChangeMessage(err?.message||"Unable to verify your account.",true);passwordChangeControls();}}
+    }
+    async function saveAccountPassword(event){
+      event.preventDefault();if(!passwordChangeReady||passwordChangeBusy)return;
+      const owner=passwordChangeOwner,epoch=passwordChangeEpoch,password=$("newAccountPassword").value;
+      if(password.length<8){passwordChangeMessage("Use at least 8 characters.",true);return;}
+      if(password!==$("confirmAccountPassword").value){passwordChangeMessage("The passwords do not match.",true);return;}
+      passwordChangeBusy=true;passwordChangeControls();passwordChangeMessage("Saving your new password…");
+      $("newAccountPassword").value="";$("confirmAccountPassword").value="";
+      const controller=new AbortController();passwordChangeController=controller;let requestSent=false;
+      try{
+        const verified=await verifiedPasswordSession(owner,epoch);if(!verified||controller.signal.aborted)return;
+        // Pin the self-service request to the verified user's JWT. A concurrent
+        // account switch must never apply the entered password to another user.
+        // This is the same PUT /user endpoint used by auth.updateUser; server-side
+        // current-password/reauthentication requirements remain enforced.
+        requestSent=true;
+        const response=await fetch(SUPABASE_URL+"/auth/v1/user",{method:"PUT",headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:"Bearer "+verified.token,"Content-Type":"application/json"},body:JSON.stringify({password}),cache:"no-store",credentials:"omit",redirect:"error",signal:controller.signal});
+        const payload=await response.json();if(!passwordChangeCurrent(owner,epoch)||controller.signal.aborted)return;
+        if(!response.ok){
+          if(response.status===401){passwordChangeReady=false;throw new Error("Your sign-in expired. Sign in again in this dashboard browser before changing your password.");}
+          if(/reauth|current_password/.test(payload?.code||"")){passwordChangeReady=false;throw new Error("Your account requires a recent sign-in or your current password. Complete Open Brain's normal recovery or sign-in before trying again.");}
+          throw new Error(String(payload?.msg||payload?.message||payload?.error_description||"The password could not be changed.").slice(0,500));
+        }
+        if(payload?.id!==owner){passwordChangeReady=false;throw new Error("The password change could not be confirmed for this account. Refresh the dashboard before retrying.");}
+        passwordChangeMessage("Password changed for "+passwordChangeEmail+". Use this email and your new Open Brain password when connecting ChatGPT.");
+      }catch(err){if(passwordChangeCurrent(owner,epoch)&&err?.name!=="AbortError"){if(!requestSent)passwordChangeReady=false;passwordChangeMessage(err?.message||"Unable to change your password.",true);}}
+      finally{if(passwordChangeCurrent(owner,epoch)){passwordChangeBusy=false;passwordChangeController=null;$("newAccountPassword").value="";$("confirmAccountPassword").value="";passwordChangeControls();}}
+    }
+    $("openPasswordChange").addEventListener("click",openPasswordChange);
+    $("passwordChangeForm").addEventListener("submit",saveAccountPassword);
+    $("closePasswordChange").addEventListener("click",()=>resetPasswordChange());
+    $("passwordChangeDialog").addEventListener("cancel",event=>{if(passwordChangeBusy)event.preventDefault();});
+    $("passwordChangeDialog").addEventListener("close",()=>{if(!$("passwordChangeDialog").open)resetPasswordChange(false);});
+
     async function start(){
       const {data:{session},error}=await sb.auth.getSession();
       if(error){ showLogin(error.message,true); return; }
@@ -2174,6 +2269,7 @@
       if(state.healthHistory?.owner!==state.user.id || state.healthTrends?.owner!==state.user.id)clearPrivateViews();
       $("loginScreen").classList.add("hidden"); $("app").classList.remove("hidden");
       $("displayName").textContent=state.member.display_name;
+      renderAccountSecurity();
       $("roleText").textContent=roleLabel(state.member.role);
       $("avatar").textContent=initials(state.member.display_name);
       $("timezoneNote").textContent="Times shown in "+Intl.DateTimeFormat().resolvedOptions().timeZone+".";
@@ -4006,7 +4102,7 @@
     }
 
     let healthTrendsRequest=0,taskSlotsRequest=0,taskSlotDraft=null;
-    function clearPrivateViews(){resetSpaces(true);resetRoutines();googleCalendarReadEpoch++;state.googleCalendarBusy=false;state.googleCalendarStatus=null;state.googleCalendars=[];state.googleEvents=[];resetGoogleEventCreation();resetGmail();state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
+    function clearPrivateViews(){clearAccountSecurity();resetSpaces(true);resetRoutines();googleCalendarReadEpoch++;state.googleCalendarBusy=false;state.googleCalendarStatus=null;state.googleCalendars=[];state.googleEvents=[];resetGoogleEventCreation();resetGmail();state.googleCalendarRefreshedAt=null;resetActivity();resetAssistantPersonalization();resetHealthHistory();resetHealthTrends();resetTaskSuggestions();if($("editor").open)$("editor").close();}
     function resetHealthTrends(){
       healthTrendsRequest++;state.healthTrends=null;
       $("healthTrendsSection").open=false;$("healthTrendPeriod").value="7";
@@ -6444,7 +6540,8 @@
       }
     });
 
-    sb.auth.onAuthStateChange((event)=>{
+    sb.auth.onAuthStateChange((event,session)=>{
+      if(passwordChangeOwner&&session?.user?.id&&session.user.id!==passwordChangeOwner)clearAccountSecurity();
       if(event==="SIGNED_OUT"){clearPrivateViews();resetTaskSuggestions();location.reload();}
     });
 

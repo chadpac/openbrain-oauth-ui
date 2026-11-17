@@ -5,7 +5,7 @@ const vm = require('node:vm');
 
 const code = fs.readFileSync('index.html', 'utf8').match(/<script type="module">([\s\S]*?)<\/script>/)[1].replace(/^\s*import .*;$/m, '');
 const settle = () => new Promise(resolve => setTimeout(resolve, 5));
-function page({ pending = 'fixture-request', session = true, collision = false, recoveryEvent = false, sessionError = null, holdInitialRead = false, hash = '' } = {}) {
+function page({ pending = 'fixture-request', session = true, collision = false, recoveryEvent = false, sessionError = null, holdInitialRead = false, hash = '', search = '', blockedStorage = false } = {}) {
   let callback, calls = 0, releaseInitialRead;
   const redirects = [], storage = new Map(pending ? [['openbrain_pending_authorization_id', pending]] : []), elements = new Map();
   const element = id => {
@@ -27,8 +27,8 @@ function page({ pending = 'fixture-request', session = true, collision = false, 
   const context = vm.createContext({
     createClient: () => ({ auth }),
     document: { getElementById: element, createElement: () => ({}) },
-    localStorage: { getItem: key => storage.get(key) || null, removeItem: key => storage.delete(key) },
-    location: { hash, replace: target => redirects.push(target) },
+    localStorage: { getItem: key => { if (blockedStorage) throw Error('Storage blocked'); return storage.get(key) || null; }, removeItem: key => storage.delete(key) },
+    location: { hash, search, replace: target => redirects.push(target) },
     URLSearchParams, setTimeout, clearTimeout,
   });
   vm.runInContext(code, context);
@@ -73,4 +73,29 @@ test('session read failures preserve the request and permit a later successful r
 test('password recovery stays on its form and preserves any unrelated pending connection', async () => {
   const p = page({ hash: '#type=recovery&access_token=fixture' }); await settle(); p.event('SIGNED_IN'); await settle();
   assert.deepEqual(p.redirects, []); assert.equal(p.storage.get('openbrain_pending_authorization_id'), 'fixture-request');
+});
+test('an email return in a fresh browser reaches consent without any pending browser storage', async () => {
+  const p = page({ pending: null, search: '?authorization_id=emailed-request', collision: true }); await settle();
+  assert.deepEqual(p.redirects, ['/openbrain-oauth-ui/oauth/consent/?authorization_id=emailed-request']);
+});
+test('the emailed request takes precedence over another connection stored in the browser', async () => {
+  const p = page({ pending: 'other-client-request', search: '?authorization_id=emailed-request' }); await settle();
+  assert.deepEqual(p.redirects, ['/openbrain-oauth-ui/oauth/consent/?authorization_id=emailed-request']);
+  assert.equal(p.storage.get('openbrain_pending_authorization_id'), 'other-client-request');
+});
+test('the emailed request continues even if browser storage is unavailable', async () => {
+  const p = page({ pending: null, search: '?authorization_id=emailed-request', blockedStorage: true }); await settle();
+  assert.deepEqual(p.redirects, ['/openbrain-oauth-ui/oauth/consent/?authorization_id=emailed-request']);
+});
+test('request values are encoded inside the consent URL rather than used as a destination', async () => {
+  const value = 'https://example.test/fixture?x=1#part';
+  const p = page({ pending: null, search: '?authorization_id=' + encodeURIComponent(value) }); await settle();
+  assert.deepEqual(p.redirects, ['/openbrain-oauth-ui/oauth/consent/?authorization_id=' + encodeURIComponent(value)]);
+});
+test('invalid empty or oversized email context does not fall through to an unrelated stored request', async () => {
+  for (const value of ['', 'x'.repeat(513)]) {
+    const p = page({ search: '?authorization_id=' + value }); await settle();
+    assert.deepEqual(p.redirects, []); assert.equal(p.storage.get('openbrain_pending_authorization_id'), 'fixture-request');
+    assert.match(p.elements.get('signinStatus').textContent, /Invalid connection request/);
+  }
 });

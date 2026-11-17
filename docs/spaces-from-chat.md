@@ -26,6 +26,9 @@ https://prctfnpbftjepdckwpao.supabase.co/functions/v1/open-brain-gemini-oauth
    click **Approve**. Signing in alone does not approve the connection. Wait for
    the page to return to ChatGPT. This endpoint retains its existing household-admin
    requirement and requests no new Gmail/Calendar permissions.
+   Use the newest email from the current connection attempt. Its return link
+   carries the pending request back to this approval page; older emails may
+   return to the dashboard or to an expired request.
 5. In a new chat, select **Open Brain Personal** with `@` and ask it to use
    `list_spaces` to show your Spaces. Refresh the connection's tools if needed.
 

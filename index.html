@@ -48,6 +48,7 @@
     const message = document.getElementById("message");
     const signinStatus = document.getElementById("signinStatus");
     const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+    const incomingAuthorizationId = new URLSearchParams(location.search).get("authorization_id");
     let recoveringPassword = hash.get("type") === "recovery";
     let resumingAuthorization = false;
     let resumeRequested = false;
@@ -65,7 +66,14 @@
         if (error) throw error;
         if (!data.session || recoveringPassword) return false;
 
-        const pendingId = localStorage.getItem("openbrain_pending_authorization_id");
+        if (incomingAuthorizationId !== null && (!incomingAuthorizationId || incomingAuthorizationId.length > 512)) {
+          throw new Error("Invalid connection request. Start Connect again from your AI app.");
+        }
+        let storedPendingId = null;
+        try { storedPendingId = localStorage.getItem("openbrain_pending_authorization_id"); } catch {}
+        // The email return URL carries its own request so opening the link in
+        // another browser does not lose consent or select an older stored request.
+        const pendingId = incomingAuthorizationId ?? storedPendingId;
         const destination = pendingId
           ? "/openbrain-oauth-ui/oauth/consent/?authorization_id=" + encodeURIComponent(pendingId)
           : "/openbrain-oauth-ui/dashboard/";
@@ -74,7 +82,9 @@
         // with the dashboard after the pending request has been consumed.
         redirecting = true;
         location.replace(destination);
-        if (pendingId) localStorage.removeItem("openbrain_pending_authorization_id");
+        if (pendingId && pendingId === storedPendingId) {
+          try { localStorage.removeItem("openbrain_pending_authorization_id"); } catch {}
+        }
         return true;
       } catch (error) {
         redirecting = false;

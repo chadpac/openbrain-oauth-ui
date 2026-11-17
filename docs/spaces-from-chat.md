@@ -2,6 +2,8 @@
 
 Connect your AI client to your personal Open Brain account. You can then ask it to
 find a Space, read it, save a note or document link, or link an existing record.
+For “Betty, remind me…” requests, use the separate private
+[personal reminder tools and saved instructions](betty-reminders.md).
 
 ## One-time connection setup
 

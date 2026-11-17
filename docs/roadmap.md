@@ -36,16 +36,30 @@ publication.
   pin/hide/section/item ordering, visible linked-task progress and reviewed record
   creation are implemented. [Behavior and rollout](spaces.md).
 
-## Current work: Spaces from chat
+## Completed: Spaces from chat
 
 Personal OAuth MCP tools for ChatGPT/Claude: find/read Spaces, search accessible
 existing sources, save native notes/document links and link records. Caller RLS,
 version guards and explicit household note/link consent. The older shared-parent
-key never receives private Space access. [Setup and prompts](spaces-from-chat.md).
+key never receives private Space access. The owner verified reading Home and
+saving a note from ChatGPT on November 17. [Setup and prompts](spaces-from-chat.md).
 Future extensions can add collaborative editing, separately scoped connector
 sources and generated layouts after the current collection workflows prove useful.
 Existing Google event editing/deletion, guests, recurrence and all-day creation
 remain later additions.
+
+## Current work: Betty reminders; next, Photo/PDF capture
+
+Personal chat reminder tools check the caller's notification settings, save a
+private one-time reminder with retry protection, and read its saved/delivery
+status. The existing notification path has been checked without sending a test
+alert; device display still needs the user's participation.
+[Behavior, saved instructions and verification](betty-reminders.md).
+
+Photo/PDF capture is the next new feature after the shipped Spaces and background
+routine foundations. Its [implementation brief](photo-pdf-capture.md) starts with
+private upload/preview/deletion, then explicit extraction and reviewed sourced
+tasks. File upload/extraction is not deployed yet.
 
 ## Agreed next phases
 

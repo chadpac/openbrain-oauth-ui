@@ -157,15 +157,17 @@
 
       const email = document.getElementById("email").value.trim();
 
-      // Preserve the AI app's pending OAuth authorization request while the user
-      // leaves this page to open the magic link from email.
-      localStorage.setItem("openbrain_pending_authorization_id", authorizationId);
+      // Keep a same-browser fallback, but carry the request in the emailed return
+      // URL too. Email apps can open a different browser without this storage.
+      try { localStorage.setItem("openbrain_pending_authorization_id", authorizationId); } catch {}
+      const returnUrl = new URL("https://chadpac.github.io/openbrain-oauth-ui/");
+      returnUrl.searchParams.set("authorization_id", authorizationId);
 
       const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: "https://chadpac.github.io/openbrain-oauth-ui"
+          emailRedirectTo: returnUrl.href
         }
       });
 

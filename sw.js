@@ -1,5 +1,5 @@
-const CACHE_NAME = "open-brain-pwa-v33";
-const SW_VERSION = "v33-account-password";
+const CACHE_NAME = "open-brain-pwa-v34";
+const SW_VERSION = "v34-betty-reminder-settings";
 const APP_SHELL = [
   "/openbrain-oauth-ui/dashboard/",
   "/openbrain-oauth-ui/manifest.webmanifest",

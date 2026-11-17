@@ -27,7 +27,7 @@ window.readFixture=async(table,id,single)=>{
  if(single)return {data:table==='households'?{id:'house',name:'Fixture household',timezone:'America/Denver'}:null};
  return {data:table==='household_members'?[{user_id:owner,household_id:'house',display_name:'Fixture',role:'admin'}]:[]};};
 window.invokeFixture=async(name,body)=>{
- if(name==='open-brain-assistant'){aiCalls.push(body);return {data:{answer:'Answer',actions:[],context_version:version,activity_id:body.activity_id}};}
+ if(name==='open-brain-assistant'){aiCalls.push(body);if(window.aiFailureCode)return {error:{message:'PRIVATE_PROVIDER_ERROR',context:{json:async()=>({code:window.aiFailureCode,error:'PRIVATE_PROVIDER_ERROR'})}}};return {data:{answer:window.aiSettingsAnswer||'Answer',actions:[],context_version:version,activity_id:body.activity_id}};}
  if(name!=='open-brain-activity')return {data:{ok:true,members:[]}};
  commands.push(structuredClone(body));
  if(body.action==='health')return {data:{checked_at:'2026-11-13T16:00:00Z',calendar:{connected:true},devices:[{id:uid(4),enabled:true,updated_at:'2026-11-13T15:00:00Z',task_notifications:true}],failures:[{kind:'task',id:uid(3),attempts:5,retry_after:'2026-11-13T16:00:00Z'}]}};
@@ -112,6 +112,16 @@ with sync_playwright() as p:
  # The UI starts tracking before model invocation, and fails closed if tracking cannot start.
  page.evaluate('activityTest.sendAiMessage("What matters today?")');page.wait_for_function('aiCalls.length===1&&!activityTest.state.aiBusy');assert page.evaluate('aiCalls[0].activity_id===uid(900)')
  page.evaluate('window.failCreate=true');page.evaluate('activityTest.sendAiMessage("Do not start without activity")');page.wait_for_function('!activityTest.state.aiBusy');assert page.evaluate('aiCalls.length')==1
+ # Provider failures no longer pretend to be a settings verification failure.
+ page.evaluate('window.failCreate=false')
+ for code,expected in [('ai_credit_limit','available credit'),('ai_response_limit','fewer items'),('ai_unavailable','AI service is unavailable'),('reminder_settings_unavailable',"check your reminder settings"),('__proto__',"get an answer right now")]:
+  page.evaluate('(code)=>window.aiFailureCode=code',code);page.evaluate('activityTest.sendAiMessage("Check fixture failure")');page.wait_for_function('!activityTest.state.aiBusy')
+  text=page.evaluate('activityTest.state.aiMessages.at(-1).content');assert expected in text,(code,text)
+  assert 'verified settings' not in text and 'PRIVATE_PROVIDER_ERROR' not in text
+  assert page.evaluate('activityTest.state.aiMessages.at(-1).actions.length')==0
+ page.evaluate('window.aiFailureCode=null;window.aiSettingsAnswer="Your reminder timezone is America/Denver. Phone/browser task alerts: enabled. Nothing was changed or sent by this check."')
+ page.evaluate('activityTest.sendAiMessage("Betty, check my Open Brain reminder settings.")');page.wait_for_function('!activityTest.state.aiBusy')
+ assert 'Phone/browser task alerts: enabled' in page.evaluate('activityTest.state.aiMessages.at(-1).content')
  assert not errors,errors
  browser.close()
 server.shutdown()

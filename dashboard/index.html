@@ -3288,7 +3288,9 @@
       if(error){
         let details=null;try{details=await error.context?.json?.();}catch(_){}
         if(details?.context_reset)await loadAssistantPreferences({fillForm:false});
-        throw new Error(details?.error||error.message||"Assistant request failed.");
+        const failure=new Error("Assistant request failed.");
+        failure.code=details?.code;
+        throw failure;
       }
       if(data?.error)throw new Error(data.error);
       if(data?.activity_id!==created.id)throw new Error("The assistant backend needs its activity update. No approval was made available.");
@@ -3320,7 +3322,9 @@
       }catch(err){
         if(state.user?.id!==owner)return;
         if(epoch!==assistantContextEpoch){input.value=message;toast("Assistant settings or memories changed. Please send your question again.",true);return;}
-        state.aiMessages.push({role:"assistant",content:useCalendar?"I couldn't check your calendar just now. I haven't confirmed your availability.":"I couldn't reach your assistant with verified settings. Retry loading settings or send your question again.",actions:[],source:useCalendar?"google_calendar":"openbrain"});saveAiChatSession();
+        const failures={ai_credit_limit:"The AI service couldn't process this request within its available credit. Check the AI service's credit, then try again. Nothing was saved.",ai_response_limit:"The answer was too long to finish safely. Please ask for fewer items at a time. Nothing was saved.",ai_unavailable:"The AI service is unavailable right now. Please try again. Nothing was saved.",reminder_settings_unavailable:"I couldn't check your reminder settings. Open Settings or try again. Nothing was changed."};
+        const failureText=Object.prototype.hasOwnProperty.call(failures,err?.code)?failures[err.code]:null;
+        state.aiMessages.push({role:"assistant",content:failureText||(useCalendar?"I couldn't check your calendar just now. I haven't confirmed your availability.":"I couldn't get an answer right now. Nothing was saved. Please try again."),actions:[],source:useCalendar?"google_calendar":"openbrain"});saveAiChatSession();
       }finally{if(state.user?.id===owner&&epoch===assistantContextEpoch){state.aiBusy=false;$("aiUseCalendar").disabled=false;renderAiMessages();}}
     }
 

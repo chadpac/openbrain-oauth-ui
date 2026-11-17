@@ -19,13 +19,14 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *args): pass
 
 module = '''export function createClient() {
- const session=window.fixtureSignedOut?null:{user:{id:'fixture-user',email:'fixture@example.test'}};
+ let session=window.fixtureSignedOut?null:{user:{id:'fixture-user',email:'fixture@example.test'}};let authCallback;
  return {auth:{
   getSession:async()=>({data:{session}}),
-  onAuthStateChange(callback){if(session)queueMicrotask(()=>callback('SIGNED_IN',session))},
-  signInWithOtp:async payload=>{window.sentLogin=payload;return {error:null}},
+  onAuthStateChange(callback){authCallback=callback;if(session)queueMicrotask(()=>callback('SIGNED_IN',session))},
+  signInWithOtp:async payload=>{window.sentLogin=payload;return {error:window.fixtureEmailRateLimit?{status:429,code:'over_email_send_rate_limit',message:'email rate limit exceeded'}:null}},
+  signInWithPassword:async payload=>{window.fixturePasswordCalls=(window.fixturePasswordCalls||0)+1;if(window.fixturePasswordFail)return {error:{message:'Invalid login credentials'}};session={user:{id:'fixture-user',email:'fixture@example.test'}};queueMicrotask(()=>authCallback('SIGNED_IN',session));return {data:{session},error:null}},
   oauth:{
-   getAuthorizationDetails:async id=>({data:{authorization_id:id,client:{name:'Open Brain ChatGPT'},scope:'openid email profile'}}),
+   getAuthorizationDetails:async id=>{window.fixtureDetailsCalls=(window.fixtureDetailsCalls||0)+1;return {data:window.fixturePriorConsent?{redirect_url:location.origin+'/complete'}:{authorization_id:id,client:{name:'Open Brain ChatGPT'},scope:'openid email profile'}}},
    approveAuthorization:async id=>{localStorage.setItem('fixture_approved',id);return {data:{redirect_url:location.origin+'/complete'}}},
   },
  },from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:{display_name:'Fixture user',role:'admin'}})})};
@@ -79,6 +80,40 @@ with sync_playwright() as p:
     fresh_page.wait_for_url('**/complete')
     assert fresh_page.evaluate("localStorage.getItem('fixture_approved')") == 'fixture-email-request'
     login_context.close(); fresh_context.close()
+    # Password login stays in the original OAuth window, including its private
+    # per-tab callback context. No real password or email provider is used.
+    for prior_consent in [False, True]:
+        password_context = browser.new_context(service_workers='block')
+        password_page = password_context.new_page()
+        password_page.on('pageerror', lambda error: errors.append(str(error)))
+        password_page.route('https://cdn.jsdelivr.net/**', lambda route: route.fulfill(content_type='text/javascript', body=module))
+        password_page.add_init_script('window.fixtureSignedOut=true;window.fixtureEmailRateLimit=true;window.fixturePriorConsent='+str(prior_consent).lower())
+        password_page.goto(f'http://127.0.0.1:{server.server_port}/openbrain-oauth-ui/oauth/consent/?authorization_id=fixture-password-request')
+        password_page.locator('#password').wait_for(state='visible')
+        password_page.evaluate("sessionStorage.setItem('fixture_client_callback_context','original-window')")
+        password_page.locator('#email').fill('fixture@example.test')
+        if not prior_consent:
+            password_page.get_by_role('button', name='Email me a sign-in link').click()
+            password_page.wait_for_function("document.getElementById('message').textContent.includes('temporarily rate limited')")
+            assert password_page.locator('#passwordSignIn').is_enabled()
+            password_page.evaluate('window.fixturePasswordFail=true')
+            password_page.locator('#password').fill('fixture-wrong-password')
+            password_page.locator('#passwordSignIn').click()
+            password_page.wait_for_function("document.getElementById('message').textContent.includes('Invalid login credentials')")
+            assert password_page.locator('#password').input_value() == ''
+            password_page.evaluate('window.fixturePasswordFail=false')
+        password_page.locator('#password').fill('fixture-only-password')
+        password_page.locator('#passwordSignIn').click()
+        if not prior_consent:
+            password_page.locator('#approve').wait_for(state='visible')
+            assert password_page.evaluate("localStorage.getItem('fixture_approved')") is None
+            assert password_page.locator('#password').input_value() == ''
+            password_page.locator('#approve').click()
+        password_page.wait_for_url('**/complete')
+        assert len(password_context.pages) == 1
+        assert password_page.evaluate("sessionStorage.getItem('fixture_client_callback_context')") == 'original-window'
+        password_context.close()
+    assert not errors, errors
     print('OAuth return passed: concurrent session/sign-in, correct ChatGPT consent, explicit approval, callback and desktop/mobile layouts; synthetic auth only.')
     browser.close()
 server.shutdown()

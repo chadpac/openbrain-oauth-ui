@@ -20,15 +20,15 @@ https://prctfnpbftjepdckwpao.supabase.co/functions/v1/open-brain-gemini-oauth
    **Confidential** and paste that exact redirect URL. Create the app and copy its
    generated client ID/secret directly into ChatGPT. A callback URL is not a secret;
    keep the client secret private. Do not substitute a project API key.
-3. Complete the connection in ChatGPT. Sign in with the **same Open Brain account
-   as the dashboard**, using the same browser for the emailed sign-in link.
+3. Complete the connection in ChatGPT. On **Authorize Open Brain**, enter the
+   email and **Open Brain password** for the same account as the dashboard and
+   choose **Sign in with password**. This sends no email and keeps the OAuth
+   callback in its original tab. Enter the password only on the Open Brain page.
 4. On **Authorize Open Brain**, review the app name **Open Brain ChatGPT** and
    click **Approve**. Signing in alone does not approve the connection. Wait for
    the page to return to ChatGPT. This endpoint retains its existing household-admin
    requirement and requests no new Gmail/Calendar permissions.
-   Use the newest email from the current connection attempt. Its return link
-   carries the pending request back to this approval page; older emails may
-   return to the dashboard or to an expired request.
+   Existing consent may return you automatically without asking for approval again.
 5. In a new chat, select **Open Brain Personal** with `@` and ask it to use
    `list_spaces` to show your Spaces. Refresh the connection's tools if needed.
 
@@ -39,6 +39,14 @@ look for Approve. Complete approval before the new request expires. A spinning
 ChatGPT Connect button can represent an unfinished attempt; a fresh page load
 is needed before retrying. Do not create replacement credentials just because
 an individual authorization request expired.
+
+Email links remain an alternative. Keep the original connection tab open. Copy
+the new email sign-in link into that original tab's address bar instead of
+finishing OAuth in a new email tab. This preserves the AI client's private
+callback context. Use the newest email for the current attempt; never post an
+email sign-in link in chat. If sending is rate limited, stop resending and use
+the password option, or wait for the email limit to reset. No password is changed
+or reset by this connection flow.
 
 The existing shared-parent connection keeps its old memory/task tools, but cannot
 identify an individual or access private Spaces. Select the personal connection

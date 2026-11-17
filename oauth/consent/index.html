@@ -31,9 +31,13 @@
     <section id="login" class="hidden">
       <form id="loginForm">
         <label for="email">Email</label>
-        <input id="email" type="email" autocomplete="email" required />
-        <p class="muted small">We'll email you a one-time sign-in link. No Open Brain password is needed.</p>
-        <div class="row"><button class="primary" type="submit">Email me a sign-in link</button></div>
+        <input id="email" type="email" autocomplete="username" required />
+        <label for="password">Open Brain password</label>
+        <input id="password" type="password" autocomplete="current-password" required />
+        <p class="muted small">Use the password you set for Open Brain. Password sign-in keeps this connection in the same tab and does not send an email.</p>
+        <div class="row"><button id="passwordSignIn" class="primary" type="submit">Sign in with password</button></div>
+        <p class="muted small">You can also use a one-time email link if you don't have an Open Brain password.</p>
+        <div class="row"><button id="emailSignIn" class="secondary" type="button">Email me a sign-in link</button></div>
       </form>
     </section>
 
@@ -66,6 +70,26 @@
     const login = document.getElementById("login");
     const consent = document.getElementById("consent");
     const message = document.getElementById("message");
+    const passwordInput = document.getElementById("password");
+    let loginBusy = false;
+    let emailRateLimited = false;
+    let consentLoading = false;
+    let consentReloadRequested = false;
+    let consentNavigating = false;
+
+    function setLoginBusy(busy) {
+      loginBusy = busy;
+      document.getElementById("passwordSignIn").disabled = busy;
+      document.getElementById("emailSignIn").disabled = busy || emailRateLimited;
+    }
+
+    function continueAuthorization(url) {
+      if (consentNavigating) return;
+      if (typeof url !== "string" || !url) throw new Error("Unable to finish authorization. Start Connect again from your AI app.");
+      consentNavigating = true;
+      passwordInput.value = "";
+      location.assign(url);
+    }
 
     const showMessage = (text, kind="error") => {
       message.innerHTML = "";
@@ -96,31 +120,34 @@
     }
 
     async function loadConsent() {
-      if (!authorizationId) {
-        fail("Missing authorization request. Please start the connection again from ChatGPT, Gemini or your other AI app.");
+      if (consentNavigating) return;
+      if (consentLoading) {
+        consentReloadRequested = true;
         return;
       }
-
-      const { data: sessionData, error: sessionError } = await sb.auth.getSession();
-      if (sessionError) {
-        fail(sessionError.message);
-        return;
-      }
-
-      const user = sessionData.session?.user;
-      if (!user) {
-        consent.classList.add("hidden");
-        login.classList.remove("hidden");
-        return;
-      }
-
+      consentLoading = true;
       try {
+        if (!authorizationId) {
+          fail("Missing authorization request. Please start the connection again from ChatGPT, Gemini or your other AI app.");
+          return;
+        }
+
+        const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        const user = sessionData.session?.user;
+        if (!user) {
+          consent.classList.add("hidden");
+          login.classList.remove("hidden");
+          return;
+        }
+
         const member = await requireAdmin(user);
         const { data, error } = await sb.auth.oauth.getAuthorizationDetails(authorizationId);
         if (error) throw error;
 
         if (data && "redirect_url" in data && !("authorization_id" in data)) {
-          location.assign(data.redirect_url);
+          continueAuthorization(data.redirect_url);
           return;
         }
 
@@ -146,49 +173,81 @@
         message.innerHTML = "";
       } catch (err) {
         fail(err?.message || "Unable to load authorization request.");
+      } finally {
+        consentLoading = false;
+        if (consentReloadRequested && !consentNavigating) {
+          consentReloadRequested = false;
+          setTimeout(() => loadConsent(), 0);
+        }
       }
     }
 
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const button = e.submitter;
-      button.disabled = true;
+      if (loginBusy) return;
+      setLoginBusy(true);
       message.innerHTML = "";
-
-      const email = document.getElementById("email").value.trim();
-
-      // Keep a same-browser fallback, but carry the request in the emailed return
-      // URL too. Email apps can open a different browser without this storage.
-      try { localStorage.setItem("openbrain_pending_authorization_id", authorizationId); } catch {}
-      const returnUrl = new URL("https://chadpac.github.io/openbrain-oauth-ui/");
-      returnUrl.searchParams.set("authorization_id", authorizationId);
-
-      const { error } = await sb.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: returnUrl.href
-        }
-      });
-
-      button.disabled = false;
-
-      if (error) {
-        showMessage(error.message, "error");
-        return;
+      try {
+        const { error } = await sb.auth.signInWithPassword({
+          email: document.getElementById("email").value.trim(),
+          password: passwordInput.value
+        });
+        passwordInput.value = "";
+        if (error) throw error;
+        await loadConsent();
+      } catch (err) {
+        showMessage(err?.message || "Unable to sign in. Please try again.");
+      } finally {
+        passwordInput.value = "";
+        setLoginBusy(false);
       }
+    });
 
-      showMessage(
-        "Sign-in link sent. Open the email link in this same browser, then click Approve on the Authorize Open Brain page to finish connecting your AI app.",
-        "ok"
-      );
+    document.getElementById("emailSignIn").addEventListener("click", async () => {
+      const emailInput = document.getElementById("email");
+      if (loginBusy || emailRateLimited || !emailInput.reportValidity()) return;
+      setLoginBusy(true);
+      message.innerHTML = "";
+      passwordInput.value = "";
+      try {
+        const email = emailInput.value.trim();
+
+        // Keep a same-browser fallback, but carry the request in the emailed return
+        // URL too. Email apps can open a different browser without this storage.
+        try { localStorage.setItem("openbrain_pending_authorization_id", authorizationId); } catch {}
+        const returnUrl = new URL("https://chadpac.github.io/openbrain-oauth-ui/");
+        returnUrl.searchParams.set("authorization_id", authorizationId);
+
+        const { error } = await sb.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+            emailRedirectTo: returnUrl.href
+          }
+        });
+
+        if (error) throw error;
+
+        showMessage(
+          "Sign-in link sent. Keep this connection tab open. Copy the new email link into this same tab's address bar so your AI app's connection stays in its original window.",
+          "ok"
+        );
+      } catch (err) {
+        const rateLimited = err?.status === 429 || err?.code === "over_email_send_rate_limit" || /email rate limit/i.test(err?.message || "");
+        if (rateLimited) emailRateLimited = true;
+        showMessage(rateLimited
+          ? "Email sending is temporarily rate limited. Please stop resending. If you have an Open Brain password, use Sign in with password above; otherwise try email again after the limit resets."
+          : err?.message || "Unable to send a sign-in link. Please try again.");
+      } finally {
+        setLoginBusy(false);
+      }
     });
 
     // If a magic-link sign-in completes in another tab, the authenticated
     // session is shared through the browser and this page can continue.
     sb.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN") {
-        loadConsent();
+        setTimeout(() => loadConsent(), 0);
       }
     });
 
@@ -201,7 +260,7 @@
         showMessage(error.message, "error");
         return;
       }
-      location.assign(data.redirect_url);
+      continueAuthorization(data.redirect_url);
     });
 
     document.getElementById("deny").addEventListener("click", async () => {
@@ -213,7 +272,7 @@
         showMessage(error.message, "error");
         return;
       }
-      location.assign(data.redirect_url);
+      continueAuthorization(data.redirect_url);
     });
 
     document.getElementById("signOut").addEventListener("click", async () => {

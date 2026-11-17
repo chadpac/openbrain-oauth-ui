@@ -6,6 +6,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { registerSpaceTools, type SpaceRpcClient } from "../_shared/space-mcp-tools.ts";
+import { registerPersonalReminderTools, type ReminderClient } from "../_shared/personal-reminder-tools.ts";
 import { pipeline } from "@supabase/middleware";
 import { withOAuthProtectedResource, withSupabase } from "@supabase/server";
 
@@ -102,13 +103,14 @@ Only extract what's explicitly there.`,
 
 // --- MCP Server Setup ---
 
-function buildServer(userId: string, householdId: string, isAdmin: boolean, spaceClient: SpaceRpcClient): McpServer {
+type PersonalClient = SpaceRpcClient & ReminderClient;
+function buildServer(userId: string, householdId: string, isAdmin: boolean, spaceClient: PersonalClient): McpServer {
   const visibilityFilter = isAdmin
     ? `visibility.eq.household,visibility.eq.parents,and(visibility.eq.private,created_by.eq.${userId})`
     : `visibility.eq.household,and(visibility.eq.private,created_by.eq.${userId})`;
   const server = new McpServer({
     name: "open-brain",
-    version: "1.1.0",
+    version: "1.2.0",
   });
 
   // ChatGPT compatibility: restricted connector surfaces, company knowledge, and deep
@@ -803,9 +805,10 @@ function buildServer(userId: string, householdId: string, isAdmin: boolean, spac
     },
     async () => {
       try {
-        const { data: members, error } = await supabase
+        const { data: members, error } = await spaceClient
           .from("household_members")
           .select("display_name, role, user_id, household_id")
+          .eq("household_id", householdId)
           .order("display_name");
 
         if (error) {
@@ -864,7 +867,7 @@ function buildServer(userId: string, householdId: string, isAdmin: boolean, spac
     {
       title: "Create Family Task",
       description:
-        "Create a family task or Telegram reminder in Open Brain. The assigned_to value should match a display name returned by list_family_members. remind_at and due_at should be ISO 8601 timestamps with a timezone offset. For recurring tasks, recurrence_rule may be daily, weekdays, weekly, monthly, days:X, weeks:X, months:X, or weekdays:mon,wed,fri.",
+        "Create an explicitly requested HOUSEHOLD-VISIBLE task in the signed-in user's household. For 'remind me' and other personal reminders, use create_personal_reminder instead, which stays private. The assigned_to value must exactly match a display name returned by list_family_members. remind_at and due_at should be ISO 8601 timestamps with a timezone offset. For recurring household tasks, recurrence_rule may be daily, weekdays, weekly, monthly, days:X, weeks:X, months:X, or weekdays:mon,wed,fri. Do not retry a household creation blindly after an interrupted response; it has no request ID.",
       annotations: {
         readOnlyHint: false,
         openWorldHint: false,
@@ -919,10 +922,11 @@ function buildServer(userId: string, householdId: string, isAdmin: boolean, spac
     }) => {
       try {
         // Find the assigned family member.
-        const { data: members, error: memberError } = await supabase
+        const { data: members, error: memberError } = await spaceClient
           .from("household_members")
           .select("user_id, household_id, display_name")
-          .ilike("display_name", assigned_to)
+          .eq("household_id", householdId)
+          .eq("display_name", assigned_to)
           .limit(2);
 
         if (memberError) {
@@ -967,18 +971,7 @@ function buildServer(userId: string, householdId: string, isAdmin: boolean, spac
 
         const member = members[0];
 
-        // Use a household admin as the creator when possible.
-        const { data: admins } = await supabase
-          .from("household_members")
-          .select("user_id")
-          .eq("household_id", member.household_id)
-          .eq("role", "admin")
-          .limit(1);
-
-        const createdBy =
-          admins?.[0]?.user_id ?? member.user_id;
-
-        const { data: task, error: taskError } = await supabase
+        const { data: task, error: taskError } = await spaceClient
           .from("family_tasks")
           .insert({
             title,
@@ -986,7 +979,7 @@ function buildServer(userId: string, householdId: string, isAdmin: boolean, spac
             assigned_to: member.display_name,
             assigned_to_user_id: member.user_id,
             household_id: member.household_id,
-            created_by: createdBy,
+            created_by: userId,
             category: category ?? "household",
             priority: priority ?? "normal",
             status: "pending",
@@ -1044,6 +1037,7 @@ function buildServer(userId: string, householdId: string, isAdmin: boolean, spac
   );
   
   registerSpaceTools(server, async () => ({ client: spaceClient, userId }));
+  registerPersonalReminderTools(server, async () => ({ client: spaceClient, userId, householdId }));
   return server;
 }
 
@@ -1132,7 +1126,7 @@ function unauthorizedResponse(id: string | number | null): Response {
   });
 }
 
-const app = new Hono<{ Bindings: { spaceClient: SpaceRpcClient } }>();
+const app = new Hono<{ Bindings: { spaceClient: PersonalClient } }>();
 
 // CORS preflight — required for browser/Electron-based clients (Claude Desktop, claude.ai)
 app.options("*", (c) => {

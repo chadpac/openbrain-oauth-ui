@@ -96,3 +96,57 @@ Deno.test("verified OAuth identity supplies the caller JWT to every Space read/w
     role = "child"; const denied = await call("list_spaces", {}); assert.equal(denied.response.status, 403);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+Deno.test("personal reminders and household tasks use the caller JWT, never service role or forged scope", async () => {
+  const home = "00000000-0000-4000-8000-000000000002";
+  const reminderId = "00000000-0000-4000-8000-000000000005";
+  let saved: any = null;
+  let posts = 0;
+  const paths: string[] = [];
+  globalThis.fetch = async (input, init) => {
+    const request = new Request(input, init), u = new URL(request.url), q = u.searchParams;
+    paths.push(u.pathname);
+    assert.equal(u.hostname, "spaces-fixture.supabase.co");
+    assert.equal(request.headers.get("authorization"), "Bearer " + token);
+    assert.equal(request.headers.get("apikey"), "sb_publishable_fixture");
+    if (u.pathname === "/auth/v1/user") return Response.json({ id: userId, aud: "authenticated", role: "authenticated", app_metadata: {}, user_metadata: {}, created_at: "2026-11-15T12:00:00Z" });
+    if (u.pathname.endsWith("/household_members")) {
+      if (q.get("select") === "role,household_id") return Response.json({ role: "admin", household_id: home });
+      assert.equal(q.get("household_id"), "eq." + home);
+      const member = { role: "admin", display_name: "Fixture person", user_id: userId, household_id: home, telegram_enabled: false, telegram_chat_id: null };
+      return Response.json(q.has("user_id") ? member : [member]);
+    }
+    if (u.pathname.endsWith("/push_subscriptions")) { assert.equal(q.get("user_id"), "eq." + userId); return Response.json([{ id: "fixture-device" }]); }
+    if (u.pathname.endsWith("/notification_preferences")) { assert.equal(q.get("owner_user_id"), "eq." + userId); return Response.json(null); }
+    if (u.pathname.endsWith("/households")) { assert.equal(q.get("id"), "eq." + home); return Response.json({ timezone: "America/Denver" }); }
+    if (u.pathname.endsWith("/family_tasks")) {
+      if (request.method === "POST") {
+        const task = await request.json(); posts++;
+        assert.equal(task.created_by, userId); assert.equal(task.assigned_to_user_id, userId); assert.equal(task.household_id, home);
+        saved = { ...task, id: task.id ?? reminderId, reminder_sent_at: null, reminder_error: null };
+        return Response.json(saved);
+      }
+      assert.equal(q.get("household_id"), "eq." + home); assert.equal(q.get("created_by"), "eq." + userId); assert.equal(q.get("assigned_to_user_id"), "eq." + userId);
+      return Response.json(saved);
+    }
+    throw Error("Unexpected request: " + u.pathname);
+  };
+  const invoke = async (method: string, params?: unknown) => {
+    const response = await oauth(new Request(url, { method: "POST", headers: { ...headers, authorization: "Bearer " + token, "x-openbrain-user-id": "spoofed", "x-openbrain-household-id": "spoofed", "x-openbrain-is-admin": "true" }, body: body(method, params) }));
+    assert.equal(response.status, 200); return decode(await response.text());
+  };
+  const call = async (name: string, args: unknown = {}) => (await invoke("tools/call", { name, arguments: args })).result;
+  try {
+    const discovery = await invoke("tools/list");
+    assert.equal(discovery.result.tools.length, 20);
+    for (const name of ["get_my_reminder_settings", "create_personal_reminder", "get_my_reminder"]) assert(discovery.result.tools.some((t: any) => t.name === name));
+    const input = { request_id: reminderId, title: "Fixture private reminder", remind_at: new Date(Date.now() + 86400000).toISOString() };
+    const created = await call("create_personal_reminder", input); assert.equal(created.isError, undefined); assert.equal(saved.visibility, "private");
+    const retried = await call("create_personal_reminder", input); assert.equal(JSON.parse(retried.content[0].text).replayed, true); assert.equal(posts, 1);
+    const status = await call("get_my_reminder", { reminder_id: reminderId }); assert.equal(status.isError, undefined);
+    const members = await call("list_family_members"); assert.equal(members.isError, undefined);
+    const shared = await call("create_family_task", { title: "Explicit household fixture", assigned_to: "Fixture person", remind_at: input.remind_at });
+    assert.equal(shared.isError, undefined); assert.equal(saved.visibility, "household"); assert.equal(posts, 2);
+    assert(paths.every(p => p.startsWith("/auth/") || p.startsWith("/rest/")));
+  } finally { globalThis.fetch = originalFetch; }
+});

@@ -20,6 +20,11 @@ https://prctfnpbftjepdckwpao.supabase.co/functions/v1/open-brain-gemini-oauth
    **Confidential** and paste that exact redirect URL. Create the app and copy its
    generated client ID/secret directly into ChatGPT. A callback URL is not a secret;
    keep the client secret private. Do not substitute a project API key.
+   Set this client's **token endpoint authentication method** to
+   **`client_secret_post`**, matching the method used by this ChatGPT connection.
+   Supabase defaults confidential clients to `client_secret_basic`; choosing
+   Confidential alone does not select the required method. Keep the client ID,
+   secret, redirect URI and confidential client type unchanged when correcting it.
 3. Complete the connection in ChatGPT. On **Authorize Open Brain**, enter the
    email and **Open Brain password** for the same account as the dashboard and
    choose **Sign in with password**. This sends no email and keeps the OAuth
@@ -64,6 +69,29 @@ clients that need dynamic registration advertised. It is not required when using
 an explicitly registered OAuth client with the direct Supabase endpoint. Supabase's
 current public authorization-server metadata does not advertise
 `registration_endpoint`. Manual registration does not require a saved gateway URL.
+
+## Sign-in succeeds but ChatGPT cannot connect
+
+Approval and token exchange are separate steps. Check Supabase Auth logs around
+the failed `POST /auth/v1/oauth/token`, rather than guessing another password or
+recreating the app. In this project's ChatGPT connection, a confirmed HTTP 400 was:
+
+```
+invalid authentication method: client is registered for 'client_secret_basic' but 'client_secret_post' was used
+```
+
+The registered confidential client's token endpoint method must match the method
+ChatGPT sends. Correcting this setting does not require rotating its client secret,
+resetting the user's password, changing permissions or disabling PKCE. Provider
+administrators can configure the method in the OAuth client's settings or through
+the server-only OAuth Admin `updateClient` API. Never expose an admin key in chat
+or browser code.
+
+Verify the saved method, then reconnect from ChatGPT. Successful user approval
+alone does not prove a completed connection: confirm a successful token exchange
+and a session for that OAuth client before investigating tool discovery. Inspect
+only relevant paths, status codes and error messages; exclude codes, secrets,
+tokens, state values and personal request headers from shared logs.
 
 ## Things to say
 

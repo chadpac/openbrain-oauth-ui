@@ -24,6 +24,9 @@ https://prctfnpbftjepdckwpao.supabase.co/functions/v1/open-brain-gemini-oauth
    email and **Open Brain password** for the same account as the dashboard and
    choose **Sign in with password**. This sends no email and keeps the OAuth
    callback in its original tab. Enter the password only on the Open Brain page.
+   If you need to change it and are already signed in to the dashboard, use
+   **Settings → Your account → Change Open Brain password** there.
+   [Password change help](account-password.md).
 4. On **Authorize Open Brain**, review the app name **Open Brain ChatGPT** and
    click **Approve**. Signing in alone does not approve the connection. Wait for
    the page to return to ChatGPT. This endpoint retains its existing household-admin

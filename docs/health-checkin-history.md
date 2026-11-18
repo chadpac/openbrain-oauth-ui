@@ -13,6 +13,18 @@ saved. Multiple saved values for one question remain visible, as do additional
 linked metrics. Historical dates use the saved `checkin_date`, not the UTC
 date of `logged_at`. Standalone tracker logs remain in Recent entries.
 
+“Sleep last night” now has separate **Hours** and **Minutes** inputs, such as
+7 hours 30 minutes. Either part can be left blank to mean zero when the other
+is entered; leaving both blank means not recorded. Enter whole hours from 0–24
+and minutes from 0–59, with a maximum total of 24 hours. Invalid durations are
+rejected before any check-in writes begin.
+
+Saved sleep answers appear as hours and minutes in history, recent entries and
+the check-in tracker card. Existing records still use decimal hours internally
+(7 hours 30 minutes = 7.5 hours), preserving the current trends/averages. Opening
+and saving an unchanged older answer preserves its original numeric value,
+including older fractional precision; no historical records are migrated.
+
 The history reads `health_checkins` with its related `health_entries` and
 tracker metadata in one query. Both check-ins and embedded entries have an
 explicit owner filter, in addition to existing owner-only row-level security

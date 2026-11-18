@@ -142,6 +142,7 @@
     .health-checkin-card{margin:16px 20px 2px;border:1px solid #cfe2e1;border-radius:16px;background:linear-gradient(145deg,#f5fbfa,#fff);padding:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}
     .health-checkin-kicker{font-size:11px;font-weight:850;letter-spacing:.06em;text-transform:uppercase;color:#3f7779}.health-checkin-title{font-size:18px;font-weight:880;margin-top:3px}.health-checkin-meta{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45}.health-checkin-status{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:6px 9px;border-radius:999px;background:#eaf5f2;color:#356c67;font-size:11px;font-weight:850}.health-checkin-status.pending{background:var(--peach-soft);color:#7a5744}
     .checkin-question{border:1px solid var(--line);border-radius:13px;padding:13px;background:#fafcfc;display:grid;gap:9px}.checkin-question legend,.checkin-question-title{font-weight:820;font-size:13px}.checkin-question small{color:var(--muted);line-height:1.4}.checkin-choice-row{display:flex;gap:7px;flex-wrap:wrap}.checkin-choice{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:750;cursor:pointer}.checkin-choice input{width:auto;margin:0}.checkin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.checkin-form-body{display:grid;gap:10px}.checkin-number-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center}.checkin-target{font-size:12px;color:var(--muted);white-space:nowrap}
+    .checkin-duration-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.checkin-duration-row label{display:grid;gap:5px;margin:0}.checkin-duration-row input{min-width:0;width:100%}
     @media(max-width:700px){.health-checkin-card{margin:12px 12px 2px;grid-template-columns:1fr}.health-checkin-card .primary{width:100%}.checkin-grid{grid-template-columns:1fr}.checkin-choice{flex:1 1 auto;justify-content:center}}
     .checkin-history{margin:16px 20px;border:1px solid var(--line);border-radius:15px;padding:14px;background:#fff}
     .checkin-history>summary{font-weight:820;cursor:pointer;padding:4px 0}.history-private-note{margin:10px 0;color:var(--muted);font-size:12px;line-height:1.5}
@@ -1013,10 +1014,14 @@
               <label class="checkin-choice"><input type="radio" name="checkin_mood" value="1">1</label><label class="checkin-choice"><input type="radio" name="checkin_mood" value="2">2</label><label class="checkin-choice"><input type="radio" name="checkin_mood" value="3">3</label><label class="checkin-choice"><input type="radio" name="checkin_mood" value="4">4</label><label class="checkin-choice"><input type="radio" name="checkin_mood" value="5">5</label>
             </div><small>1 = very low · 5 = very good</small>
           </fieldset>
-          <div class="checkin-question">
-            <div class="checkin-question-title">9. Sleep last night</div>
-            <div class="checkin-number-row"><input id="checkinSleep" type="number" inputmode="decimal" min="0" max="24" step="0.25" placeholder="hours"><span class="checkin-target">hours</span></div>
-          </div>
+          <fieldset class="checkin-question">
+            <legend>9. Sleep last night</legend>
+            <div class="checkin-duration-row">
+              <label for="checkinSleep">Hours<input id="checkinSleep" type="number" inputmode="numeric" min="0" max="24" step="1" placeholder="0" /></label>
+              <label for="checkinSleepMinutes">Minutes<input id="checkinSleepMinutes" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="0" /></label>
+            </div>
+            <small>Leave both blank if not recorded.</small>
+          </fieldset>
         </div>
 
         <div class="checkin-question"><div class="checkin-question-title">10. Biggest win today</div><textarea id="checkinWin" maxlength="1000" placeholder="What went well?"></textarea></div>
@@ -3948,6 +3953,7 @@
       if(tracker.value_kind==="rating") return String(entry.rating)+"/5";
       if(tracker.value_kind==="text") return entry.value_text||"—";
       const raw=entry.value_number;
+      if(raw!=null&&tracker.checkin_key==="sleep")return formatCheckinSleep(raw);
       return raw==null?"—":String(Number(raw))+(tracker.unit?" "+tracker.unit:"");
     }
 
@@ -4010,6 +4016,7 @@
 
     function historyAnswerValue(entry){
       if(entry.rating!=null)return String(entry.rating)+" / 5";
+      if(entry.value_number!=null&&entry.tracker?.checkin_key==="sleep")return formatCheckinSleep(entry.value_number);
       if(entry.value_number!=null)return String(Number(entry.value_number))+(entry.tracker?.unit?" "+entry.tracker.unit:"");
       if(entry.value_text!=null && String(entry.value_text).trim())return ({yes:"Yes",no:"No",mostly:"Mostly",partly:"Partly",unsure:"Unsure"})[entry.value_text]||entry.value_text;
       return "Not recorded";
@@ -4274,6 +4281,32 @@
       $("healthCheckinMeta").textContent=reminder+" · Water target "+waterTarget+" oz · Private to you";
     }
 
+    // BEGIN CHECKIN SLEEP DURATION
+    function checkinSleepParts(value){
+      if(value==null||value==="")return {hours:"",minutes:""};
+      const total=Math.round(Number(value)*60);
+      return {hours:String(Math.floor(total/60)),minutes:String(total%60)};
+    }
+
+    function checkinSleepHours(hoursText,minutesText,previous=null){
+      const h=String(hoursText).trim(),m=String(minutesText).trim();
+      if(h===""&&m==="")return null;
+      const hours=h===""?0:/^\d+$/.test(h)?Number(h):NaN;
+      const minutes=m===""?0:/^\d+$/.test(m)?Number(m):NaN;
+      if(!Number.isInteger(hours)||hours<0||hours>24||!Number.isInteger(minutes)||minutes<0||minutes>59||hours*60+minutes>1440)throw new Error("Enter whole hours (0–24) and minutes (0–59), totaling no more than 24 hours.");
+      // Existing values stay exact when an unchanged check-in is reopened/saved.
+      // New entries still use decimal hours, so history and trends need no rewrite.
+      const old=checkinSleepParts(previous);
+      if(previous!=null&&previous!==""&&hours===Number(old.hours)&&minutes===Number(old.minutes))return Number(previous);
+      return (hours*60+minutes)/60;
+    }
+
+    function formatCheckinSleep(value){
+      const {hours,minutes}=checkinSleepParts(value);
+      return hours+" "+(hours==="1"?"hour":"hours")+" "+minutes+" "+(minutes==="1"?"minute":"minutes");
+    }
+    // END CHECKIN SLEEP DURATION
+
     function openHealthCheckin(){
       const checkin=todayHealthCheckin();
       $("healthCheckinForm").reset();
@@ -4291,7 +4324,9 @@
       setHealthRadio("checkin_hunger",checkinEntry(checkin,"hunger")?.rating);
       setHealthRadio("checkin_energy",checkinEntry(checkin,"energy")?.rating);
       setHealthRadio("checkin_mood",checkinEntry(checkin,"mood")?.rating);
-      $("checkinSleep").value=checkinEntry(checkin,"sleep")?.value_number??"";
+      const sleep=checkinSleepParts(checkinEntry(checkin,"sleep")?.value_number);
+      $("checkinSleep").value=sleep.hours;
+      $("checkinSleepMinutes").value=sleep.minutes;
       $("checkinWin").value=checkinEntry(checkin,"biggest_win")?.value_text||"";
       $("checkinObstacle").value=checkinEntry(checkin,"obstacle")?.value_text||"";
       $("healthCheckinDialog").showModal();
@@ -4330,6 +4365,7 @@
         if(!vegetables)throw new Error("Choose an answer for vegetables and fiber.");
         if(!protein)throw new Error("Choose an answer for protein.");
         if(!hunger||!energy||!mood)throw new Error("Choose hunger, energy, and mood ratings.");
+        const sleep=checkinSleepHours($("checkinSleep").value,$("checkinSleepMinutes").value,checkinEntry(todayHealthCheckin(),"sleep")?.value_number);
 
         const checkinDate=localDayKey(new Date());
         const loggedAt=new Date().toISOString();
@@ -4346,7 +4382,6 @@
         if(deleteError)throw deleteError;
 
         const water=$("checkinWater").value===""?null:Number($("checkinWater").value);
-        const sleep=$("checkinSleep").value===""?null:Number($("checkinSleep").value);
         const workout=$("checkinWorkout").checked;
         const workoutDetails=$("checkinWorkoutDetails").value.trim();
         const win=$("checkinWin").value.trim();

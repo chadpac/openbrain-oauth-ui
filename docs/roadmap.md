@@ -81,6 +81,14 @@ tasks. File upload/extraction is not deployed yet.
    renewal/return deadlines, comparisons and itineraries. Begin with tracking and
    recommendations; reviewed transactions are a later step.
 
+   To do: [Connect the shared Google Keep shopping list to Open Brain](https://github.com/chadpac/openbrain-oauth-ui/issues/29).
+   Preserve the family's Google Home voice additions and Keep as the primary list
+   for checking items off. Investigate reliable two-way sync of additions, edits,
+   completion and deletion, with duplicate/conflict handling and selected-list
+   privacy. An interim on-demand import must remain clearly distinct from automatic
+   sync. This connection is planned, not implemented; Walmart cart integration is
+   a separate dependency.
+
 ## Cross-cutting additions accepted after the Muse review
 
 - Explicit watch rules for useful changes (deadline updates, replies, price
